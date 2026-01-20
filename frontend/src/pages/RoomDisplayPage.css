@@ -1,0 +1,444 @@
+.room-display-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Header */
+.page-header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 20px 30px;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.clinic-name {
+  font-size: 2.5rem;
+  margin: 0 0 10px 0;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-title {
+  font-size: 1.8rem;
+  margin: 0 0 15px 0;
+  opacity: 0.9;
+  font-weight: 500;
+  text-align: center;
+}
+
+.api-status {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 5px;
+  transition: all 0.3s ease;
+}
+
+.api-status.connected {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  border: 2px solid rgba(40, 167, 69, 0.3);
+}
+
+.api-status.disconnected {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 2px solid rgba(220, 53, 69, 0.3);
+}
+
+.header-info {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+/* Main content */
+.page-main {
+  flex: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 30px;
+}
+
+/* Start section */
+.start-section {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  margin-bottom: 30px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.instruction-text {
+  margin-bottom: 30px;
+}
+
+.instruction-text h3 {
+  font-size: 1.8rem;
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.instruction-text p {
+  font-size: 1.2rem;
+  color: #6c757d;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.button-container {
+  margin: 30px 0;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 10px;
+  border: 2px solid #f5c6cb;
+  margin: 20px auto;
+  max-width: 600px;
+  text-align: center;
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.error-hint {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 10px;
+}
+
+.stats-info {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #e9ecef;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #495057;
+}
+
+.stat-value.ready {
+  color: #28a745;
+}
+
+/* Rooms section */
+.rooms-section {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  margin-bottom: 30px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.section-header h3 {
+  font-size: 1.8rem;
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.section-subtitle {
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 30px;
+}
+
+.room-container {
+  transition: transform 0.3s ease;
+}
+
+.room-container:hover {
+  transform: translateY(-5px);
+}
+
+.room-card {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 25px;
+  border: 2px solid #e9ecef;
+  height: 100%;
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.room-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-icon {
+  font-size: 1.5rem;
+}
+
+.room-title h4 {
+  font-size: 1.5rem;
+  color: #495057;
+  margin: 0;
+}
+
+.room-stats {
+  display: flex;
+  gap: 10px;
+}
+
+.bed-count {
+  background: #667eea;
+  color: white;
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.beds-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Welcome section */
+.welcome-section {
+  margin-top: 30px;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Empty state */
+.empty-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 40px;
+  text-align: center;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.5;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.empty-state h3 {
+  font-size: 1.8rem;
+  color: #495057;
+  margin-bottom: 15px;
+}
+
+.empty-state p {
+  font-size: 1.2rem;
+  color: #6c757d;
+  max-width: 500px;
+  margin: 0 auto 15px;
+}
+
+.empty-hint {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+/* Loading state */
+.loading-state {
+  background: white;
+  border-radius: 20px;
+  padding: 60px 40px;
+  text-align: center;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+}
+
+.loading-state p {
+  font-size: 1.2rem;
+  color: #6c757d;
+  margin-top: 20px;
+}
+
+/* Footer */
+.page-footer {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 20px 30px;
+  color: white;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: auto;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.footer-text {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.system-info {
+  display: flex;
+  gap: 20px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.system-version,
+.system-mode {
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 15px 20px;
+  }
+  
+  .clinic-name {
+    font-size: 2rem;
+  }
+  
+  .page-title {
+    font-size: 1.4rem;
+  }
+  
+  .header-info {
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .page-main {
+    padding: 15px;
+  }
+  
+  .start-section,
+  .rooms-section {
+    padding: 25px;
+  }
+  
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-info {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .system-info {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .clinic-name {
+    font-size: 1.6rem;
+  }
+  
+  .instruction-text h3,
+  .section-header h3 {
+    font-size: 1.4rem;
+  }
+  
+  .instruction-text p,
+  .section-subtitle {
+    font-size: 1rem;
+  }
+  
+  .room-card {
+    padding: 20px;
+  }
+}
