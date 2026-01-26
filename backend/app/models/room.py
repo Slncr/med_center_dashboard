@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -19,7 +19,7 @@ class Room(BaseModel):
     beds = relationship("Bed", back_populates="room", cascade="all, delete-orphan")
 
 class Bed(BaseModel):
-    tablename = "beds"
+    __tablename__ = "beds"
     id = Column(Integer, primary_key=True, index=True)
     number = Column(Integer, nullable=False)
     room_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)

@@ -1,0 +1,190 @@
+.temperature-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.temperature-info {
+  margin-top: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.info-item {
+  text-align: center;
+  padding: 5px;
+}
+
+.info-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 3px;
+}
+
+.info-value {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #495057;
+}
+
+.status-low {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-high-fever {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.temp-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.temperature-label {
+  color: #495057;
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.temperature-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.temperature-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2c3e50;
+  min-width: 60px;
+  text-align: center;
+}
+
+.temperature-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.temp-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ced4da;
+  background: white;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.temp-button:hover {
+  background: #f8f9fa;
+  border-color: #4CAF50;
+}
+
+.temp-button:active {
+  background: #e9ecef;
+}
+
+.temp-button.decrease {
+  color: #dc3545;
+}
+
+.temp-button.increase {
+  color: #28a745;
+}
+
+.temperature-slider {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.temperature-slider input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e9ecef;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.temperature-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.temperature-slider input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.temperature-range {
+  display: flex;
+  justify-content: space-between;
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 5px;
+}
+
+.status-indicator {
+  padding: 3px 10px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-normal {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-fever {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-hypothermia {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-critical {
+  background: #f8d7da;
+  color: #721c24;
+}

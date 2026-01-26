@@ -13,7 +13,7 @@ class Observation(BaseModel):
     blood_pressure_diastolic: Optional[int] = None
     pulse: Optional[int] = None
     notes: Optional[str] = None
-    date: date = date.today()
+    date: date
 
 class Procedure(BaseModel):
     name: str

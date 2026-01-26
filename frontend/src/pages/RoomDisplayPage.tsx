@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Room, Bed } from '../types/patient';
+import { Room, Bed, Patient } from '../types/patient';
 import { apiService } from '../services/api';
 import StartButton from '../components/patient-room/StartButton';
 import BedCard from '../components/patient-room/BedCard';
 import WelcomeMessage from '../components/patient-room/WelcomeMessage';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import './RoomDisplayPage.css';
+import AppointmentsDisplay from '../components/patient-room/AppointmentsDisplay';
+
 
 const RoomDisplayPage: React.FC = () => {
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
@@ -45,34 +48,51 @@ const RoomDisplayPage: React.FC = () => {
       console.error('Error loading rooms:', err);
       setError('Ошибка загрузки данных. Проверьте подключение к серверу.');
       
-      // Демо данные при ошибке
-      setRooms([
-        {
-          id: 1,
-          number: "101",
-          beds: [
-            { id: 1, number: 1, patient: "Иванов И.И. (демо)" },
-            { id: 2, number: 2, patient: "Петров П.П. (демо)" }
-          ]
-        },
-        {
-          id: 2,
-          number: "102",
-          beds: [
-            { id: 3, number: 1, patient: "Сидорова М.С. (демо)" }
-          ]
-        }
-      ]);
+     setRooms([
+      {
+        id: 1,
+        number: "101",
+        max_beds: 2,
+        beds: [
+          { 
+            id: 1, 
+            number: 1, 
+            room_id: 1,
+            is_occupied: true,
+            patient: { 
+              id: 1, 
+              full_name: "Иванов И.И. (демо)", 
+              admission_date: new Date().toISOString(),
+              status: 'active'
+            } as Patient
+          },
+          { 
+            id: 2, 
+            number: 2, 
+            room_id: 1,
+            is_occupied: true,
+            patient: { 
+              id: 2, 
+              full_name: "Петров П.П. (демо)", 
+              admission_date: new Date().toISOString(),
+              status: 'active'
+            } as Patient
+          }
+        ]
+      }
+    ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePatientSelect = async (bedId: number, patientName: string) => {
+  const handlePatientSelect = async (bedId: number, patientName: string, patientId?: number) => {
     try {
       const response = await apiService.selectPatient(bedId);
+      
+      // response уже имеет тип PatientSelectResponse, а не ApiResponse
       setSelectedPatient({
-        id: bedId,
+        id: patientId || bedId, // Используем переданный patientId если есть
         name: patientName,
         message: response.welcome_message || 'Добро пожаловать в медицинский центр!'
       });
@@ -86,11 +106,11 @@ const RoomDisplayPage: React.FC = () => {
       }, 100);
     } catch (err) {
       console.error('Error selecting patient:', err);
-      // Демо режим
+      // Демо режим при ошибке
       setSelectedPatient({
         id: bedId,
         name: patientName,
-        message: 'Пациент выбран (демо режим)'
+        message: 'Добро пожаловать! (оффлайн режим)'
       });
     }
   };
@@ -180,15 +200,22 @@ const RoomDisplayPage: React.FC = () => {
                     </div>
                     
                     <div className="beds-container">
-                      {room.beds.map((bed) => (
-                        <BedCard
-                          key={bed.id}
-                          bed={bed}
-                          roomNumber={room.number}
-                          onSelect={handlePatientSelect}
-                          disabled={loading || !!selectedPatient}
-                        />
-                      ))}
+                      {room.beds.map((bed) => {
+                        // Получаем имя пациента - может быть string или Patient объект
+                        const patientName = typeof bed.patient === 'string' 
+                          ? bed.patient 
+                          : bed.patient?.full_name || `Пациент ${bed.id}`;
+                        
+                        return (
+                          <BedCard
+                            key={bed.id}
+                            bed={bed}
+                            roomNumber={room.number}
+                            onSelect={(bedId) => handlePatientSelect(bedId, patientName, bed.patient?.id)}
+                            disabled={loading || !!selectedPatient}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -204,6 +231,20 @@ const RoomDisplayPage: React.FC = () => {
               patientId={selectedPatient.id}
               message={selectedPatient.message}
               onClose={handleCloseWelcome}
+            />
+          </div>
+        )}
+
+        {selectedPatientId && (
+          <div className="appointments-display-section">
+            <h3>📋 Назначения и процедуры</h3>
+            <AppointmentsDisplay 
+              patientId={selectedPatientId}
+              compact={true}
+              onProcedureUpdate={() => {
+                // Можно добавить обновление данных при изменении процедур
+                console.log('Procedures updated');
+              }}
             />
           </div>
         )}
@@ -238,4 +279,4 @@ const RoomDisplayPage: React.FC = () => {
   );
 };
 
-export default RoomDisplayPage;
+export default RoomDisplayPage

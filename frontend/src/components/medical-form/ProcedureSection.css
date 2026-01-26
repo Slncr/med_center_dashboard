@@ -1,0 +1,334 @@
+.procedure-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 20px;
+}
+
+.procedure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.procedure-title {
+  color: #2c3e50;
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.procedure-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-procedure-button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.add-procedure-button:hover {
+  background: #388e3c;
+}
+
+.expand-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.expand-button:hover {
+  background: #545b62;
+}
+
+.procedure-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.procedure-item {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.procedure-item:hover {
+  border-color: #4CAF50;
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.1);
+}
+
+.procedure-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.procedure-name {
+  color: #2c3e50;
+  font-weight: 500;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.procedure-status {
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+}
+
+.status-in-progress {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.procedure-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.detail-label {
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.detail-value {
+  color: #495057;
+  font-weight: 500;
+}
+
+.procedure-notes {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.procedure-item-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  flex: 1;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.start-button {
+  background: #ffc107;
+  color: #212529;
+}
+
+.start-button:hover {
+  background: #e0a800;
+}
+
+.complete-button {
+  background: #28a745;
+  color: white;
+}
+
+.complete-button:hover {
+  background: #218838;
+}
+
+.edit-button {
+  background: #17a2b8;
+  color: white;
+}
+
+.edit-button:hover {
+  background: #138496;
+}
+
+.delete-button {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-button:hover {
+  background: #c82333;
+}
+
+.no-procedures {
+  text-align: center;
+  padding: 30px 20px;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.no-procedures p {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+}
+
+.add-first-button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.add-first-button:hover {
+  background: #388e3c;
+}
+
+.procedure-form {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  border: 2px dashed #dee2e6;
+  margin-top: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  color: #495057;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.save-button {
+  flex: 1;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.save-button:hover {
+  background: #388e3c;
+}
+
+.cancel-button {
+  flex: 1;
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.cancel-button:hover {
+  background: #545b62;
+}
+
+@media (max-width: 768px) {
+  .procedure-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .procedure-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .procedure-item-actions {
+    flex-direction: column;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

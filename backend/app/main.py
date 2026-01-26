@@ -36,18 +36,22 @@ app = FastAPI(
 # Настраиваем CORS
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+      CORSMiddleware,
+      allow_origins=[
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+          "http://frontend:3000",
+      ],
+      allow_credentials=True,
+      allow_methods=["*"],
+      allow_headers=["*"],
     )
 
 # Подключаем API роутер
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-# Статические файлы
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# # Статические файлы
+# app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.get("/")

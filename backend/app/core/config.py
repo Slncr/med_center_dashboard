@@ -21,7 +21,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
     
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/medcenter"
+    DATABASE_URL: str = "postgresql://med_user:med_pass@postgres:5432/med_center"
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 40
     
@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 
 settings = Settings()
