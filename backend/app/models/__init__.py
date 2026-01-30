@@ -1,7 +1,8 @@
 # Импортируем все модели
 from .base import Base, BaseModel
 from .user import User, UserRole
-from .room import Room, Bed
+from .room import Room
+from .bed import Bed
 from .patient import Patient, PatientStatus
 from .medical import (
     MedicalRecord,

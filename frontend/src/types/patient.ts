@@ -1,4 +1,5 @@
 export interface Patient {
+  department_name: string;
   id: number;
   full_name: string;
   birth_date?: string;

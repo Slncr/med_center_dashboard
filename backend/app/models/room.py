@@ -6,26 +6,12 @@ from .base import BaseModel
 
 class Room(BaseModel):
     __tablename__ = "rooms"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    number = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String)
-    description = Column(Text)
-    max_beds = Column(Integer, default=1)
+    number = Column(String, nullable=False)  # например "101", "A-2"
+    name = Column(String)  # "Палата № 06"
+    description = Column(String)
+    max_beds = Column(Integer, default=10)
     floor = Column(Integer)
     wing = Column(String)
-    
-    # Relationships
-    beds = relationship("Bed", back_populates="room", cascade="all, delete-orphan")
-
-class Bed(BaseModel):
-    __tablename__ = "beds"
-    id = Column(Integer, primary_key=True, index=True)
-    number = Column(Integer, nullable=False)
-    room_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
-    is_occupied = Column(Boolean, default=False)
-    external_id = Column(String)  # ID из 1С
-
-    # Relationships
-    room = relationship("Room", back_populates="beds")
-    patients = relationship("Patient", back_populates="bed", uselist=False)
+    external_id = Column(String, unique=True, index=True)  # UUID из 1С

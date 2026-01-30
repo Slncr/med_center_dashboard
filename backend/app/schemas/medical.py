@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 from datetime import date, datetime
 
 class ObservationBase(BaseModel):
@@ -40,3 +40,20 @@ class Procedure(ProcedureBase):
 
     class Config:
         from_attributes = True
+
+class HospitalDocument(BaseModel):
+    document: str
+    branch: str
+    room: str
+    room_name: str
+    client: str
+    client_name: str
+    bed: str
+    bed_name: str
+    start_date: str
+    end_date: str
+    department: str
+    department_name: str
+
+class HospitalDocumentsResponse(BaseModel):
+    documents: List[HospitalDocument]

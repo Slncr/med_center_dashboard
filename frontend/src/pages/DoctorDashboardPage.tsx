@@ -32,10 +32,10 @@ const DoctorDashboardPage: React.FC = () => {
     );
   }
 
-  const activePatients = patients.filter(p => p.status === 'active');
+  const activePatients = patients;
   const today = new Date().toLocaleDateString('ru-RU');
 
-  return (
+  return (  
     <div className="doctor-dashboard">
       <header className="doctor-header">
         <div className="header-content">

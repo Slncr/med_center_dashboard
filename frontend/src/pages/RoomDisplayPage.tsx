@@ -48,39 +48,6 @@ const RoomDisplayPage: React.FC = () => {
       console.error('Error loading rooms:', err);
       setError('Ошибка загрузки данных. Проверьте подключение к серверу.');
       
-     setRooms([
-      {
-        id: 1,
-        number: "101",
-        max_beds: 2,
-        beds: [
-          { 
-            id: 1, 
-            number: 1, 
-            room_id: 1,
-            is_occupied: true,
-            patient: { 
-              id: 1, 
-              full_name: "Иванов И.И. (демо)", 
-              admission_date: new Date().toISOString(),
-              status: 'active'
-            } as Patient
-          },
-          { 
-            id: 2, 
-            number: 2, 
-            room_id: 1,
-            is_occupied: true,
-            patient: { 
-              id: 2, 
-              full_name: "Петров П.П. (демо)", 
-              admission_date: new Date().toISOString(),
-              status: 'active'
-            } as Patient
-          }
-        ]
-      }
-    ]);
     } finally {
       setLoading(false);
     }

@@ -1,40 +1,26 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 from typing import List
+
+from app.schemas.patient import Patient  # Убедитесь, что Pydantic-схема Patient определена
+from app.crud.patient import get_all_active_patients
+from app.core.database import get_db
 
 router = APIRouter()
 
-# Модели
-class Patient(BaseModel):
-    id: int
-    full_name: str
-    bed_id: int
-    room_number: str
-
-class PatientSelect(BaseModel):
-    patient_id: int
-
-# Мок данные
-mock_patients = [
-    {"id": 1, "full_name": "Иванов Иван Иванович", "bed_id": 1, "room_number": "101"},
-    {"id": 2, "full_name": "Петров Петр Петрович", "bed_id": 2, "room_number": "101"},
-    {"id": 3, "full_name": "Сидорова Мария Сергеевна", "bed_id": 1, "room_number": "102"},
-]
-
 @router.get("/", response_model=List[Patient])
-async def get_patients():
-    return mock_patients
+async def get_patients(db: Session = Depends(get_db)):
+    patients = get_all_active_patients(db)
+    return patients
 
 @router.get("/{patient_id}", response_model=Patient)
-async def get_patient(patient_id: int):
-    for patient in mock_patients:
-        if patient["id"] == patient_id:
-            return patient
-    raise HTTPException(status_code=404, detail="Patient not found")
+async def get_patient(patient_id: int, db: Session = Depends(get_db)):
+    patient = get_all_active_patients(db, patient_id=patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return patient
 
 @router.post("/{patient_id}/select")
 async def select_patient(patient_id: int):
-    for patient in mock_patients:
-        if patient["id"] == patient_id:
-            return {"message": f"Patient {patient['full_name']} selected", "success": True}
-    raise HTTPException(status_code=404, detail="Patient not found")
+    # Пока оставим как заглушка, можно реализовать позже
+    return {"message": f"Patient {patient_id} selected", "success": True}

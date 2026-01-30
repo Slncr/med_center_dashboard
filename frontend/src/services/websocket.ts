@@ -1,5 +1,3 @@
-// src/services/websocket.ts
-
 export interface WebSocketMessage {
   type: string;
   data: any;

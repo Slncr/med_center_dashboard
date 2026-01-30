@@ -46,7 +46,8 @@ export const usePatients = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [fetchRooms]);
+    fetchPatients();
+  }, [fetchRooms, fetchPatients]);
 
   return {
     patients,
@@ -56,6 +57,6 @@ export const usePatients = () => {
     fetchPatients,
     fetchRooms,
     selectPatient,
-    refetch: fetchRooms
+    refetch: fetchPatients
   };
 };

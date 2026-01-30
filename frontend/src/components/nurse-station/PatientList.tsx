@@ -9,21 +9,18 @@ interface PatientListProps {
 }
 
 const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSelect }) => {
-  const getPatientRoom = (patient: Patient): Room | undefined => {
-    return rooms.find(room => 
-      room.beds.some(bed => bed.patient?.id === patient.id)
-    );
-  };
-
-  const getPatientBed = (patient: Patient): number | undefined => {
+  // Найти палату по `patient.bed_id` и связь с койкой
+  const getPatientRoomAndBed = (patient: Patient) => {
     for (const room of rooms) {
-      const bed = room.beds.find(b => b.patient?.id === patient.id);
-      if (bed) return bed.number;
+      const bed = room.beds.find(b => b.id === patient.bed_id);
+      if (bed) {
+        return { room, bed };
+      }
     }
-    return undefined;
+    return { room: undefined, bed: undefined };
   };
 
-  const activePatients = patients.filter(p => p.status === 'active');
+  const activePatients = patients;
 
   return (
     <div className="patient-list">
@@ -37,16 +34,15 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
 
       <div className="patients-grid">
         {activePatients.map(patient => {
-          const room = getPatientRoom(patient);
-          const bedNumber = getPatientBed(patient);
+          const { room, bed } = getPatientRoomAndBed(patient);
 
           return (
             <div key={patient.id} className="patient-card">
               <div className="patient-header">
                 <h3>{patient.full_name}</h3>
-                <span className="patient-status active">Активный</span>
+                <span className={`patient-status ${patient.status}`}>{patient.status}</span>
               </div>
-              
+
               <div className="patient-info">
                 <div className="info-row">
                   <span className="info-label">Палата:</span>
@@ -54,7 +50,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
                 </div>
                 <div className="info-row">
                   <span className="info-label">Койка:</span>
-                  <span className="info-value">{bedNumber || '—'}</span>
+                  <span className="info-value">{bed ? bed.number : '—'}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Поступил:</span>
@@ -62,22 +58,24 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
                     {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
                   </span>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">ID:</span>
+                {/* <div className="info-row">
+                  <span className="info-label">IqqqD:</span>
                   <span className="info-value">{patient.external_id || patient.id}</span>
                 </div>
+                <div className="info-row">
+                  <span className="info-label">Подразделение:</span>
+                  <span className="info-value">{patient.department_name || '—'}</span>
+                </div> */}
               </div>
 
               <div className="patient-actions">
-                <button 
+                <button
                   className="action-button select-button"
                   onClick={() => onPatientSelect(patient.id)}
                 >
                   Выбрать
                 </button>
-                <button className="action-button view-button">
-                  Карта
-                </button>
+                <button className="action-button view-button">Карта</button>
               </div>
             </div>
           );

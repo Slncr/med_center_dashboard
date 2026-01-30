@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from typing import Generator
-
+from app.models import patient, user, medical, room, bed
 from .config import settings
 
 # Создаем engine с настройками пула соединений
