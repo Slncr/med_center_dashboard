@@ -8,7 +8,6 @@ from .medical import (
     MedicalRecord,
     Appointment,
     Procedure,
-    ObservationType,
     ProcedureStatus
 )
 
@@ -24,6 +23,5 @@ __all__ = [
     "MedicalRecord",
     "Appointment",
     "Procedure",
-    "ObservationType",
     "ProcedureStatus",
 ]

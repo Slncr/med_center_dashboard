@@ -6,7 +6,7 @@ from app.models.room import Room
 from app.models.bed import Bed  # ✅ Правильный импорт
 from app.schemas.medical import HospitalDocument
 from app.crud.bed import get_bed_by_external_id, create_bed
-from app.crud.room import get_all_rooms_with_beds
+from app.crud.room import get_room_by_external_id, create_room
 from app.crud.patient import get_patient_by_external_id, create_patient
 
 BASE_URL = 'http://172.191.7.27/g8_mis/hs/bwi/DictionaryData'
@@ -47,9 +47,9 @@ def sync_with_1c(db: Session):
         )
 
         # Найти или создать палату
-        room = get_all_rooms_with_beds(db, hospital_doc.room)
-        # if not room:
-        #     room = create_room(db, hospital_doc.room, hospital_doc.room_name.replace("Палата № ", ""), hospital_doc.room_name)
+        room = get_room_by_external_id(db, hospital_doc.room)  # ✅ Правильный вызов
+        if not room:
+            room = create_room(db, hospital_doc.room, hospital_doc.room_name.replace("Палата № ", ""), hospital_doc.room_name)
 
         # Найти или создать койку
         bed = get_bed_by_external_id(db, hospital_doc.bed)

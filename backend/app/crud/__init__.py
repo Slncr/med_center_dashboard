@@ -8,5 +8,6 @@ __all__ = [
     "create_patient",
     "get_all_rooms_with_beds",
     "get_bed_by_external_id",
-    "create_bed"
+    "create_bed",
+    "create_room"
 ]

@@ -21,7 +21,6 @@ class Observation(ObservationBase):
 
     class Config:
         from_attributes = True
-        arbitrary_types_allowed = True  
 
 class ProcedureBase(BaseModel):
     name: str
@@ -40,6 +39,7 @@ class Procedure(ProcedureBase):
 
     class Config:
         from_attributes = True
+
 
 class HospitalDocument(BaseModel):
     document: str

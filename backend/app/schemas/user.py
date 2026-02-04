@@ -5,15 +5,21 @@ class UserBase(BaseModel):
     username: str
     email: Optional[str] = None
     full_name: Optional[str] = None
+    role: str
 
 class UserCreate(UserBase):
     password: str
-    role: str = "nurse"
+    role: str
 
 class User(UserBase):
     id: int
-    role: str
-    is_active: bool
 
     class Config:
         from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None

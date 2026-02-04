@@ -1,73 +1,50 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional
+from datetime import timedelta
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 
-router = APIRouter()
+from app.core.config import settings
+from app.schemas.user import Token, User, UserCreate
+from app.crud.user import authenticate_user
+from app.deps import create_access_token, get_current_user
+from app.core.database import get_db
+from sqlalchemy.orm import Session
 
-# Модели для аутентификации
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+from app.crud.user import create_user, get_user_by_username
+# from app.api.v1.endpoints.auth import router
 
-class User(BaseModel):
-    username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    role: Optional[str] = None
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-# Мок пользователи для демо
-fake_users_db = {
-    "doctor": {
-        "username": "doctor",
-        "email": "doctor@example.com",
-        "full_name": "Доктор Иванов",
-        "role": "doctor",
-        "password": "password123"
-    },
-    "nurse": {
-        "username": "nurse",
-        "email": "nurse@example.com",
-        "full_name": "Медсестра Петрова",
-        "role": "nurse",
-        "password": "password123"
-    }
-}
+router = APIRouter(tags=["Authentication"])
 
 @router.post("/login", response_model=Token)
-async def login(login_data: LoginRequest):
-    """Простая аутентификация для демо"""
-    user = fake_users_db.get(login_data.username)
-    
-    if not user or user["password"] != login_data.password:
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
         raise HTTPException(
-            status_code=401,
-            detail="Неверное имя пользователя или пароль",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    # В реальном приложении здесь генерируется JWT токен
-    return {
-        "access_token": f"fake-jwt-token-for-{login_data.username}",
-        "token_type": "bearer"
-    }
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/users/me", response_model=User)
-async def read_users_me(token: str = "demo"):
-    """Получение информации о текущем пользователе"""
-    # В реальном приложении здесь проверяется JWT токен
-    # Для демо возвращаем пользователя doctor
-    return {
-        "username": "doctor",
-        "email": "doctor@example.com",
-        "full_name": "Доктор Иванов",
-        "role": "doctor"
-    }
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
 
-@router.get("/test")
-async def test_auth():
-    """Тестовый endpoint для проверки работы"""
-    return {"message": "Auth endpoint работает", "status": "ok"}
+@router.post("/register", response_model=dict)
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    # Проверим, существует ли пользователь
+    existing_user = get_user_by_username(db, user.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+
+    created_user = create_user(db, user)
+    return {"message": "User created successfully", "user_id": created_user.id}
