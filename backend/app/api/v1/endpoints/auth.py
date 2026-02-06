@@ -1,25 +1,27 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 
 from app.core.config import settings
 from app.schemas.user import Token, User, UserCreate
-from app.crud.user import authenticate_user
+from app.crud.user import authenticate_user, create_user, get_user_by_username
 from app.deps import create_access_token, get_current_user
 from app.core.database import get_db
 from sqlalchemy.orm import Session
 
-from app.crud.user import create_user, get_user_by_username
-# from app.api.v1.endpoints.auth import router
+from pydantic import BaseModel
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+    
 router = APIRouter(tags=["Authentication"])
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    login_request: LoginRequest,
     db: Session = Depends(get_db)
 ):
-    user = authenticate_user(db, form_data.username, form_data.password)
+    user = authenticate_user(db, login_request.username, login_request.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

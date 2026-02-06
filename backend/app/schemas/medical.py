@@ -7,11 +7,36 @@ class ObservationBase(BaseModel):
     blood_pressure_systolic: Optional[int] = None
     blood_pressure_diastolic: Optional[int] = None
     pulse: Optional[int] = None
-    notes: Optional[str] = None
+    complaints: Optional[str] = None
+    examination: Optional[str] = None
+    # notes: Optional[str] = None
 
 class ObservationCreate(ObservationBase):
     patient_id: int
     record_date: date
+    temperature: Optional[float] = None
+    blood_pressure_systolic: Optional[int] = None
+    blood_pressure_diastolic: Optional[int] = None
+    pulse: Optional[int] = None
+    respiration_rate: Optional[int] = None
+    spO2: Optional[int] = None
+    weight: Optional[float] = None
+    height: Optional[float] = None
+    
+    diagnosis: Optional[str] = None
+    recommendations: Optional[str] = None
+
+class ObservationUpdate(ObservationBase):
+    # Все поля опциональны
+    temperature: Optional[float] = None
+    blood_pressure_systolic: Optional[int] = None
+    blood_pressure_diastolic: Optional[int] = None
+    pulse: Optional[int] = None
+    complaints: Optional[str] = None
+    examination: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class Observation(ObservationBase):
     id: int
@@ -26,15 +51,16 @@ class ProcedureBase(BaseModel):
     name: str
     description: Optional[str] = None
     status: str = "scheduled"
+    scheduled_time: datetime
 
 class ProcedureCreate(ProcedureBase):
     patient_id: int
-    scheduled_time: datetime
 
 class Procedure(ProcedureBase):
     id: int
     patient_id: int
     scheduled_time: datetime
+    created_by: int 
     completed_at: Optional[datetime] = None
 
     class Config:

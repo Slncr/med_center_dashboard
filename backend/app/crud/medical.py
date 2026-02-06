@@ -1,10 +1,11 @@
 from fastapi import HTTPException
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from app.models.medical import MedicalRecord, Procedure as ProcedureModel
-from app.schemas.medical import ObservationCreate, ProcedureCreate
+from app.schemas.medical import ObservationCreate, ObservationUpdate, ProcedureCreate
 
 def get_observations_by_patient(db: Session, patient_id: int):
-    records = db.query(MedicalRecord).filter(MedicalRecord.patient_id == patient_id).all()
+    records = db.query(MedicalRecord).filter(MedicalRecord.patient_id == patient_id).order_by(desc(MedicalRecord.created_at)).all()
     # Преобразуем в Pydantic-объекты
     observations = []
     for rec in records:
@@ -22,6 +23,7 @@ def get_observations_by_patient(db: Session, patient_id: int):
     return observations
 
 def create_observation(db: Session, obs: ObservationCreate, user_id: int):
+    from datetime import datetime
     record = MedicalRecord(
         patient_id=obs.patient_id,
         record_date=obs.record_date,
@@ -29,14 +31,21 @@ def create_observation(db: Session, obs: ObservationCreate, user_id: int):
         blood_pressure_systolic=obs.blood_pressure_systolic,
         blood_pressure_diastolic=obs.blood_pressure_diastolic,
         pulse=obs.pulse,
-        complaints=obs.notes,
-        created_by=user_id
+        respiration_rate=obs.respiration_rate,
+        spO2=obs.spO2,
+        weight=obs.weight,
+        height=obs.height,
+        complaints=obs.complaints,
+        examination=obs.examination,
+        diagnosis=obs.diagnosis,
+        recommendations=obs.recommendations,
+        created_by=user_id,
+        created_at=datetime.utcnow()
     )
     db.add(record)
     db.commit()
     db.refresh(record)
 
-    # Возвращаем как Observation Pydantic-объект
     return {
         "id": record.id,
         "patient_id": record.patient_id,
@@ -45,9 +54,53 @@ def create_observation(db: Session, obs: ObservationCreate, user_id: int):
         "blood_pressure_systolic": record.blood_pressure_systolic,
         "blood_pressure_diastolic": record.blood_pressure_diastolic,
         "pulse": record.pulse,
-        "notes": record.complaints,
+        "respiration_rate": record.respiration_rate,
+        "spO2": record.spO2,
+        "weight": record.weight,
+        "height": record.height,
+        "complaints": record.complaints,
+        "examination": record.examination,
+        "diagnosis": record.diagnosis,
+        "recommendations": record.recommendations,
         "created_at": record.created_at
     }
+
+def update_observation_in_db(
+    db: Session, 
+    observation_id: int, 
+    obs_update: ObservationUpdate, 
+    user_id: int
+):
+    record = db.query(MedicalRecord).filter(MedicalRecord.id == observation_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Observation not found")
+
+    # Обновляем только те поля, которые переданы (включая None)
+    for field, value in obs_update.model_dump(exclude_unset=True).items():
+        setattr(record, field, value)
+
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "id": record.id,
+        "patient_id": record.patient_id,
+        "record_date": record.record_date,
+        "temperature": record.temperature,
+        "blood_pressure_systolic": record.blood_pressure_systolic,
+        "blood_pressure_diastolic": record.blood_pressure_diastolic,
+        "pulse": record.pulse,
+        "complaints": record.complaints,
+        "examination": record.examination,
+        "created_at": record.created_at
+    }
+
+def delete_observation_from_db(db: Session, observation_id: int):
+    record = db.query(MedicalRecord).filter(MedicalRecord.id == observation_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Observation not found")
+    db.delete(record)
+    db.commit()
 
 def get_procedures_by_patient(db: Session, patient_id: int):
     procedures = db.query(ProcedureModel).filter(ProcedureModel.patient_id == patient_id).all()
@@ -61,6 +114,29 @@ def update_procedure_status(db: Session, procedure_id: int, status: str):
     db.commit()
     db.refresh(proc)
     return proc
+
+def create_procedure(db: Session, proc: ProcedureCreate, user_id: int):
+    record = ProcedureModel(
+        patient_id=proc.patient_id,
+        name=proc.name,
+        description=proc.description,
+        scheduled_time=proc.scheduled_time,
+        status=proc.status,
+        created_by=user_id  # ✅ Указываем, кто создал
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "id": record.id,
+        "patient_id": record.patient_id,
+        "name": record.name,
+        "description": record.description,
+        "scheduled_time": record.scheduled_time,
+        "status": record.status,
+        "created_by": record.created_by
+    }
 
 def get_appointments_by_patient(db: Session, patient_id: int):
     from app.models.medical import Appointment as AppointmentModel

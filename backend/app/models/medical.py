@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import Boolean, Column, Enum as SQLEnum, Integer, String, Float, Text, DateTime, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from .base import BaseModel
@@ -30,7 +31,7 @@ class MedicalRecord(BaseModel):
     diagnosis = Column(Text)
     recommendations = Column(Text)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     patient = relationship("Patient", back_populates="medical_records")
     created_by_user = relationship("User", back_populates="medical_records")
@@ -49,6 +50,8 @@ class Appointment(BaseModel):
     notes = Column(Text)
     is_completed = Column(Boolean, default=False)
     completed_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
     patient = relationship("Patient", back_populates="appointments")
     doctor = relationship("User", back_populates="appointments")
@@ -69,6 +72,8 @@ class Procedure(BaseModel):
     dosage = Column(String)
     frequency = Column(String)
     duration = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 
     # Связи
     patient = relationship("Patient", back_populates="procedures")

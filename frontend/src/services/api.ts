@@ -24,6 +24,8 @@ class ApiService {
   private token: string | null = null;
 
   constructor() {
+    this.token = localStorage.getItem('token');
+    
     this.api = axios.create({
       baseURL: API_BASE_URL,
       timeout: 10000,
@@ -80,7 +82,7 @@ class ApiService {
     }
     return response.data;
   }
-
+  
   async logout(): Promise<void> {
     this.setToken(null);
   }
@@ -123,9 +125,18 @@ class ApiService {
     return response.data;
   }
 
-  async addObservation(observation: Omit<Observation, 'id'>): Promise<Observation> {
+  async createObservation(observation: Omit<Observation, 'id' | 'created_at'>): Promise<Observation> {
     const response = await this.api.post<Observation>('/api/v1/medical/observations', observation);
     return response.data;
+  }
+
+  async updateObservation(id: number, updates: Partial<Omit<Observation, 'id' | 'created_at' | 'patient_id' | 'record_date'>>): Promise<Observation> {
+    const response = await this.api.put<Observation>(`/api/v1/medical/observations/${id}`, updates);
+    return response.data;
+  }
+
+  async deleteObservation(id: number): Promise<void> {
+    await this.api.delete(`/api/v1/medical/observations/${id}`);
   }
 
   // Процедуры

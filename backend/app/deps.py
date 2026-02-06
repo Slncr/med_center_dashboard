@@ -5,6 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
+
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
@@ -16,7 +17,7 @@ security = HTTPBearer()
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None
 ) -> str:
     to_encode = data.copy()
-    expire = datetime + (expires_delta or timedelta(minutes=15))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt

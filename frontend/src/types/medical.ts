@@ -14,22 +14,16 @@ export type ProcedureStatus =
   | 'cancelled';
 
 export interface Observation {
-  id?: number;
+  id: number;
   patient_id: number;
   record_date: string;
-  temperature?: number;
-  blood_pressure_systolic?: number;
-  blood_pressure_diastolic?: number;
-  pulse?: number;
-  respiration_rate?: number;
-  spO2?: number;
-  weight?: number;
-  height?: number;
-  complaints?: string;
-  examination?: string;
-  diagnosis?: string;
-  recommendations?: string;
-  created_by?: number;
+  temperature: number | null;
+  blood_pressure_systolic: number | null;
+  blood_pressure_diastolic: number | null;
+  pulse: number | null;
+  complaints: string | null;
+  examination: string | null;
+  created_at: string;
 }
 
 export interface Appointment {
