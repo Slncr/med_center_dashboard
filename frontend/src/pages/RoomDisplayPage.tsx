@@ -64,7 +64,6 @@ const RoomDisplayPage: React.FC = () => {
         message: response.welcome_message || 'Добро пожаловать в медицинский центр!'
       });
       
-      // Прокрутка к сообщению
       setTimeout(() => {
         const welcomeElement = document.getElementById('welcome-message');
         if (welcomeElement) {

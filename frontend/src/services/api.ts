@@ -108,6 +108,21 @@ class ApiService {
     return response.data;
   }
 
+  async getArchivedPatients(): Promise<Patient[]> {
+    const response = await this.api.get<Patient[]>('/api/v1/patients/archived');
+    return response.data;
+  }
+
+  async archivePatient(patientId: number): Promise<Patient> {
+    const response = await this.api.patch<Patient>(`/api/v1/patients/${patientId}/archive`);
+    return response.data;
+  }
+
+  async restorePatient(patientId: number): Promise<Patient> {
+    const response = await this.api.patch<Patient>(`/api/v1/patients/${patientId}/restore`);
+    return response.data;
+  }
+
   // Палаты
   async getRooms(): Promise<Room[]> {
     const response = await this.api.get<Room[]>('/api/v1/rooms/');

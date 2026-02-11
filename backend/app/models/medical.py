@@ -6,7 +6,7 @@ from .patient import Patient
 from .user import User
 from enum import Enum as PyEnum
 
-class ProcedureStatus(PyEnum):  # используем PyEnum
+class ProcedureStatus(PyEnum):
     SCHEDULED = "scheduled"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"

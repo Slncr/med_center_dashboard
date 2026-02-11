@@ -1,8 +1,6 @@
 import { User } from "./user";
-
-// Разделите ApiResponse на два разных интерфейса
 export interface BaseApiResponse<T = any> {
-  data?: T;
+  data: T;
   message?: string;
   success: boolean;
   error?: string | string[];
@@ -15,9 +13,7 @@ export interface AuthApiResponse<T = any> extends BaseApiResponse<T> {
   user?: User; // Делаем опциональным
 }
 
-// Оставьте старый интерфейс для обратной совместимости (deprecated)
 export interface ApiResponse<T = any> extends BaseApiResponse<T> {
-  // Этот интерфейс больше не расширяет User
   id?: number;
   username?: string;
   full_name?: string;

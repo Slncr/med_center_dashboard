@@ -18,7 +18,6 @@ class User(BaseModel):
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.NURSE, nullable=False)
 
-    # Связи
     created_patients = relationship("Patient", back_populates="created_by_user", foreign_keys="Patient.created_by")
     medical_records = relationship("MedicalRecord", back_populates="created_by_user")
     appointments = relationship("Appointment", back_populates="doctor")

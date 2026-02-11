@@ -1,4 +1,3 @@
-// src/components/nurse-station/MedicalForm530n.tsx
 import React from 'react';
 import './MedicalForm530n.css';
 

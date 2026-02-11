@@ -17,7 +17,8 @@ def get_observations_by_patient(db: Session, patient_id: int):
             "blood_pressure_systolic": rec.blood_pressure_systolic,
             "blood_pressure_diastolic": rec.blood_pressure_diastolic,
             "pulse": rec.pulse,
-            "notes": rec.complaints or rec.examination,  # например
+            "complaints": rec.complaints,
+            "examination": rec.examination,
             "created_at": rec.created_at
         })
     return observations
@@ -122,7 +123,7 @@ def create_procedure(db: Session, proc: ProcedureCreate, user_id: int):
         description=proc.description,
         scheduled_time=proc.scheduled_time,
         status=proc.status,
-        created_by=user_id  # ✅ Указываем, кто создал
+        created_by=user_id
     )
     db.add(record)
     db.commit()

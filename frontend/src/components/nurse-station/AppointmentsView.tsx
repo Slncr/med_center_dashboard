@@ -1,4 +1,3 @@
-// src/components/nurse-station/AppointmentsView.tsx
 import React from 'react';
 import './AppointmentsView.css';
 

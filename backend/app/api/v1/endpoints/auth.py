@@ -40,7 +40,6 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
 
 @router.post("/register", response_model=dict)
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Проверим, существует ли пользователь
     existing_user = get_user_by_username(db, user.username)
     if existing_user:
         raise HTTPException(

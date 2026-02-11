@@ -7,10 +7,10 @@ export interface Patient {
   medical_record_number?: string;
   admission_date: string;
   discharge_date?: string;
-  status: 'active' | 'discharged' | 'transferred' | 'temporary_absent';
+  status: 'active' | 'discharged';
   bed_id?: number;
   created_by?: number;
-  external_id?: string; // ID из 1С
+  external_id?: string; // UIID из 1С
 }
 
 export interface Bed {

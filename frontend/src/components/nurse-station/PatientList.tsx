@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Patient, Room } from '../../types';
 import './PatientList.css';
+import PatientCard from './PatientCard';
 
 interface PatientListProps {
   patients: Patient[];
   rooms: Room[];
   onPatientSelect: (patientId: number) => void;
+  onPatientsUpdate?: () => void;
 }
 
-const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSelect }) => {
+const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSelect, onPatientsUpdate }) => {
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+
+  const handlePatientArchived = () => {
+    if (onPatientsUpdate) {
+      onPatientsUpdate();
+    }
+  }
+
   // Найти палату по `patient.bed_id` и связь с койкой
   const getPatientRoomAndBed = (patient: Patient) => {
     for (const room of rooms) {
@@ -21,6 +31,10 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
   };
 
   const activePatients = patients;
+
+  const closePatientCard = () => { 
+    setSelectedPatientId(null)
+  };
 
   return (
     <div className="patient-list">
@@ -75,7 +89,10 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
                 >
                   Выбрать
                 </button>
-                <button className="action-button view-button">Карта</button>
+                <button 
+                  className="action-button view-button"
+                  onClick={() => setSelectedPatientId(patient.id)}  
+                >Карта</button>
               </div>
             </div>
           );
@@ -85,6 +102,17 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
       {activePatients.length === 0 && (
         <div className="empty-list">
           <p>Нет активных пациентов</p>
+        </div>
+      )}
+
+      {selectedPatientId && (
+        <div className="modal-overlay" onClick={closePatientCard}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <PatientCard
+              patientId={selectedPatientId}
+              onClose={closePatientCard}
+              onPatientArchived={handlePatientArchived}  />
+          </div>
         </div>
       )}
     </div>

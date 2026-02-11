@@ -8,7 +8,7 @@ const DoctorDashboardPage: React.FC = () => {
   const [activeView, setActiveView] = useState<'overview' | 'patients' | 'prescriptions' | 'reports'>('overview');
   const { patients, loading, error } = usePatients();
   
-  // Используйте 3 параметра: clientId, onMessage, options
+  // Использовать 3 параметра: clientId, onMessage, options
   // const { isConnected } = useWebSocket('doctor', undefined, {
   //   autoConnect: true,
   //   reconnectInterval: 3000

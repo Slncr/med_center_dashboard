@@ -11,5 +11,4 @@ class Bed(BaseModel):
     is_occupied = Column(Boolean, default=False)
     external_id = Column(String, unique=True, index=True)
 
-    # ❗️Используйте строковое имя модели
     patients = relationship("Patient", back_populates="bed")

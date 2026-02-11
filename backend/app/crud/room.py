@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.room import Room as RoomModel
 from app.models.bed import Bed as BedModel
-from app.models.patient import Patient
+from app.models.patient import Patient, PatientStatus
 
 def get_room_by_external_id(db: Session, external_id: str):
     return db.query(RoomModel).filter(RoomModel.external_id == external_id).first()
@@ -24,8 +24,9 @@ def get_all_rooms_with_beds(db: Session):
         for b in beds:
             patient = None
             if b.patients:
-                # Предполагаем, что у койки может быть один пациент
-                patient = b.patients[0]  # или использовать first()
+                active_patients = [p for p in b.patients if p.status == PatientStatus.ACTIVE]
+                if active_patients:
+                    patient = active_patients[0]
             beds_with_patients.append({
                 "id": b.id,
                 "number": b.number,

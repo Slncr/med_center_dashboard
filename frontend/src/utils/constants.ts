@@ -11,9 +11,7 @@ export const API_CONFIG = {
 // Статусы пациентов
 export const PATIENT_STATUSES = {
   ACTIVE: { id: 'active', name: 'Активный', color: 'green' },
-  DISCHARGED: { id: 'discharged', name: 'Выписан', color: 'blue' },
-  TRANSFERRED: { id: 'transferred', name: 'Переведен', color: 'orange' },
-  TEMPORARY_ABSENT: { id: 'temporary_absent', name: 'Временно отсутствует', color: 'yellow' }
+  DISCHARGED: { id: 'discharged', name: 'Выписан', color: 'blue' }
 } as const;
 
 export type PatientStatusType = keyof typeof PATIENT_STATUSES;
@@ -175,8 +173,6 @@ export const STATUS_COLORS = {
   // Пациенты
   ACTIVE: '#2ecc71', // green
   DISCHARGED: '#95a5a6', // grey
-  TRANSFERRED: '#9b59b6', // purple
-  TEMPORARY_ABSENT: '#f1c40f', // yellow
   
   // Печать
   PENDING: '#3498db', // blue

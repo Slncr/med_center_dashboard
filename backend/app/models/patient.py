@@ -6,8 +6,6 @@ import enum
 class PatientStatus(str, enum.Enum):
     ACTIVE = "active"
     DISCHARGED = "discharged"
-    TRANSFERRED = "transferred"
-    TEMPORARY_ABSENT = "temporary_absent"
 
 class Patient(BaseModel):
     __tablename__ = "patients"

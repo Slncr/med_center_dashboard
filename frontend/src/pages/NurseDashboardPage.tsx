@@ -137,6 +137,7 @@ const NurseDashboardPage: React.FC = () => {
               patients={patients} 
               rooms={rooms}
               onPatientSelect={handlePatientSelect}
+              onPatientsUpdate={refetch}
             />
           </div>
         )}
