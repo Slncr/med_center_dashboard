@@ -78,3 +78,34 @@ class Procedure(BaseModel):
     # Связи
     patient = relationship("Patient", back_populates="procedures")
     created_by_user = relationship("User", back_populates="procedures")
+
+class PrescriptionType(str, PyEnum):
+    PROCEDURE = "PROCEDURE"      # ✅ ВЕРХНИЙ РЕГИСТР
+    MEASUREMENT = "MEASUREMENT"
+    NOTE = "NOTE"               # Общее примечание
+
+class PrescriptionStatus(str, PyEnum):
+    ACTIVE = "ACTIVE"            # ✅ ВЕРХНИЙ РЕГИСТР
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+
+class Prescription(BaseModel):
+    __tablename__ = "prescriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    prescription_type = Column(SQLEnum(PrescriptionType), nullable=False)
+    name = Column(String, nullable=False)          # Название процедуры/измерения
+    frequency = Column(String)                     # "3 раза в день", "каждые 4 часа"
+    dosage = Column(String)                        # Дозировка (для лекарств)
+    notes = Column(Text)                           # Примечания врача
+    
+    start_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    end_date = Column(DateTime)                    # Дата окончания назначения
+    status = Column(SQLEnum(PrescriptionStatus), default=PrescriptionStatus.ACTIVE, nullable=False)
+    
+    # Relationships
+    patient = relationship("Patient", back_populates="prescriptions")
+    created_by_user = relationship("User", back_populates="prescriptions")

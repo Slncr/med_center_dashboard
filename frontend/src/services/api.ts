@@ -14,7 +14,8 @@ import {
   LoginResponse,
   ApiResponse,
   HealthCheckResponse,
-  ApiError
+  ApiError,
+  Prescription
 } from '../types';
 
 const API_BASE_URL = '';
@@ -178,8 +179,37 @@ class ApiService {
     return response.data;
   }
 
-  async updateProcedureStatus(procedureId: number, status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'): Promise<Procedure> {
+  async updateProcedureStatus(procedureId: number, status: 'SCHEDULED' | 'IN_PROGRES' | 'COMPLETED' | 'CANCELLED'): Promise<Procedure> {
     const response = await this.api.patch<Procedure>(`/api/v1/medical/procedures/${procedureId}`, { status });
+    return response.data;
+  }
+
+  async createPrescription(prescription: {
+    patient_id: number;
+    prescription_type: 'PROCEDURE' | 'MEASUREMENT' | 'NOTE';
+    name: string;
+    frequency?: string;
+    dosage?: string;
+    notes?: string;
+    status?: 'ACTIVE';
+  }): Promise<Prescription> {
+    // ✅ Отправляем на /prescriptions, НЕ на /observations!
+    const response = await this.api.post<Prescription>('/api/v1/medical/prescriptions', prescription);
+    return response.data;
+  }
+
+  async getPrescriptions(patientId: number): Promise<Prescription[]> {
+    // ✅ Получаем назначения, НЕ наблюдения!
+    const response = await this.api.get<Prescription[]>(`/api/v1/medical/prescriptions/patient/${patientId}`);
+    return response.data;
+  }
+
+  // ✅ Для медсестры — выполнение назначения
+  async executePrescription(prescriptionId: number, notes?: string): Promise<Procedure> {
+    const response = await this.api.post<Procedure>(
+      `/api/v1/medical/prescriptions/${prescriptionId}/execute`,
+      { notes }
+    );
     return response.data;
   }
 

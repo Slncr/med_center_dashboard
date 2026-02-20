@@ -34,3 +34,4 @@ class Patient(BaseModel):
     medical_records = relationship("MedicalRecord", back_populates="patient", cascade="all, delete-orphan")
     appointments = relationship("Appointment", back_populates="patient", cascade="all, delete-orphan")
     procedures = relationship("Procedure", back_populates="patient", cascade="all, delete-orphan")
+    prescriptions = relationship("Prescription", back_populates="patient", cascade="all, delete-orphan")

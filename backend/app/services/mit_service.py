@@ -1,7 +1,7 @@
 import requests
 from datetime import datetime
 from sqlalchemy.orm import Session
-from app.models.patient import Patient
+from app.models.patient import Patient, PatientStatus
 from app.models.room import Room
 from app.models.bed import Bed  # ✅ Правильный импорт
 from app.schemas.medical import HospitalDocument
@@ -29,7 +29,19 @@ def sync_with_1c(db: Session):
     docs = raw_data.get("Ответ", {}).get("КлиентыСтационара", [])
 
     processed_count = 0
+    archived_count = 0
+    active_count = 0
+    new_count = 0
 
+    # ✅ Текущая дата для сравнения (без времени)
+    now = datetime.utcnow().date()
+
+    # ✅ Получаем всех активных пациентов из БД
+    all_patients_in_db = db.query(Patient).filter(Patient.status == PatientStatus.ACTIVE).all()
+    all_patients_in_db_dict = {p.external_id: p for p in all_patients_in_db}
+
+    # ✅ Собираем пациентов из 1С
+    patients_from_1c = {}
     for doc in docs:
         hospital_doc = HospitalDocument(
             document=doc["Документ"],
@@ -45,9 +57,53 @@ def sync_with_1c(db: Session):
             department=doc["Подразделение"],
             department_name=doc["ПодразделениеНаименование"]
         )
+        patients_from_1c[hospital_doc.client] = hospital_doc
+
+    # ✅ Обработка существующих пациентов
+    for external_id, patient in all_patients_in_db_dict.items():
+        if external_id not in patients_from_1c:
+            # Пациент есть в БД, но отсутствует в 1С — архивируем
+            patient.status = PatientStatus.DISCHARGED  # ✅ Правильный статус
+            if not patient.discharge_date:
+                patient.discharge_date = datetime.utcnow()
+            archived_count += 1
+            continue
+
+        hospital_doc = patients_from_1c[external_id]
+        discharge_date = parse_date(hospital_doc.end_date).date() if hospital_doc.end_date else None
+
+        # ✅ Архивируем ТОЛЬКО если дата выписки уже наступила (включая сегодня)
+        if discharge_date and discharge_date < now:
+            patient.status = PatientStatus.DISCHARGED  # ✅ Правильный статус
+            patient.discharge_date = datetime.combine(discharge_date, datetime.min.time())
+            archived_count += 1
+        else:
+            # Пациент активен — обновляем данные
+            admission_date = parse_date(hospital_doc.start_date)
+            
+            # Найти или создать палату
+            room = get_room_by_external_id(db, hospital_doc.room)
+            if not room:
+                room = create_room(db, hospital_doc.room, hospital_doc.room_name.replace("Палата № ", ""), hospital_doc.room_name)
+
+            # Найти или создать койку
+            bed = get_bed_by_external_id(db, hospital_doc.bed)
+            if not bed:
+                bed = create_bed(db, hospital_doc.bed, hospital_doc.bed_name.replace("Койка № ", ""), room.id)
+
+            patient.full_name = hospital_doc.client_name
+            patient.admission_date = admission_date
+            patient.bed_id = bed.id
+            patient.department_name = hospital_doc.department_name
+            active_count += 1
+
+    # ✅ Добавление новых пациентов
+    for external_id, hospital_doc in patients_from_1c.items():
+        if external_id in all_patients_in_db_dict:
+            continue  # Уже обработан выше
 
         # Найти или создать палату
-        room = get_room_by_external_id(db, hospital_doc.room)  # ✅ Правильный вызов
+        room = get_room_by_external_id(db, hospital_doc.room)
         if not room:
             room = create_room(db, hospital_doc.room, hospital_doc.room_name.replace("Палата № ", ""), hospital_doc.room_name)
 
@@ -56,26 +112,44 @@ def sync_with_1c(db: Session):
         if not bed:
             bed = create_bed(db, hospital_doc.bed, hospital_doc.bed_name.replace("Койка № ", ""), room.id)
 
-        # Найти или создать пациента
-        patient = get_patient_by_external_id(db, hospital_doc.client)
-        if not patient:
-            admission_date = parse_date(hospital_doc.start_date)
-            discharge_date = parse_date(hospital_doc.end_date) if hospital_doc.end_date else None
+        admission_date = parse_date(hospital_doc.start_date)
+        discharge_date = parse_date(hospital_doc.end_date).date() if hospital_doc.end_date else None
 
-            patient = create_patient(
-                db,
-                external_id=hospital_doc.client,
-                full_name=hospital_doc.client_name,
-                admission_date=admission_date,
-                discharge_date=discharge_date,
-                status='active',
-                bed_id=bed.id,
-                document_id=hospital_doc.document,
-                branch_id=hospital_doc.branch,
-                department_id=hospital_doc.department,
-                department_name=hospital_doc.department_name
-            )
+        # ✅ Статус определяется по дате выписки
+        if discharge_date and discharge_date < now:
+            status = PatientStatus.DISCHARGED  # ✅ Правильный статус
+        else:
+            status = PatientStatus.ACTIVE
+
+        # Создаём нового пациента
+        patient = create_patient(
+            db,
+            external_id=hospital_doc.client,
+            full_name=hospital_doc.client_name,
+            admission_date=admission_date,
+            discharge_date=datetime.combine(discharge_date, datetime.min.time()) if discharge_date else None,
+            status=status,
+            bed_id=bed.id,
+            document_id=hospital_doc.document,
+            branch_id=hospital_doc.branch,
+            department_id=hospital_doc.department,
+            department_name=hospital_doc.department_name
+        )
+
+        if status == PatientStatus.DISCHARGED:
+            archived_count += 1
+        else:
+            active_count += 1
+            new_count += 1
 
         processed_count += 1
 
-    return {"processed_count": processed_count, "message": f"Processed {processed_count} records"}
+    db.commit()
+
+    return {
+        "processed_count": processed_count,
+        "archived_count": archived_count,
+        "active_count": active_count,
+        "new_count": new_count,
+        "message": f"Обработано {processed_count} записей ({active_count} активных, {archived_count} выписанных, {new_count} новых)"
+    }

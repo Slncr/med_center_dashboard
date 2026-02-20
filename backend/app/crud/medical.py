@@ -1,3 +1,4 @@
+from datetime import timedelta
 from fastapi import HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -25,6 +26,7 @@ def get_observations_by_patient(db: Session, patient_id: int):
 
 def create_observation(db: Session, obs: ObservationCreate, user_id: int):
     from datetime import datetime
+    moscow_now = datetime.utcnow() + timedelta(hours=3)
     record = MedicalRecord(
         patient_id=obs.patient_id,
         record_date=obs.record_date,
@@ -41,7 +43,7 @@ def create_observation(db: Session, obs: ObservationCreate, user_id: int):
         diagnosis=obs.diagnosis,
         recommendations=obs.recommendations,
         created_by=user_id,
-        created_at=datetime.utcnow()
+        created_at=moscow_now
     )
     db.add(record)
     db.commit()

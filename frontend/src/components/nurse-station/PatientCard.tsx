@@ -353,7 +353,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
                       )}
                       {proc.scheduled_time && (
                         <div className="record-field">
-                          <strong>Запланировано:</strong> {new Date(proc.scheduled_time).toLocaleString('ru-RU')}
+                          <strong>Запланировано:</strong> {new Date(proc.scheduled_time).toLocaleString('ru-RU', {timeZone: 'Europe/Moscow'})}
                         </div>
                       )}
                       {proc.dosage && (

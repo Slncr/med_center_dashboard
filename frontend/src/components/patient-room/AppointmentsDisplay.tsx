@@ -167,9 +167,9 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   }
 
   const pendingProcedures = procedures.filter(p => 
-    p.status === 'scheduled' || p.status === 'in_progress'
+    p.status === 'SCHEDULED' || p.status === 'IN_PROGRES'
   );
-  const completedProcedures = procedures.filter(p => p.status === 'completed');
+  const completedProcedures = procedures.filter(p => p.status === 'COMPLETED');
 
   return (
     <div className={`appointments-display ${compact ? 'compact' : ''}`}>
@@ -321,12 +321,12 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                     </div>
                     
                     <div className="procedure-actions">
-                      {procedure.status === 'scheduled' && (
+                      {procedure.status === 'SCHEDULED' && (
                         <>
                           <Button
                             variant="warning"
                             size="sm"
-                            onClick={() => handleProcedureStatusChange(procedure.id!, 'in_progress')}
+                            onClick={() => handleProcedureStatusChange(procedure.id!, 'IN_PROGRES')}
                             fullWidth
                           >
                             Начать процедуру
@@ -334,7 +334,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                           <Button
                             variant="success"
                             size="sm"
-                            onClick={() => handleProcedureStatusChange(procedure.id!, 'completed')}
+                            onClick={() => handleProcedureStatusChange(procedure.id!, 'COMPLETED')}
                             fullWidth
                           >
                             Завершить
@@ -342,11 +342,11 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                         </>
                       )}
                       
-                      {procedure.status === 'in_progress' && (
+                      {procedure.status === 'IN_PROGRES' && (
                         <Button
                           variant="success"
                           size="sm"
-                          onClick={() => handleProcedureStatusChange(procedure.id!, 'completed')}
+                          onClick={() => handleProcedureStatusChange(procedure.id!, 'COMPLETED')}
                           fullWidth
                         >
                           Завершить процедуру
@@ -370,19 +370,19 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                 <div className="summary-item">
                   <span className="summary-label">Ожидают выполнения:</span>
                   <span className="summary-value">
-                    {procedures.filter(p => p.status === 'scheduled').length}
+                    {procedures.filter(p => p.status === 'SCHEDULED').length}
                   </span>
                 </div>
                 <div className="summary-item">
                   <span className="summary-label">В процессе:</span>
                   <span className="summary-value">
-                    {procedures.filter(p => p.status === 'in_progress').length}
+                    {procedures.filter(p => p.status === 'IN_PROGRES').length}
                   </span>
                 </div>
                 <div className="summary-item">
                   <span className="summary-label">Выполнено:</span>
                   <span className="summary-value">
-                    {procedures.filter(p => p.status === 'completed').length}
+                    {procedures.filter(p => p.status === 'COMPLETED').length}
                   </span>
                 </div>
               </div>

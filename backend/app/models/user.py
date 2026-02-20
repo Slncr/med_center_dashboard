@@ -22,3 +22,4 @@ class User(BaseModel):
     medical_records = relationship("MedicalRecord", back_populates="created_by_user")
     appointments = relationship("Appointment", back_populates="doctor")
     procedures = relationship("Procedure", back_populates="created_by_user")
+    prescriptions = relationship("Prescription", back_populates="created_by_user")

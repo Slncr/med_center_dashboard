@@ -1,18 +1,40 @@
 import React, { useState } from 'react';
 import { usePatients } from '../hooks/usePatients';
 // import { useWebSocket } from '../hooks/useWebSocket';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import './DoctorDashboardPage.css';
 
-const DoctorDashboardPage: React.FC = () => {
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import PatientCard from '../components/nurse-station/PatientCard';
+import './DoctorDashboardPage.css';
+import PrescriptionsForm from '../components/doctor-station/PrescriptionsForm';
+import PrescriptionsList from '../components/doctor-station/PrescriptionsList';
+
+interface DoctorDashboardPageProps {
+  // patients: Patient[];
+  // rooms: Room[];
+  // onPatientSelect: (patientId: number) => void;
+  onPatientsUpdate?: () => void;
+}
+
+const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpdate }) => {
   const [activeView, setActiveView] = useState<'overview' | 'patients' | 'prescriptions' | 'reports'>('overview');
-  const { patients, loading, error } = usePatients();
+  const { patients, loading, refetch, error } = usePatients();
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   
   // Использовать 3 параметра: clientId, onMessage, options
   // const { isConnected } = useWebSocket('doctor', undefined, {
   //   autoConnect: true,
   //   reconnectInterval: 3000
   // });
+
+  const closePatientCard = () => { 
+    setSelectedPatientId(null)
+  };
+
+  const handlePatientArchived = () => {
+    if (onPatientsUpdate) {
+      onPatientsUpdate();
+    }
+  }
 
   if (loading) {
     return (
@@ -121,17 +143,45 @@ const DoctorDashboardPage: React.FC = () => {
                     <div>Поступил: {new Date(patient.admission_date).toLocaleDateString('ru-RU')}</div>
                     <div>Статус: <span className="status-active">Активный</span></div>
                   </div>
-                  <button className="view-button">Просмотр карты</button>
+                  <button className="view-button" onClick={() => setSelectedPatientId(patient.id)}>Открыть карту</button>
                 </div>
               ))}
             </div>
           </div>
         )}
 
+        {selectedPatientId && (
+          <div className="modal-overlay" onClick={closePatientCard}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <PatientCard 
+                patientId={selectedPatientId} 
+                onClose={closePatientCard}
+                onPatientArchived={handlePatientArchived} 
+              />
+            </div>
+          </div>
+        )}
+
         {activeView === 'prescriptions' && (
           <div className="prescriptions-view">
-            <h2>Создание назначений</h2>
-            <p>Интерфейс для создания назначений будет здесь</p>
+            <div className="prescriptions-container">
+              <div className="prescriptions-form-section">
+                <PrescriptionsForm onPrescriptionCreated={refetch} />
+              </div>
+              
+              <div className="prescriptions-list-section">
+                {selectedPatientId ? (
+                  <PrescriptionsList 
+                    patientId={selectedPatientId} 
+                    // showActions={false}
+                  />
+                ) : (
+                  <div className="select-patient-hint">
+                    <p>Выберите пациента, чтобы увидеть его назначения</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

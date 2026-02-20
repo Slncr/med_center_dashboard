@@ -8,10 +8,10 @@ export type ObservationType =
   | 'other';
 
 export type ProcedureStatus = 
-  | 'scheduled' 
-  | 'in_progress' 
-  | 'completed' 
-  | 'cancelled';
+  | 'SCHEDULED' 
+  | 'IN_PROGRES' 
+  | 'COMPLETED' 
+  | 'CANCELLED';
 
 export interface Observation {
   id: number;
@@ -21,8 +21,14 @@ export interface Observation {
   blood_pressure_systolic: number | null;
   blood_pressure_diastolic: number | null;
   pulse: number | null;
+  respiration_rate?: number | null;   // ✅ Добавлено
+  spO2?: number | null;               // ✅ Добавлено
+  weight?: number | null;             // ✅ Добавлено
+  height?: number | null;             // ✅ Добавлено
   complaints: string | null;
   examination: string | null;
+  diagnosis?: string;                // ✅ Опционально
+  recommendations?: string;          // ✅ Опционально
   created_at: string;
 }
 
@@ -41,7 +47,7 @@ export interface Appointment {
 }
 
 export interface Procedure {
-  id?: number;
+  id: number;
   patient_id: number;
   name: string;
   description?: string;
@@ -67,17 +73,42 @@ export interface MedicalRecord {
   id?: number;
   patient_id: number;
   record_date: string;
-  temperature?: number;
-  blood_pressure_systolic?: number;
-  blood_pressure_diastolic?: number;
-  pulse?: number;
-  respiration_rate?: number;
-  spO2?: number;
-  weight?: number;
-  height?: number;
-  complaints?: string;
-  examination?: string;
-  diagnosis?: string;
-  recommendations?: string;
+  temperature?: number | null;               // ✅ null | undefined
+  blood_pressure_systolic?: number | null;
+  blood_pressure_diastolic?: number | null;
+  pulse?: number | null;
+  respiration_rate?: number | null;
+  spO2?: number | null;
+  weight?: number | null;
+  height?: number | null;
+  complaints?: string | null;
+  examination?: string | null;
+  diagnosis?: string | null;
+  recommendations?: string | null;
   created_by?: number;
+}
+
+// ✅ Типы для назначений (отдельно от наблюдений!)
+export type PrescriptionType = 'PROCEDURE' | 'MEASUREMENT' | 'NOTE';
+export type PrescriptionStatus = 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+export interface Prescription {
+  id: number;
+  patient_id: number;
+  created_by: number;
+  prescription_type: PrescriptionType;
+  name: string;
+  frequency?: string;
+  dosage?: string;
+  notes?: string;
+  start_date: string;
+  end_date?: string;
+  status: PrescriptionStatus;
+  completed_at?: string;
+  created_at: string;
+}
+
+// ✅ Для выполнения назначения медсестрой
+export interface PrescriptionExecution {
+  notes?: string;
 }

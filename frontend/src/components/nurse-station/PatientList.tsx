@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Patient, Room } from '../../types';
 import './PatientList.css';
 import PatientCard from './PatientCard';
+import { usePatients } from '../../hooks/usePatients';
+import apiService from '../../services/api';
 
 interface PatientListProps {
   patients: Patient[];
@@ -12,12 +14,32 @@ interface PatientListProps {
 
 const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSelect, onPatientsUpdate }) => {
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSync = async() => {
+    if (syncing) return;
+
+    setSyncing(true);
+    try {
+      await apiService.syncWith1C();
+
+      if (onPatientsUpdate) {
+        onPatientsUpdate();
+      } 
+    } catch (err) {
+        console.error('Ошибка синхронизации', err);
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const handlePatientArchived = () => {
     if (onPatientsUpdate) {
       onPatientsUpdate();
     }
   }
+
+  const { refetch } = usePatients();
 
   // Найти палату по `patient.bed_id` и связь с койкой
   const getPatientRoomAndBed = (patient: Patient) => {
@@ -41,7 +63,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
       <div className="list-header">
         <h2>Активные пациенты ({activePatients.length})</h2>
         <div className="list-actions">
-          <button className="action-button refresh-button">🔄 Обновить</button>
+          <button onClick={handleSync} disabled={syncing} className="action-button refresh-button">🔄 Обновить</button>
           <button className="action-button filter-button">🔍 Фильтр</button>
         </div>
       </div>

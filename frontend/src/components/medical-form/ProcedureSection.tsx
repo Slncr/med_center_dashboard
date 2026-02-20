@@ -65,20 +65,20 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
 
   const getStatusColor = (status: ProcedureStatus): string => {
     switch (status) {
-      case 'scheduled': return 'status-pending';
-      case 'in_progress': return 'status-in-progress';
-      case 'completed': return 'status-completed';
-      case 'cancelled': return 'status-cancelled';
+      case 'SCHEDULED': return 'status-pending';
+      case 'IN_PROGRES': return 'status-in-progress';
+      case 'COMPLETED': return 'status-completed';
+      case 'CANCELLED': return 'status-cancelled';
       default: return '';
     }
   };
 
   const getStatusText = (status: ProcedureStatus): string => {
     switch (status) {
-      case 'scheduled': return 'Запланировано';
-      case 'in_progress': return 'В процессе';
-      case 'completed': return 'Выполнено';
-      case 'cancelled': return 'Отменено';
+      case 'SCHEDULED': return 'Запланировано';
+      case 'IN_PROGRES': return 'В процессе';
+      case 'COMPLETED': return 'Выполнено';
+      case 'CANCELLED': return 'Отменено';
       default: return status;
     }
   };
@@ -282,12 +282,12 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
                 )}
 
                 <div className="procedure-item-actions">
-                  {procedure.status === 'scheduled' && (
+                  {procedure.status === 'SCHEDULED' && (
                     <>
                       <button
                         type="button"
                         className="action-button start-button"
-                        onClick={() => handleStatusChange(procedure.id!, 'in_progress')}
+                        onClick={() => handleStatusChange(procedure.id!, 'IN_PROGRES')}
                         disabled={disabled}
                       >
                         Начать
@@ -295,28 +295,28 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
                       <button
                         type="button"
                         className="action-button complete-button"
-                        onClick={() => handleStatusChange(procedure.id!, 'completed')}
+                        onClick={() => handleStatusChange(procedure.id!, 'COMPLETED')}
                         disabled={disabled}
                       >
                         Завершить
                       </button>
                     </>
                   )}
-                  {procedure.status === 'in_progress' && (
+                  {procedure.status === 'IN_PROGRES' && (
                     <button
                       type="button"
                       className="action-button complete-button"
-                      onClick={() => handleStatusChange(procedure.id!, 'completed')}
+                      onClick={() => handleStatusChange(procedure.id!, 'COMPLETED')}
                       disabled={disabled}
                     >
                       Завершить
                     </button>
                   )}
-                  {procedure.status !== 'cancelled' && procedure.status !== 'completed' && (
+                  {procedure.status !== 'CANCELLED' && procedure.status !== 'COMPLETED' && (
                     <button
                       type="button"
                       className="action-button cancel-button"
-                      onClick={() => handleStatusChange(procedure.id!, 'cancelled')}
+                      onClick={() => handleStatusChange(procedure.id!, 'CANCELLED')}
                       disabled={disabled}
                     >
                       Отменить
