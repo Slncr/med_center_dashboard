@@ -8,6 +8,7 @@ import AppointmentsView from '../components/nurse-station/AppointmentsView';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { WebSocketMessage, PatientSelectedEvent } from '../types';
 import './NurseDashboardPage.css';
+import { useNavigate } from 'react-router-dom';
 
 const NurseDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'patients' | 'observations' | 'form530n' | 'appointments'>('patients');
@@ -15,6 +16,8 @@ const NurseDashboardPage: React.FC = () => {
   const [notifications, setNotifications] = useState<string[]>([]);
   
   const { patients, rooms, loading, error, refetch } = usePatients();
+
+  const navigate = useNavigate()
   // const { isConnected, messages, sendMessage } = useWebSocket('nurse', handleWebSocketMessage);
 
   function handleWebSocketMessage(message: WebSocketMessage) {
@@ -59,8 +62,8 @@ const NurseDashboardPage: React.FC = () => {
       <div className="error-container">
         <h2>Ошибка загрузки данных</h2>
         <p>{error}</p>
-        <button onClick={() => refetch()} className="retry-button">
-          Попробовать снова
+        <button onClick={() => navigate('/login') } className="retry-button">
+          Войти
         </button>
       </div>
     );

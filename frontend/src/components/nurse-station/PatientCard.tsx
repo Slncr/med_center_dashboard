@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
-import { Patient, Observation, Procedure, Appointment } from '../../types';
+import { Patient, Observation, Procedure, Prescription } from '../../types';
 import './PatientCard.css';
 
 interface PatientCardProps {
@@ -14,15 +14,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'observations' | 'procedures' | 'appointments'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'observations' | 'procedures' | 'prescriptions'>('info');
+  const [expandedPrescriptionId, setExpandedPrescriptionId] = useState<number | null>(null);
 
-  // Данные для редактирования
   const [editData, setEditData] = useState<Partial<Patient>>({});
-
-  // Медицинские записи
   const [observations, setObservations] = useState<Observation[]>([]);
   const [procedures, setProcedures] = useState<Procedure[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
 
   useEffect(() => {
     loadPatient();
@@ -52,14 +50,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
 
   const loadMedicalRecords = async () => {
     try {
-      const [obsData, procData, appData] = await Promise.all([
+      const [obsData, procData, prescData] = await Promise.all([
         apiService.getObservations(patientId),
         apiService.getProcedures(patientId),
-        apiService.getAppointments(patientId)
+        apiService.getPrescriptions(patientId)
       ]);
       setObservations(obsData);
-      setProcedures(procData.data);
-      setAppointments(appData.data);
+      setProcedures(Array.isArray(procData) ? procData : procData.data || []);
+      setPrescriptions(prescData);
     } catch (err) {
       console.error('Ошибка загрузки медицинских записей:', err);
     }
@@ -69,20 +67,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     setEditData(prev => ({ ...prev, [field]: value }));
   };
 
-  // const handleSave = async () => {
-  //   if (!patient) return;
-
-  //   try {
-  //     await apiService.updatePatient(patient.id, editData);
-  //     setPatient(prev => prev ? { ...prev, ...editData } : null);
-  //     setEditing(false);
-  //     setError(null);
-  //   } catch (err) {
-  //     setError('Ошибка сохранения данных');
-  //     console.error(err);
-  //   }
-  // };
-
   const handleArchive = async () => {
     if (!patient) return;
     if (!window.confirm('Вы уверены, что хотите выписать пациента?')) return;
@@ -90,11 +74,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     try {
       await apiService.archivePatient(patient.id);
       alert('Пациент выписан');
-
-      if (onPatientArchived) {
-        onPatientArchived();
-      }
-      
+      if (onPatientArchived) onPatientArchived();
       onClose();
     } catch (err) {
       setError('Ошибка выписки пациента');
@@ -102,318 +82,305 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     }
   };
 
-  if (loading) return <div className="patient-card">Загрузка...</div>;
-  if (!patient) return <div className="patient-card">Пациент не найден</div>;
+  const getPrescriptionTypeLabel = (type: string) => {
+    switch (type) {
+      case 'PROCEDURE': return '💉';
+      case 'MEASUREMENT': return '📊';
+      case 'NOTE': return '📝';
+      default: return '❓';
+    }
+  };
+
+  const getPrescriptionStatusLabel = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'Активно';
+      case 'COMPLETED': return '✅ Выполнено';
+      case 'CANCELLED': return '❌ Отменено';
+      default: return status;
+    }
+  };
+
+  const getPatientStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'Активный';
+      case 'discharged': return 'Выписан';
+      case 'archived': return 'Архив';
+      default: return status;
+    }
+  };
+
+  const togglePrescription = (id: number) => {
+    setExpandedPrescriptionId(prev => prev === id ? null : id);
+  };
+
+  if (loading) return (
+    <div className="pc-modal-overlay" onClick={onClose}>
+      <div className="pc-patient-card" onClick={e => e.stopPropagation()}>
+        <div className="pc-loading">Загрузка...</div>
+      </div>
+    </div>
+  );
+  
+  if (!patient) return (
+    <div className="pc-modal-overlay" onClick={onClose}>
+      <div className="pc-patient-card" onClick={e => e.stopPropagation()}>
+        <div className="pc-error">Пациент не найден</div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="patient-card">
-      <div className="card-header">
-        <h2>Карточка пациента</h2>
-        <button className="close-btn" onClick={onClose}>✕</button>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      {/* Основная информация */}
-      <div className="patient-main-info">
-        <div className="info-row">
-          <span className="info-label">ФИО:</span>
-          {editing ? (
-            <input
-              type="text"
-              value={editData.full_name || ''}
-              onChange={(e) => handleInputChange('full_name', e.target.value)}
-            />
-          ) : (
-            <span className="info-value">{patient.full_name}</span>
-          )}
+    <div className="pc-modal-overlay" onClick={onClose}>
+      <div className="pc-patient-card" onClick={e => e.stopPropagation()}>
+        <div className="pc-card-header">
+          <h2>Карточка пациента: {patient.full_name}</h2>
+          <button className="pc-close-btn" onClick={onClose}>✕</button>
         </div>
 
-        <div className="info-row">
-          <span className="info-label">Дата рождения:</span>
-          {editing ? (
-            <input
-              type="date"
-              value={editData.birth_date || ''}
-              onChange={(e) => handleInputChange('birth_date', e.target.value)}
-            />
-          ) : (
-            <span className="info-value">
-              {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('ru-RU') : '—'}
-            </span>
-          )}
-        </div>
+        {error && <div className="pc-error-message">{error}</div>}
 
-        <div className="info-row">
-          <span className="info-label">Пол:</span>
-          {editing ? (
-            <select
-              value={editData.gender || ''}
-              onChange={(e) => handleInputChange('gender', e.target.value)}
-            >
-              <option value="">—</option>
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-            </select>
-          ) : (
-            <span className="info-value">{patient.gender || '—'}</span>
-          )}
-        </div>
-
-        <div className="info-row">
-          <span className="info-label">Мед. карта №:</span>
-          {editing ? (
-            <input
-              type="text"
-              value={editData.medical_record_number || ''}
-              onChange={(e) => handleInputChange('medical_record_number', e.target.value)}
-            />
-          ) : (
-            <span className="info-value">{patient.medical_record_number || '—'}</span>
-          )}
-        </div>
-
-        <div className="info-row">
-          <span className="info-label">Подразделение:</span>
-          {editing ? (
-            <input
-              type="text"
-              value={editData.department_name || ''}
-              onChange={(e) => handleInputChange('department_name', e.target.value)}
-            />
-          ) : (
-            <span className="info-value">{patient.department_name || '—'}</span>
-          )}
-        </div>
-
-        <div className="info-row">
-          <span className="info-label">Статус:</span>
-          <span className={`info-value status-${patient.status}`}>
-            {patient.status === 'active' ? 'Активный' : 'Архив'}
-          </span>
-        </div>
-
-        <div className="info-row">
-          <span className="info-label">Дата поступления:</span>
-          <span className="info-value">
-            {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
-          </span>
-        </div>
-
-        {patient.discharge_date && (
-          <div className="info-row">
-            <span className="info-label">Дата выписки:</span>
-            <span className="info-value">
-              {new Date(patient.discharge_date).toLocaleDateString('ru-RU')}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Кнопки действий */}
-      <div className="card-actions">
-        {editing ? (
-          <>
-            {/* <button className="btn-primary" onClick={handleSave}>Сохранить</button> */}
-            <button className="btn-secondary" onClick={() => setEditing(false)}>Отмена</button>
-          </>
-        ) : (
-          <>
-            <button className="btn-primary" onClick={() => setEditing(true)}>Редактировать</button>
-            <button className="btn-danger" onClick={handleArchive}>Выписать</button>
-          </>
-        )}
-      </div>
-
-      {/* Вкладки */}
-      <div className="tabs">
-        <button
-          className={`tab-btn ${activeTab === 'info' ? 'active' : ''}`}
-          onClick={() => setActiveTab('info')}
-        >
-          📋 Информация
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'observations' ? 'active' : ''}`}
-          onClick={() => setActiveTab('observations')}
-        >
-          🩺 Наблюдения ({observations.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'procedures' ? 'active' : ''}`}
-          onClick={() => setActiveTab('procedures')}
-        >
-          💉 Процедуры ({procedures.length})
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'appointments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('appointments')}
-        >
-          📅 Назначения ({appointments.length})
-        </button>
-      </div>
-
-      {/* Контент вкладок */}
-      <div className="tab-content">
-        {activeTab === 'info' && (
-          <div className="info-tab">
-            <h3>Дополнительная информация</h3>
-            <div className="info-grid">
-              <div className="info-item">
-                <span className="info-label">ID пациента:</span>
-                <span className="info-value">{patient.id}</span>
+        <div className="pc-card-content">
+          {/* Левая колонка: информация */}
+          <div className="pc-info-column">
+            <div className="pc-info-section">
+              <div className="pc-info-item">
+                <span className="pc-info-label">Дата поступления:</span>
+                <span className="pc-info-value">{new Date(patient.admission_date).toLocaleDateString('ru-RU')}</span>
               </div>
-              <div className="info-item">
-                <span className="info-label">Внешний ID:</span>
-                <span className="info-value">{patient.external_id || '—'}</span>
-              </div>
-              {/* <div className="info-item">
-                <span className="info-label">Филиал:</span>
-                <span className="info-value">{patient.branch_id || '—'}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Подразделение ID:</span>
-                <span className="info-value">{patient.department_id || '—'}</span>
-              </div> */}
-              <div className="info-item">
-                <span className="info-label">Койка ID:</span>
-                <span className="info-value">{patient.bed_id || '—'}</span>
-              </div>
-              {/* <div className="info-item">
-                <span className="info-label">Создан:</span>
-                <span className="info-value">
-                  {new Date(patient.created_at).toLocaleString('ru-RU')}
+              <div className="pc-info-item">
+                <span className="pc-info-label">Статус:</span>
+                <span className={`pc-info-value pc-status-${patient.status}`}>
+                  {getPatientStatusLabel(patient.status)}
                 </span>
-              </div> */}
+              </div>
+              <div className="pc-info-item">
+                <span className="pc-info-label">Койка:</span>
+                <span className="pc-info-value">{patient.bed_id || '—'}</span>
+              </div>
+              <div className="pc-info-item">
+                <span className="pc-info-label">Подразделение:</span>
+                <span className="pc-info-value">{patient.department_name || '—'}</span>
+              </div>
+              <div className="pc-info-item">
+                <span className="pc-info-label">Дата рождения:</span>
+                <span className="pc-info-value">
+                  {patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('ru-RU') : '—'}
+                </span>
+              </div>
+              <div className="pc-info-item">
+                <span className="pc-info-label">Пол:</span>
+                <span className="pc-info-value">{patient.gender || '—'}</span>
+              </div>
+              {patient.discharge_date && (
+                <div className="pc-info-item">
+                  <span className="pc-info-label">Дата выписки:</span>
+                  <span className="pc-info-value">
+                    {new Date(patient.discharge_date).toLocaleDateString('ru-RU')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="pc-actions">
+              <button className="pc-btn pc-btn-primary" onClick={() => setEditing(!editing)}>
+                {editing ? 'Отменить' : 'Редактировать'}
+              </button>
+              <button className="pc-btn pc-btn-danger" onClick={handleArchive}>Выписать</button>
+            </div>
+
+            {editing && (
+              <div className="pc-edit-form">
+                <div className="pc-form-group">
+                  <label>ФИО</label>
+                  <input
+                    type="text"
+                    value={editData.full_name || ''}
+                    onChange={e => handleInputChange('full_name', e.target.value)}
+                  />
+                </div>
+                <div className="pc-form-group">
+                  <label>Подразделение</label>
+                  <input
+                    type="text"
+                    value={editData.department_name || ''}
+                    onChange={e => handleInputChange('department_name', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Правая колонка: вкладки */}
+          <div className="pc-records-column">
+            <div className="pc-tabs">
+              <button
+                className={`pc-tab-btn ${activeTab === 'observations' ? 'active' : ''}`}
+                onClick={() => setActiveTab('observations')}
+              >
+                🩺 Наблюдения ({observations.length})
+              </button>
+              <button
+                className={`pc-tab-btn ${activeTab === 'procedures' ? 'active' : ''}`}
+                onClick={() => setActiveTab('procedures')}
+              >
+                💉 Процедуры ({procedures.length})
+              </button>
+              <button
+                className={`pc-tab-btn ${activeTab === 'prescriptions' ? 'active' : ''}`}
+                onClick={() => setActiveTab('prescriptions')}
+              >
+                📋 Назначения ({prescriptions.length})
+              </button>
+            </div>
+
+            <div className="pc-tab-content">
+              {activeTab === 'observations' && (
+                <div className="pc-records-list">
+                  {observations.length > 0 ? observations.map(obs => (
+                    <div key={obs.id} className="pc-record-card">
+                      <div className="pc-record-header">
+                        <span className="pc-record-date">
+                          {new Date(obs.record_date).toLocaleDateString('ru-RU')}
+                        </span>
+                        <span className="pc-record-time">
+                          {new Date(obs.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="pc-record-body">
+                        <div className="pc-vitals">
+                          <span>🌡️ {obs.temperature ? `${obs.temperature}°C` : '—'}</span>
+                          <span>❤️ {obs.pulse ? `${obs.pulse}` : '—'}</span>
+                          <span>🩸 {obs.blood_pressure_systolic && obs.blood_pressure_diastolic
+                            ? `${obs.blood_pressure_systolic}/${obs.blood_pressure_diastolic}`
+                            : '—'}</span>
+                        </div>
+                        {obs.complaints && (
+                          <div className="pc-record-field">
+                            <strong>Жалобы:</strong> {obs.complaints}
+                          </div>
+                        )}
+                        {obs.examination && (
+                          <div className="pc-record-field">
+                            <strong>Обследование:</strong> {obs.examination}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="pc-no-records">Нет наблюдений</div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'procedures' && (
+                <div className="pc-records-list">
+                  {procedures.length > 0 ? procedures.map(proc => (
+                    <div key={proc.id} className="pc-record-card">
+                      <div className="pc-record-header">
+                        <span className="pc-record-title">{proc.name}</span>
+                        <span className={`pc-status-badge pc-status-${proc.status.toLowerCase()}`}>
+                          {proc.status}
+                        </span>
+                      </div>
+                      <div className="pc-record-body">
+                        {proc.description && (
+                          <div className="pc-record-field">
+                            <strong>Описание:</strong> {proc.description}
+                          </div>
+                        )}
+                        {proc.scheduled_time && (
+                          <div className="pc-record-field">
+                            <strong>Время:</strong> {new Date(proc.scheduled_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                        {proc.dosage && (
+                          <div className="pc-record-field">
+                            <strong>Дозировка:</strong> {proc.dosage}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="pc-no-records">Нет процедур</div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'prescriptions' && (
+                <div className="pc-prescriptions-list">
+                  {prescriptions.length > 0 ? (
+                    <>
+                      {prescriptions.map(p => (
+                        <React.Fragment key={p.id}>
+                          <div 
+                            className={`pc-prescription-item pc-status-${p.status.toLowerCase()} ${expandedPrescriptionId === p.id ? 'expanded' : ''}`}
+                            onClick={() => togglePrescription(p.id)}
+                          >
+                            <div className="pc-presc-type">
+                              {getPrescriptionTypeLabel(p.prescription_type)}
+                            </div>
+                            <div className="pc-presc-main">
+                              <div className="pc-presc-name" title={p.name}>
+                                {p.name.length > 60 ? `${p.name.substring(0, 60)}...` : p.name}
+                              </div>
+                              {p.notes && (
+                                <div className="pc-presc-notes" title={p.notes}>
+                                  📝 {p.notes.length > 50 ? `${p.notes.substring(0, 50)}...` : p.notes}
+                                </div>
+                              )}
+                            </div>
+                            <div className="pc-presc-meta">
+                              <div className="pc-presc-freq">{p.frequency || '—'}</div>
+                              <div className={`pc-presc-status pc-status-${p.status.toLowerCase()}`}>
+                                {p.status === 'ACTIVE' ? 'Активно' : p.status === 'COMPLETED' ? '✅' : '❌'}
+                              </div>
+                            </div>
+                            <div className="pc-presc-toggle">
+                              {expandedPrescriptionId === p.id ? '▴' : '▾'}
+                            </div>
+                          </div>
+                          
+                          {expandedPrescriptionId === p.id && (
+                            <div className="pc-prescription-detail">
+                              <div className="pc-detail-row">
+                                <span className="pc-detail-label">Полное название:</span>
+                                <span className="pc-detail-value">{p.name}</span>
+                              </div>
+                              {p.notes && (
+                                <div className="pc-detail-row">
+                                  <span className="pc-detail-label">Примечания:</span>
+                                  <span className="pc-detail-value">{p.notes}</span>
+                                </div>
+                              )}
+                              <div className="pc-detail-row">
+                                <span className="pc-detail-label">Частота:</span>
+                                <span className="pc-detail-value">{p.frequency || '—'}</span>
+                              </div>
+                              <div className="pc-detail-row">
+                                <span className="pc-detail-label">Статус:</span>
+                                <span className={`pc-detail-value pc-status-${p.status.toLowerCase()}`}>
+                                  {getPrescriptionStatusLabel(p.status)}
+                                </span>
+                              </div>
+                              <div className="pc-detail-row">
+                                <span className="pc-detail-label">Создано:</span>
+                                <span className="pc-detail-value">
+                                  {new Date(p.created_at).toLocaleString('ru-RU')}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="pc-no-records">Нет назначений</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        )}
-
-        {activeTab === 'observations' && (
-          <div className="observations-tab">
-            <h3>Наблюдения</h3>
-            {observations.length > 0 ? (
-              <div className="records-list">
-                {observations.map(obs => (
-                  <div key={obs.id} className="record-card">
-                    <div className="record-header">
-                      <span className="record-date">
-                        {new Date(obs.record_date).toLocaleDateString('ru-RU')}
-                      </span>
-                      <span className="record-time">
-                        {new Date(obs.created_at).toLocaleTimeString('ru-RU')}
-                      </span>
-                    </div>
-                    <div className="record-body">
-                      <div className="vitals">
-                        <span>🌡️ {obs.temperature ? `${obs.temperature}°C` : '—'}</span>
-                        <span>❤️ {obs.pulse ? `${obs.pulse} уд/мин` : '—'}</span>
-                        <span>🩸 {obs.blood_pressure_systolic && obs.blood_pressure_diastolic
-                          ? `${obs.blood_pressure_systolic}/${obs.blood_pressure_diastolic}`
-                          : '—'}</span>
-                      </div>
-                      {obs.complaints && (
-                        <div className="record-field">
-                          <strong>Жалобы:</strong> {obs.complaints}
-                        </div>
-                      )}
-                      {obs.examination && (
-                        <div className="record-field">
-                          <strong>Обследование:</strong> {obs.examination}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-records">Нет наблюдений</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'procedures' && (
-          <div className="procedures-tab">
-            <h3>Процедуры</h3>
-            {procedures.length > 0 ? (
-              <div className="records-list">
-                {procedures.map(proc => (
-                  <div key={proc.id} className="record-card">
-                    <div className="record-header">
-                      <span className="record-title">{proc.name}</span>
-                      <span className={`status-badge ${proc.status}`}>
-                        {proc.status}
-                      </span>
-                    </div>
-                    <div className="record-body">
-                      {proc.description && (
-                        <div className="record-field">
-                          <strong>Описание:</strong> {proc.description}
-                        </div>
-                      )}
-                      {proc.scheduled_time && (
-                        <div className="record-field">
-                          <strong>Запланировано:</strong> {new Date(proc.scheduled_time).toLocaleString('ru-RU', {timeZone: 'Europe/Moscow'})}
-                        </div>
-                      )}
-                      {proc.dosage && (
-                        <div className="record-field">
-                          <strong>Дозировка:</strong> {proc.dosage}
-                        </div>
-                      )}
-                      {proc.frequency && (
-                        <div className="record-field">
-                          <strong>Периодичность:</strong> {proc.frequency}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-records">Нет процедур</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'appointments' && (
-          <div className="appointments-tab">
-            <h3>Назначения</h3>
-            {appointments.length > 0 ? (
-              <div className="records-list">
-                {appointments.map(app => (
-                  <div key={app.id} className="record-card">
-                    <div className="record-header">
-                      <span className="record-title">{app.title}</span>
-                      <span className={`status-badge ${app.status}`}>
-                        {app.status}
-                      </span>
-                    </div>
-                    <div className="record-body">
-                      {app.description && (
-                        <div className="record-field">
-                          <strong>Описание:</strong> {app.description}
-                        </div>
-                      )}
-                      {app.appointment_date && (
-                        <div className="record-field">
-                          <strong>Дата:</strong> {new Date(app.appointment_date).toLocaleDateString('ru-RU')}
-                        </div>
-                      )}
-                      {app.appointment_time && (
-                        <div className="record-field">
-                          <strong>Время:</strong> {new Date(app.appointment_time).toLocaleTimeString('ru-RU')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="no-records">Нет назначений</p>
-            )}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

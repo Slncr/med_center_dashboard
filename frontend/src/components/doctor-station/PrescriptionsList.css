@@ -147,11 +147,11 @@
   border-radius: 8px;
 }
 
-.prescriptions-container {
+/* .prescriptions-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-}
+} */
 
 .prescriptions-form-section,
 .prescriptions-list-section {

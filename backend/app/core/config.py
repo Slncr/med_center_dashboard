@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "Gp6qPUYuc6LKlCvGwOuDGLQhXx4jDNqkjugTOUfKdFG"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240
     
     # 1C
     ONEC_BASE_URL: Optional[str] = None

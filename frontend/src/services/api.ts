@@ -11,21 +11,19 @@ import {
   Appointment,
   User,
   LoginRequest,
-  LoginResponse,
-  ApiResponse,
+  Prescription,
   HealthCheckResponse,
-  ApiError,
-  Prescription
+  ApiResponse
 } from '../types';
 
-const API_BASE_URL = '';
+const API_BASE_URL = '/api/v1';
 
 class ApiService {
   private api: AxiosInstance;
   private token: string | null = null;
 
   constructor() {
-    this.token = localStorage.getItem('token');
+    this.token = localStorage.getItem('auth_token');
     
     this.api = axios.create({
       baseURL: API_BASE_URL,
@@ -38,35 +36,29 @@ class ApiService {
     // Интерцептор для добавления токена
     this.api.interceptors.request.use(
       (config) => {
-        if (this.token) {
-          config.headers.Authorization = `Bearer ${this.token}`;
+        // ✅ Берём токен из единого источника
+        const token = this.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
       (error) => Promise.reject(error)
     );
-
-    // Интерцептор для обработки ошибок
-    this.api.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        console.error('API Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-      }
-    );
+  }
+  
+  getToken(): string | null {
+    return this.token || localStorage.getItem('auth_token');
   }
 
+  // ✅ ЕДИНСТВЕННЫЙ МЕТОД ДЛЯ УСТАНОВКИ ТОКЕНА
   setToken(token: string | null) {
     this.token = token;
     if (token) {
-      localStorage.setItem('token', token);
+      localStorage.setItem('auth_token', token);
     } else {
-      localStorage.removeItem('token');
+      localStorage.removeItem('auth_token');
     }
-  }
-
-  getToken(): string | null {
-    return this.token || localStorage.getItem('token');
   }
 
   // Health check
@@ -76,89 +68,110 @@ class ApiService {
   }
 
   // Аутентификация
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await this.api.post<LoginResponse>('/api/v1/auth/login', credentials);
-    if (response.data.access_token) {
-      this.setToken(response.data.access_token);
-    }
+  async login(credentials: { username: string; password: string }): Promise<{ access_token: string; user: User }> {
+    const response = await this.api.post<{ access_token: string; user: User }>('/auth/login', credentials);
+    console.log(response)
+    // ✅ Сохраняем ТОЛЬКО под ключом 'auth_token'
+    this.setToken(response.data.access_token);
+    localStorage.setItem('user_profile', JSON.stringify(response.data.user));
     return response.data;
   }
   
-  async logout(): Promise<void> {
+  logout(): void {
     this.setToken(null);
+    localStorage.removeItem('user_profile');
+  }
+
+  async registerUser(userData: {
+    username: string;
+    email: string;
+    full_name: string;
+    password: string;
+    role: 'doctor' | 'nurse';
+  }): Promise<void> {
+    // Отправляем роль в ВЕРХНЕМ регистре (как ожидает бэкенд)
+    await this.api.post('/users/register', {
+      ...userData,
+      role: userData.role // 'DOCTOR' или 'NURSE'
+    });
+  }
+
+  async getUsers(): Promise<User[]> {
+    const response = await this.api.get<User[]>('/users/');
+    return response.data;
   }
 
   async getCurrentUser(): Promise<User> {
-    const response = await this.api.get<User>('/api/v1/auth/users/me');
+    const response = await this.api.get<User>('/users/me');
     return response.data;
   }
 
   // Пациенты
   async getPatients(): Promise<Patient[]> {
-    const response = await this.api.get<Patient[]>('/api/v1/patients/');
+    const response = await this.api.get<Patient[]>('/patients/');
     return response.data;
   }
 
   async getPatient(id: number): Promise<Patient> {
-    const response = await this.api.get<Patient>(`/api/v1/patients/${id}`);
+    const response = await this.api.get<Patient>(`/patients/${id}`);
     return response.data;
   }
 
   async selectPatient(patientId: number): Promise<PatientSelectResponse> {
-    const response = await this.api.post<PatientSelectResponse>(`/api/v1/patients/${patientId}/select`);
+    const response = await this.api.post<PatientSelectResponse>(`/patients/${patientId}/select`);
     return response.data;
   }
 
   async getArchivedPatients(): Promise<Patient[]> {
-    const response = await this.api.get<Patient[]>('/api/v1/patients/archived');
+    const response = await this.api.get<Patient[]>('/patients/archived');
     return response.data;
   }
 
   async archivePatient(patientId: number): Promise<Patient> {
-    const response = await this.api.patch<Patient>(`/api/v1/patients/${patientId}/archive`);
+    const response = await this.api.patch<Patient>(`/patients/${patientId}/archive`);
     return response.data;
   }
 
   async restorePatient(patientId: number): Promise<Patient> {
-    const response = await this.api.patch<Patient>(`/api/v1/patients/${patientId}/restore`);
+    const response = await this.api.patch<Patient>(`/patients/${patientId}/restore`);
     return response.data;
   }
 
   // Палаты
   async getRooms(): Promise<Room[]> {
-    const response = await this.api.get<Room[]>('/api/v1/rooms/');
+    const response = await this.api.get<Room[]>('/rooms/');
     return response.data;
   }
 
   async getRoom(id: number): Promise<Room> {
-    const response = await this.api.get<Room>(`/api/v1/rooms/${id}`);
+    const response = await this.api.get<Room>(`/rooms/${id}`);
     return response.data;
   }
 
   // Наблюдения
   async getObservations(patientId: number): Promise<Observation[]> {
-    const response = await this.api.get<Observation[]>(`/api/v1/medical/observations/${patientId}`);
+    const response = await this.api.get<Observation[]>(`/medical/observations/${patientId}`);
     return response.data;
   }
 
   async createObservation(observation: Omit<Observation, 'id' | 'created_at'>): Promise<Observation> {
-    const response = await this.api.post<Observation>('/api/v1/medical/observations', observation);
+    const response = await this.api.post<Observation>('/medical/observations', observation);
     return response.data;
   }
 
   async updateObservation(id: number, updates: Partial<Omit<Observation, 'id' | 'created_at' | 'patient_id' | 'record_date'>>): Promise<Observation> {
-    const response = await this.api.put<Observation>(`/api/v1/medical/observations/${id}`, updates);
+    const response = await this.api.put<Observation>(`/medical/observations/${id}`, updates);
     return response.data;
   }
 
   async deleteObservation(id: number): Promise<void> {
-    await this.api.delete(`/api/v1/medical/observations/${id}`);
+    await this.api.delete(`/medical/observations/${id}`);
   }
 
   // Процедуры
   async getProcedures(patientId: number): Promise<ApiResponse<Procedure[]>> {
     try {
-      const response = await this.api.get<Procedure[]>(`/api/v1/medical/procedures/${patientId}`);
+      const response = await this.api.get<Procedure[]>(`/medical/procedures/${patientId}`);
       return {
         data: response.data,
         success: true,
@@ -175,12 +188,12 @@ class ApiService {
   }
 
   async createProcedure(procedure: Omit<Procedure, 'id'>): Promise<Procedure> {
-    const response = await this.api.post<Procedure>('/api/v1/medical/procedures', procedure);
+    const response = await this.api.post<Procedure>('/medical/procedures', procedure);
     return response.data;
   }
 
   async updateProcedureStatus(procedureId: number, status: 'SCHEDULED' | 'IN_PROGRES' | 'COMPLETED' | 'CANCELLED'): Promise<Procedure> {
-    const response = await this.api.patch<Procedure>(`/api/v1/medical/procedures/${procedureId}`, { status });
+    const response = await this.api.patch<Procedure>(`/medical/procedures/${procedureId}`, { status });
     return response.data;
   }
 
@@ -194,20 +207,20 @@ class ApiService {
     status?: 'ACTIVE';
   }): Promise<Prescription> {
     // ✅ Отправляем на /prescriptions, НЕ на /observations!
-    const response = await this.api.post<Prescription>('/api/v1/medical/prescriptions', prescription);
+    const response = await this.api.post<Prescription>('/medical/prescriptions', prescription);
     return response.data;
   }
 
   async getPrescriptions(patientId: number): Promise<Prescription[]> {
     // ✅ Получаем назначения, НЕ наблюдения!
-    const response = await this.api.get<Prescription[]>(`/api/v1/medical/prescriptions/patient/${patientId}`);
+    const response = await this.api.get<Prescription[]>(`/medical/prescriptions/patient/${patientId}`);
     return response.data;
   }
 
   // ✅ Для медсестры — выполнение назначения
   async executePrescription(prescriptionId: number, notes?: string): Promise<Procedure> {
     const response = await this.api.post<Procedure>(
-      `/api/v1/medical/prescriptions/${prescriptionId}/execute`,
+      `/medical/prescriptions/${prescriptionId}/execute`,
       { notes }
     );
     return response.data;
@@ -216,7 +229,7 @@ class ApiService {
   // Назначения
   async getAppointments(patientId: number): Promise<ApiResponse<Appointment[]>> {
     try {
-      const response = await this.api.get<Appointment[]>(`/api/v1/medical/appointments/${patientId}`);
+      const response = await this.api.get<Appointment[]>(`/medical/appointments/${patientId}`);
       return {
         data: response.data,
         success: true,
@@ -232,19 +245,23 @@ class ApiService {
     }
   }
 
+  async cancelPrescription(prescriptionId: number): Promise<void> {
+    await this.api.patch(`/medical/prescriptions/${prescriptionId}/cancel`);
+  }
+
   async createAppointment(appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
-    const response = await this.api.post<Appointment>('/api/v1/medical/appointments', appointment);
+    const response = await this.api.post<Appointment>('/medical/appointments', appointment);
     return response.data;
   }
 
   // Форма 530н
   async getForm530n(patientId: number): Promise<Form530n> {
-    const response = await this.api.get<Form530n>(`/api/v1/medical/form-530n/${patientId}`);
+    const response = await this.api.get<Form530n>(`/medical/form-530n/${patientId}`);
     return response.data;
   }
 
   async printForm530n(patientId: number): Promise<Blob> {
-    const response = await this.api.get(`/api/v1/medical/form-530n/${patientId}/print`, {
+    const response = await this.api.get(`/medical/form-530n/${patientId}/print`, {
       responseType: 'blob'
     });
     return response.data;
@@ -252,12 +269,12 @@ class ApiService {
 
   // 1C интеграция
   async syncWith1C(): Promise<any> {
-    const response = await this.api.post('/api/v1/integration/1c/sync');
+    const response = await this.api.post('/integration/1c/sync');
     return response.data;
   }
 
   async getPatientsFrom1C(): Promise<Patient[]> {
-    const response = await this.api.get<Patient[]>('/api/v1/integration/1c/patients');
+    const response = await this.api.get<Patient[]>('/integration/1c/patients');
     return response.data;
   }
 }

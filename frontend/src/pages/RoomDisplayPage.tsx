@@ -1,248 +1,264 @@
 import React, { useState, useEffect } from 'react';
-import { Room, Bed, Patient } from '../types/patient';
 import { apiService } from '../services/api';
-import StartButton from '../components/patient-room/StartButton';
-import BedCard from '../components/patient-room/BedCard';
-import WelcomeMessage from '../components/patient-room/WelcomeMessage';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import { Patient, Room, Prescription } from '../types';
 import './RoomDisplayPage.css';
-import AppointmentsDisplay from '../components/patient-room/AppointmentsDisplay';
-
 
 const RoomDisplayPage: React.FC = () => {
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<{
-    id: number;
-    name: string;
-    message: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
 
-  // Проверка подключения к API
+  // Обновление времени каждую секунду
   useEffect(() => {
-    checkApiConnection();
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  const checkApiConnection = async () => {
-    try {
-      const health = await apiService.healthCheck();
-      setApiConnected(health.status === 'healthy');
-    } catch (err) {
-      console.error('API connection error:', err);
-      setApiConnected(false);
-    }
-  };
+  // Автоматическая загрузка данных
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleStart = async () => {
-    setLoading(true);
-    setError(null);
-    
+  const loadData = async () => {
     try {
-      const roomsData = await apiService.getRooms();
-      setRooms(roomsData);
+      await apiService.healthCheck();
       setApiConnected(true);
+
+      const [roomsData, patientsData] = await Promise.all([
+        apiService.getRooms(),
+        apiService.getPatients()
+      ]);
+
+      setRooms(roomsData);
+      setPatients(patientsData);
+
+      // Автоматически выбираем первую палату с пациентами
+      const roomWithPatients = roomsData.find(r => 
+        r.beds.some(b => b.patient)
+      );
+      if (roomWithPatients) {
+        setActiveRoomId(roomWithPatients.id);
+        const firstBed = roomWithPatients.beds.find(b => b.patient);
+        if (firstBed) {
+          const patient = patientsData.find(p => p.id === firstBed.patient?.id);
+          if (patient) {
+            handlePatientSelect(patient.id);
+          }
+        }
+      }
     } catch (err) {
-      console.error('Error loading rooms:', err);
-      setError('Ошибка загрузки данных. Проверьте подключение к серверу.');
-      
+      console.error('Ошибка загрузки данных:', err);
+      setApiConnected(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePatientSelect = async (bedId: number, patientName: string, patientId?: number) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handlePatientSelect = async (patientId: number) => {
+    setSelectedPatientId(patientId);
+    
     try {
-      const response = await apiService.selectPatient(bedId);
-      
-      // response уже имеет тип PatientSelectResponse, а не ApiResponse
-      setSelectedPatient({
-        id: patientId || bedId, // Используем переданный patientId если есть
-        name: patientName,
-        message: response.welcome_message || 'Добро пожаловать в медицинский центр!'
-      });
-      
-      setTimeout(() => {
-        const welcomeElement = document.getElementById('welcome-message');
-        if (welcomeElement) {
-          welcomeElement.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
+      const data = await apiService.getPrescriptions(patientId);
+      setPrescriptions(data.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
     } catch (err) {
-      console.error('Error selecting patient:', err);
-      // Демо режим при ошибке
-      setSelectedPatient({
-        id: bedId,
-        name: patientName,
-        message: 'Добро пожаловать! (оффлайн режим)'
-      });
+      console.error('Ошибка загрузки назначений:', err);
+      setPrescriptions([]);
     }
   };
 
-  const handleCloseWelcome = () => {
-    setSelectedPatient(null);
+  const getPatientByBedId = (bedId: number): Patient | undefined => {
+    const bed = rooms.flatMap(r => r.beds).find(b => b.id === bedId);
+    return bed?.patient?.id ? patients.find(p => p.id === bed.patient?.id) : undefined;
   };
+
+  const getRoomById = (roomId: number): Room | undefined => {
+    return rooms.find(r => r.id === roomId);
+  };
+
+  if (loading) {
+    return (
+      <div className="room-display-page loading">
+        <div className="loading-content">
+          <div className="clinic-logo">🏥</div>
+          <div className="spinner"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const activeRoom = activeRoomId ? getRoomById(activeRoomId) : null;
+  const selectedPatient = selectedPatientId ? patients.find(p => p.id === selectedPatientId) : null;
 
   return (
     <div className="room-display-page">
-      <header className="page-header">
-        <div className="header-content">
-          <h1 className="clinic-name">🏥 Медицинский Центр</h1>
-          <h2 className="page-title">Планшет у палаты</h2>
-          <div className={`api-status ${apiConnected ? 'connected' : 'disconnected'}`}>
-            Статус: {apiConnected ? '✅ Подключено' : '❌ Нет подключения'}
+      {/* Хедер */}
+      <header className="room-header">
+        <div className="header-left">
+          <div className="clinic-logo">🏥</div>
+          <div className="clinic-name">Медицинский центр</div>
+          {activeRoom && (
+            <div className="room-location">Палата №{activeRoom.number}</div>
+          )}
+        </div>
+        
+        <div className="header-center">
+          <div className="current-time">
+            <span className="time">{currentTime.toLocaleTimeString('ru-RU', { 
+              hour: '2-digit', 
+              minute: '2-digit'
+            })}</span>
+            <span className="date">{currentTime.toLocaleDateString('ru-RU')}</span>
           </div>
         </div>
-        <div className="header-info">
-          <div className="info-item">📅 {new Date().toLocaleDateString('ru-RU')}</div>
-          <div className="info-item">🕒 {new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
-          <div className="info-item">📍 Этаж 1</div>
+        
+        <div className="header-right">
+          <div className={`connection-indicator ${apiConnected ? 'connected' : 'disconnected'}`}></div>
         </div>
       </header>
 
-      <main className="page-main">
-        <div className="start-section">
-          <div className="instruction-text">
-            <h3>Начать регистрацию пациента</h3>
-            <p>Нажмите кнопку ниже для загрузки списка доступных палат и пациентов</p>
+      <main className="room-main">
+        {/* Список пациентов */}
+        <div className="patients-panel">
+          <div className="panel-header">
+            <h2>Пациенты</h2>
+            {activeRoom && (
+              <div className="room-stats">
+                {activeRoom.beds.filter(b => b.patient?.id).length} из {activeRoom.beds.length}
+              </div>
+            )}
           </div>
           
-          <div className="button-container">
-            <StartButton 
-              onClick={handleStart} 
-              loading={loading} 
-              disabled={rooms.length > 0 && !error}
-            />
+          <div className="patients-list">
+            {activeRoom ? (
+              activeRoom.beds.map(bed => {
+                const patient = getPatientByBedId(bed.id);
+                return (
+                  <div 
+                    key={bed.id} 
+                    className={`patient-row ${selectedPatientId === patient?.id ? 'active' : ''}`}
+                    onClick={() => patient && handlePatientSelect(patient.id)}
+                  >
+                    <div className="bed-col">Койка {bed.number}</div>
+                    <div className="name-col">
+                      {patient ? (
+                        <>
+                          <div className="patient-name">{patient.full_name}</div>
+                          <div className="patient-meta">
+                            Поступил: {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="empty-bed">Свободна</div>
+                      )}
+                    </div>
+                    <div className={`status-col ${patient ? 'occupied' : 'empty'}`}>
+                      {patient ? '●' : '○'}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="empty-state">Нет активных палат</div>
+            )}
           </div>
-          
-          {error && (
-            <div className="error-message">
-              ⚠️ {error}
-              <p className="error-hint">Убедитесь, что бэкенд сервер запущен на http://localhost:8000</p>
-            </div>
-          )}
-          
-          {rooms.length > 0 && (
-            <div className="stats-info">
-              <div className="stat-item">
-                <span className="stat-label">Загружено палат:</span>
-                <span className="stat-value">{rooms.length}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Всего коек:</span>
-                <span className="stat-value">
-                  {rooms.reduce((total, room) => total + room.beds.length, 0)}
-                </span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Статус:</span>
-                <span className="stat-value ready">Готово</span>
-              </div>
-            </div>
-          )}
         </div>
 
-        {rooms.length > 0 && (
-          <div className="rooms-section">
-            <div className="section-header">
-              <h3>📋 Доступные палаты</h3>
-              <div className="section-subtitle">Выберите пациента для регистрации</div>
-            </div>
-            
-            <div className="rooms-grid">
-              {rooms.map((room) => (
-                <div key={room.id} className="room-container">
-                  <div className="room-card">
-                    <div className="room-header">
-                      <div className="room-title">
-                        <span className="room-icon">🚪</span>
-                        <h4>Палата №{room.number}</h4>
-                      </div>
-                      <div className="room-stats">
-                        <span className="bed-count">{room.beds.length} коек</span>
-                      </div>
+        {/* Основной контент */}
+        <div className="content-panel">
+          {/* Карточка пациента */}
+          <div className="patient-card">
+            {selectedPatient ? (
+              <>
+                <div className="patient-header">
+                  <h1>{selectedPatient.full_name}</h1>
+                  <div className="patient-id">ID: {selectedPatient.id}</div>
+                </div>
+                
+                <div className="patient-info-grid">
+                  <div className="info-item">
+                    <div className="info-label">Статус</div>
+                    <div className={`info-value status-${selectedPatient.status}`}>
+                      {selectedPatient.status === 'active' ? 'Активный' : 'Выписан'}
                     </div>
-                    
-                    <div className="beds-container">
-                      {room.beds.map((bed) => {
-                        // Получаем имя пациента - может быть string или Patient объект
-                        const patientName = typeof bed.patient === 'string' 
-                          ? bed.patient 
-                          : bed.patient?.full_name || `Пациент ${bed.id}`;
-                        
-                        return (
-                          <BedCard
-                            key={bed.id}
-                            bed={bed}
-                            roomNumber={room.number}
-                            onSelect={(bedId) => handlePatientSelect(bedId, patientName, bed.patient?.id)}
-                            disabled={loading || !!selectedPatient}
-                          />
-                        );
-                      })}
+                  </div>
+                  <div className="info-item">
+                    <div className="info-label">Поступление</div>
+                    <div className="info-value">
+                      {new Date(selectedPatient.admission_date).toLocaleDateString('ru-RU')}
+                    </div>
+                  </div>
+                  <div className="info-item">
+                    <div className="info-label">Койка</div>
+                    <div className="info-value">
+                      {selectedPatient.bed_id || '—'}
                     </div>
                   </div>
                 </div>
-              ))}
+              </>
+            ) : (
+              <div className="no-patient-selected">
+                <div className="placeholder-icon">👤</div>
+                <p>Выберите пациента из списка слева</p>
+              </div>
+            )}
+          </div>
+
+          {/* Назначения */}
+          <div className="prescriptions-panel">
+            <div className="panel-header">
+              <h2>Назначения</h2>
+              <div className="prescriptions-count">{prescriptions.length}</div>
             </div>
-          </div>
-        )}
-
-        {selectedPatient && (
-          <div id="welcome-message" className="welcome-section">
-            <WelcomeMessage
-              patientName={selectedPatient.name}
-              patientId={selectedPatient.id}
-              message={selectedPatient.message}
-              onClose={handleCloseWelcome}
-            />
-          </div>
-        )}
-
-        {selectedPatientId && (
-          <div className="appointments-display-section">
-            <h3>📋 Назначения и процедуры</h3>
-            <AppointmentsDisplay 
-              patientId={selectedPatientId}
-              compact={true}
-              onProcedureUpdate={() => {
-                // Можно добавить обновление данных при изменении процедур
-                console.log('Procedures updated');
-              }}
-            />
-          </div>
-        )}
-
-        {!loading && rooms.length === 0 && !error && (
-          <div className="empty-state">
-            <div className="empty-icon">👈</div>
-            <h3>Готовы начать работу?</h3>
-            <p>Нажмите кнопку "СТАРТ" для загрузки списка пациентов</p>
-            <p className="empty-hint">После загрузки вы сможете выбрать пациента для регистрации</p>
-          </div>
-        )}
-
-        {loading && rooms.length === 0 && (
-          <div className="loading-state">
-            <LoadingSpinner size="large" />
-            <p>Загрузка данных с сервера...</p>
-          </div>
-        )}
-      </main>
-
-      <footer className="page-footer">
-        <div className="footer-content">
-          <p className="footer-text">© 2024 Медицинский Центр. Система управления пациентами</p>
-          <div className="system-info">
-            <span className="system-version">Версия 1.0.0</span>
-            <span className="system-mode">Режим: {apiConnected ? 'Рабочий' : 'Демо'}</span>
+            
+            {prescriptions.length > 0 ? (
+              <div className="prescriptions-list">
+                {prescriptions.map(p => (
+                  <div key={p.id} className={`prescription-row status-${p.status.toLowerCase()}`}>
+                    <div className="type-col">
+                      {p.prescription_type === 'PROCEDURE' && '💉'}
+                      {p.prescription_type === 'MEASUREMENT' && '📊'}
+                      {p.prescription_type === 'NOTE' && '📝'}
+                    </div>
+                    <div className="name-col">
+                      <div className="prescription-name">{p.name}</div>
+                      {p.notes && (
+                        <div className="prescription-notes">{p.notes}</div>
+                      )}
+                    </div>
+                    <div className="freq-col">{p.frequency || '—'}</div>
+                    <div className="status-col">
+                      {p.status === 'ACTIVE' && <span className="status-dot active"></span>}
+                      {p.status === 'COMPLETED' && <span className="status-dot completed">✓</span>}
+                      {p.status === 'CANCELLED' && <span className="status-dot cancelled">×</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-prescriptions">
+                <div className="placeholder-icon">📋</div>
+                <p>Нет активных назначений</p>
+              </div>
+            )}
           </div>
         </div>
+      </main>
+
+      <footer className="room-footer">
+        <div className="footer-left">Медицинский центр • Планшет у палаты</div>
+        <div className="footer-right">v1.2</div>
       </footer>
     </div>
   );
 };
 
-export default RoomDisplayPage
+export default RoomDisplayPage;

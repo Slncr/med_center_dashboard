@@ -1,225 +1,171 @@
-.login-page {
-  min-height: 100vh;
+/* Префикс lg- = login */
+.lg-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a2a4a 0%, #0f1a2d 100%);
   padding: 20px;
 }
 
-.login-container {
+.lg-card {
   background: white;
   border-radius: 20px;
-  padding: 40px;
-  max-width: 500px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.35);
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 420px;
+  overflow: hidden;
 }
 
-.login-header {
+.lg-header {
+  padding: 32px 32px 24px;
   text-align: center;
-  margin-bottom: 30px;
+  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
+  color: white;
 }
 
-.login-header h1 {
-  color: #2c3e50;
-  margin-bottom: 10px;
-  font-size: 2.2rem;
+.lg-logo {
+  font-size: 48px;
+  margin-bottom: 16px;
 }
 
-.login-header h2 {
-  color: #4CAF50;
-  margin-bottom: 10px;
-  font-size: 1.5rem;
+.lg-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
 }
 
-.login-header p {
-  color: #6c757d;
-  font-size: 1.1rem;
-}
-
-.login-form {
-  margin-bottom: 30px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #495057;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
-  box-sizing: border-box;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #4CAF50;
-}
-
-.form-group input:disabled {
-  background: #f8f9fa;
-  cursor: not-allowed;
-}
-
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: #495057;
-  user-select: none;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: auto;
+.lg-subtitle {
+  font-size: 16px;
+  opacity: 0.9;
   margin: 0;
 }
 
-.forgot-password {
-  color: #4CAF50;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: color 0.3s;
-}
-
-.forgot-password:hover {
-  color: #388e3c;
-  text-decoration: underline;
-}
-
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 12px 15px;
+.lg-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-left: 4px solid #ef4444;
+  margin: 24px;
   border-radius: 8px;
-  border: 1px solid #f5c6cb;
-  margin-bottom: 20px;
-  font-size: 0.95rem;
+  font-weight: 500;
 }
 
-.login-button {
+.error-icon {
+  font-size: 24px;
+}
+
+.lg-form {
+  padding: 0 24px 24px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 15px;
+}
+
+.form-input {
   width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, #4CAF50 0%, #388e3c 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 25px;
+  padding: 14px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.2s;
+  background: #f8fafc;
 }
 
-.login-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: white;
 }
 
-.login-button:disabled {
-  opacity: 0.7;
+.form-input:disabled {
+  background: #e2e8f0;
   cursor: not-allowed;
 }
 
-.login-footer {
-  text-align: center;
-  padding-top: 20px;
-  border-top: 1px solid #dee2e6;
-}
-
-.login-footer p {
-  color: #6c757d;
-  margin-bottom: 15px;
-}
-
-.interface-buttons {
+.lg-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
 }
 
-.interface-button {
-  padding: 12px 20px;
-  background: #e3f2fd;
-  color: #1565c0;
-  border: 2px solid #bbdefb;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
+.lg-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1a325a 0%, #162647 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
 }
 
-.interface-button:hover {
-  background: #bbdefb;
-  transform: translateX(5px);
+.lg-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.demo-credentials {
-  background: #f8f9fa;
-  border-radius: 10px;
-  padding: 20px;
-  border: 1px solid #dee2e6;
+.lg-footer {
+  padding: 20px 24px;
+  text-align: center;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 14px;
 }
 
-.demo-credentials h3 {
-  margin: 0 0 15px 0;
-  color: #495057;
-  font-size: 1.1rem;
+.version {
+  opacity: 0.8;
+  margin-top: 4px;
+  font-size: 13px;
 }
 
-.credential {
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-.credential strong {
-  color: #495057;
-}
-
-@media (max-width: 768px) {
-  .login-container {
-    padding: 25px;
+/* Адаптивность */
+@media (max-width: 480px) {
+  .lg-card {
+    border-radius: 16px;
   }
   
-  .login-header h1 {
-    font-size: 1.8rem;
+  .lg-header {
+    padding: 24px 20px 20px;
   }
   
-  .form-options {
-    flex-direction: column;
-    gap: 15px;
-    align-items: flex-start;
+  .lg-logo {
+    font-size: 40px;
   }
   
-  .interface-buttons {
-    gap: 8px;
+  .lg-title {
+    font-size: 24px;
   }
   
-  .interface-button {
-    font-size: 0.9rem;
-    padding: 10px 15px;
+  .lg-form {
+    padding: 0 20px 20px;
+  }
+  
+  .lg-btn {
+    padding: 14px;
+    font-size: 17px;
   }
 }

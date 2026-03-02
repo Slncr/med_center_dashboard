@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Appointment, Procedure, ProcedureStatus } from '../../types';
-import Button from '../common/Button';
-import Card from '../common/Card';
-import LoadingSpinner from '../common/LoadingSpinner';
 import './AppointmentsDisplay.css';
 
 interface AppointmentsDisplayProps {
@@ -22,7 +19,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'appointments' | 'procedures'>('appointments');
-  const [refreshing, setRefreshing] = useState(false);
+  const [expandedProcedureId, setExpandedProcedureId] = useState<number | null>(null);
 
   const fetchData = async () => {
     if (!patientId) return;
@@ -36,45 +33,21 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
         apiService.getProcedures(patientId)
       ]);
       
-      // Обработка ответа appointments
-      if (appointmentsRes.success && appointmentsRes.data) {
-        setAppointments(appointmentsRes.data);
-      } else if (appointmentsRes.error) {
-        console.error('Appointments error:', appointmentsRes.error);
-        // Не выбрасываем ошибку, просто логируем
-      }
-      
-      // Обработка ответа procedures
-      if (proceduresRes.success && proceduresRes.data) {
-        setProcedures(proceduresRes.data);
-      } else if (proceduresRes.error) {
-        console.error('Procedures error:', proceduresRes.error);
-        // Не выбрасываем ошибку, просто логируем
-      }
-      
-      // Показываем ошибку только если оба запроса неуспешны
-      if (!appointmentsRes.success && !proceduresRes.success) {
-        setError('Ошибка загрузки данных');
-      }
+      setAppointments(Array.isArray(appointmentsRes) ? appointmentsRes : appointmentsRes.data || []);
+      setProcedures(Array.isArray(proceduresRes) ? proceduresRes : proceduresRes.data || []);
     } catch (err) {
-      setError('Ошибка соединения с сервером');
+      setError('Ошибка загрузки данных');
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchData();
   };
 
   const handleProcedureStatusChange = async (procedureId: number, newStatus: ProcedureStatus) => {
     try {
-      const response = await apiService.updateProcedureStatus(procedureId, newStatus);
+      await apiService.updateProcedureStatus(procedureId, newStatus);
       setProcedures(prev => prev.map(proc => 
-        proc.id === procedureId ? { ...proc, ...response, status: newStatus } : proc
+        proc.id === procedureId ? { ...proc, status: newStatus } : proc
       ));
       
       if (onProcedureUpdate) {
@@ -82,87 +55,62 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
       }
     } catch (err) {
       console.error('Error updating procedure:', err);
+      alert('Ошибка обновления статуса процедуры');
     }
   };
 
-  const formatTime = (dateString: string) => {
+  const formatDateTime = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleTimeString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const date = new Date(dateString);
+      return `${date.toLocaleDateString('ru-RU')} ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
     } catch {
-      return '--:--';
+      return '—';
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: 'long',
-        weekday: 'short'
-      });
-    } catch {
-      return '--.--.----';
-    }
-  };
-
-  const getStatusColor = (status: string): string => {
+  const getProcedureStatusText = (status: string): string => {
     switch (status) {
-      case 'scheduled': return 'status-scheduled';
-      case 'in_progress': return 'status-in-progress';
-      case 'completed': return 'status-completed';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
-  };
-
-  const getStatusText = (status: string): string => {
-    switch (status) {
-      case 'scheduled': return 'Запланировано';
-      case 'in_progress': return 'В процессе';
-      case 'completed': return 'Выполнено';
-      case 'cancelled': return 'Отменено';
+      case 'SCHEDULED': return 'Запланировано';
+      case 'IN_PROGRESS': return 'В процессе';
+      case 'COMPLETED': return '✅ Выполнено';
+      case 'CANCELLED': return '❌ Отменено';
       default: return status;
+    }
+  };
+
+  const getProcedureStatusClass = (status: string): string => {
+    switch (status) {
+      case 'SCHEDULED': return 'ad-status-scheduled';
+      case 'IN_PROGRESS': return 'ad-status-in-progress';
+      case 'COMPLETED': return 'ad-status-completed';
+      case 'CANCELLED': return 'ad-status-cancelled';
+      default: return '';
     }
   };
 
   useEffect(() => {
     if (patientId) {
       fetchData();
-      
-      // Автообновление каждые 30 секунд
-      const interval = setInterval(fetchData, 30000);
-      return () => clearInterval(interval);
     }
   }, [patientId]);
 
-  if (loading && !refreshing) {
+  if (loading) {
     return (
-      <div className="appointments-loading">
-        <LoadingSpinner size="medium" />
-        <p>Загрузка назначений...</p>
+      <div className="ad-container">
+        <div className="ad-loading">Загрузка...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="appointments-error" variant="bordered">
-        <div className="error-content">
-          <div className="error-icon">⚠️</div>
-          <div className="error-message">{error}</div>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            onClick={handleRefresh}
-            isLoading={refreshing}
-          >
-            Повторить
-          </Button>
+      <div className="ad-container">
+        <div className="ad-error">
+          <div className="ad-error-icon">⚠️</div>
+          <div>{error}</div>
+          <button className="ad-btn ad-btn-primary" onClick={fetchData}>Повторить</button>
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -172,240 +120,190 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   const completedProcedures = procedures.filter(p => p.status === 'COMPLETED');
 
   return (
-    <div className={`appointments-display ${compact ? 'compact' : ''}`}>
-      <div className="appointments-header">
-        <div className="header-tabs">
+    <div className={`ad-container ${compact ? 'ad-compact' : ''}`}>
+      <div className="ad-header">
+        <div className="ad-tabs">
           <button
-            className={`tab-button ${activeTab === 'appointments' ? 'active' : ''}`}
+            className={`ad-tab ${activeTab === 'appointments' ? 'active' : ''}`}
             onClick={() => setActiveTab('appointments')}
           >
             📅 Назначения ({appointments.length})
           </button>
           <button
-            className={`tab-button ${activeTab === 'procedures' ? 'active' : ''}`}
+            className={`ad-tab ${activeTab === 'procedures' ? 'active' : ''}`}
             onClick={() => setActiveTab('procedures')}
           >
             💉 Процедуры ({pendingProcedures.length})
           </button>
         </div>
         
-        <Button
-          variant="light"
-          size="sm"
-          onClick={handleRefresh}
-          isLoading={refreshing}
-          icon="🔄"
-        >
-          Обновить
-        </Button>
+        <button className="ad-refresh-btn" onClick={fetchData} title="Обновить">
+          🔄
+        </button>
       </div>
 
-      <div className="appointments-content">
+      <div className="ad-content">
         {activeTab === 'appointments' ? (
-          <div className="appointments-list">
+          <div className="ad-list">
             {appointments.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📅</div>
+              <div className="ad-empty">
+                <div>📅</div>
                 <p>Нет назначений</p>
-                <p className="empty-subtitle">Все назначения будут отображаться здесь</p>
               </div>
             ) : (
               appointments.map((appointment) => (
-                <Card key={appointment.id} className="appointment-card" hoverable>
-                  <div className="appointment-header">
-                    <h4 className="appointment-title">{appointment.title}</h4>
-                    <span className={`appointment-status ${getStatusColor(appointment.status)}`}>
-                      {getStatusText(appointment.status)}
-                    </span>
+                <div key={appointment.id} className="ad-appointment-item">
+                  <div className="ad-item-header">
+                    <div className="ad-item-title">{appointment.title}</div>
+                    <div className={`ad-item-status ${getProcedureStatusClass(appointment.status)}`}>
+                      {getProcedureStatusText(appointment.status)}
+                    </div>
                   </div>
                   
-                  <div className="appointment-body">
+                  <div className="ad-item-body">
                     {appointment.description && (
-                      <p className="appointment-description">{appointment.description}</p>
+                      <div className="ad-item-desc">{appointment.description}</div>
                     )}
                     
-                    <div className="appointment-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Дата:</span>
-                        <span className="detail-value">{formatDate(appointment.appointment_date)}</span>
-                      </div>
+                    <div className="ad-item-meta">
+                      <div>📅 {formatDateTime(appointment.appointment_date)}</div>
                       {appointment.appointment_time && (
-                        <div className="detail-item">
-                          <span className="detail-label">Время:</span>
-                          <span className="detail-value">{formatTime(appointment.appointment_time)}</span>
-                        </div>
+                        <div>⏰ {formatDateTime(appointment.appointment_time)}</div>
                       )}
                     </div>
                     
                     {appointment.notes && (
-                      <div className="appointment-notes">
-                        <strong>Примечания врача:</strong> {appointment.notes}
+                      <div className="ad-item-notes" title={appointment.notes}>
+                        📝 {appointment.notes.length > 60 ? `${appointment.notes.substring(0, 60)}...` : appointment.notes}
                       </div>
                     )}
                   </div>
-                  
-                  {!appointment.is_completed && (
-                    <div className="appointment-footer">
-                      <Button
-                        variant="success"
-                        size="sm"
-                        fullWidth
-                        onClick={() => {
-                          // Логика завершения назначения
-                          console.log('Complete appointment:', appointment.id);
-                        }}
-                      >
-                        Отметить как выполненное
-                      </Button>
-                    </div>
-                  )}
-                </Card>
+                </div>
               ))
             )}
           </div>
         ) : (
-          <div className="procedures-section">
-            <div className="procedures-tabs">
-              <div className="procedures-subtabs">
-                <button className="subtab-button active">Текущие ({pendingProcedures.length})</button>
-                <button className="subtab-button">Выполненные ({completedProcedures.length})</button>
+          <div className="ad-list">
+            {pendingProcedures.length === 0 ? (
+              <div className="ad-empty">
+                <div>✅</div>
+                <p>Нет активных процедур</p>
               </div>
-            </div>
-            
-            <div className="procedures-list">
-              {pendingProcedures.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">✅</div>
-                  <p>Нет активных процедур</p>
-                  <p className="empty-subtitle">Все процедуры выполнены</p>
-                </div>
-              ) : (
-                pendingProcedures.map((procedure) => (
-                  <Card key={procedure.id} className="procedure-card" hoverable>
-                    <div className="procedure-header">
-                      <h4 className="procedure-name">{procedure.name}</h4>
-                      <span className={`procedure-status ${getStatusColor(procedure.status)}`}>
-                        {getStatusText(procedure.status)}
-                      </span>
+            ) : (
+              pendingProcedures.map((procedure) => (
+                <React.Fragment key={procedure.id}>
+                  <div 
+                    className={`ad-procedure-item ${getProcedureStatusClass(procedure.status)} ${expandedProcedureId === procedure.id ? 'expanded' : ''}`}
+                    onClick={() => setExpandedProcedureId(prev => prev === procedure.id ? null : procedure.id)}
+                  >
+                    <div className="ad-item-header">
+                      <div className="ad-item-title">{procedure.name}</div>
+                      <div className={`ad-item-status ${getProcedureStatusClass(procedure.status)}`}>
+                        {getProcedureStatusText(procedure.status)}
+                      </div>
                     </div>
                     
-                    <div className="procedure-body">
+                    <div className="ad-item-body">
                       {procedure.description && (
-                        <p className="procedure-description">{procedure.description}</p>
+                        <div className="ad-item-desc">
+                          {procedure.description.length > 60 
+                            ? `${procedure.description.substring(0, 60)}...` 
+                            : procedure.description}
+                        </div>
                       )}
                       
-                      <div className="procedure-details">
-                        <div className="detail-item">
-                          <span className="detail-label">Время:</span>
-                          <span className="detail-value">{formatTime(procedure.scheduled_time)}</span>
+                      <div className="ad-item-meta">
+                        <div>⏰ {formatDateTime(procedure.scheduled_time)}</div>
+                        {procedure.dosage && <div>💊 {procedure.dosage}</div>}
+                        {procedure.frequency && <div>🔄 {procedure.frequency}</div>}
+                      </div>
+                    </div>
+                    
+                    <div className="ad-item-toggle">
+                      {expandedProcedureId === procedure.id ? '▴' : '▾'}
+                    </div>
+                  </div>
+                  
+                  {expandedProcedureId === procedure.id && (
+                    <div className="ad-procedure-detail">
+                      <div className="ad-detail-row">
+                        <span className="ad-detail-label">Полное описание:</span>
+                        <span className="ad-detail-value">{procedure.description || '—'}</span>
+                      </div>
+                      {procedure.notes && (
+                        <div className="ad-detail-row">
+                          <span className="ad-detail-label">Примечания:</span>
+                          <span className="ad-detail-value">{procedure.notes}</span>
                         </div>
-                        {procedure.dosage && (
-                          <div className="detail-item">
-                            <span className="detail-label">Дозировка:</span>
-                            <span className="detail-value">{procedure.dosage}</span>
-                          </div>
-                        )}
-                        {procedure.frequency && (
-                          <div className="detail-item">
-                            <span className="detail-label">Периодичность:</span>
-                            <span className="detail-value">{procedure.frequency}</span>
-                          </div>
-                        )}
+                      )}
+                      <div className="ad-detail-row">
+                        <span className="ad-detail-label">Статус:</span>
+                        <span className={`ad-detail-value ${getProcedureStatusClass(procedure.status)}`}>
+                          {getProcedureStatusText(procedure.status)}
+                        </span>
                       </div>
                       
-                      {procedure.notes && (
-                        <div className="procedure-notes">
-                          <strong>Примечания:</strong> {procedure.notes}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="procedure-actions">
-                      {procedure.status === 'SCHEDULED' && (
-                        <>
-                          <Button
-                            variant="warning"
-                            size="sm"
-                            onClick={() => handleProcedureStatusChange(procedure.id!, 'IN_PROGRES')}
-                            fullWidth
+                      <div className="ad-procedure-actions">
+                        {procedure.status === 'SCHEDULED' && (
+                          <>
+                            <button 
+                              className="ad-btn ad-btn-warning" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleProcedureStatusChange(procedure.id!, 'IN_PROGRES');
+                              }}
+                            >
+                              Начать
+                            </button>
+                            <button 
+                              className="ad-btn ad-btn-success" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleProcedureStatusChange(procedure.id!, 'COMPLETED');
+                              }}
+                            >
+                              Завершить
+                            </button>
+                          </>
+                        )}
+                        
+                        {procedure.status === 'IN_PROGRES' && (
+                          <button 
+                            className="ad-btn ad-btn-success" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProcedureStatusChange(procedure.id!, 'COMPLETED');
+                            }}
                           >
-                            Начать процедуру
-                          </Button>
-                          <Button
-                            variant="success"
-                            size="sm"
-                            onClick={() => handleProcedureStatusChange(procedure.id!, 'COMPLETED')}
-                            fullWidth
-                          >
-                            Завершить
-                          </Button>
-                        </>
-                      )}
-                      
-                      {procedure.status === 'IN_PROGRES' && (
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => handleProcedureStatusChange(procedure.id!, 'COMPLETED')}
-                          fullWidth
-                        >
-                          Завершить процедуру
-                        </Button>
-                      )}
+                            Завершить процедуру
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="procedure-time">
-                      <span className="time-icon">⏰</span>
-                      <span className="time-text">
-                        Начало: {formatDate(procedure.scheduled_time)} в {formatTime(procedure.scheduled_time)}
-                      </span>
-                    </div>
-                  </Card>
-                ))
-              )}
-            </div>
+                  )}
+                </React.Fragment>
+              ))
+            )}
             
             {pendingProcedures.length > 0 && (
-              <div className="procedures-summary">
-                <div className="summary-item">
-                  <span className="summary-label">Ожидают выполнения:</span>
-                  <span className="summary-value">
-                    {procedures.filter(p => p.status === 'SCHEDULED').length}
-                  </span>
+              <div className="ad-summary">
+                <div className="ad-summary-item">
+                  <span>Запланировано:</span>
+                  <span>{procedures.filter(p => p.status === 'SCHEDULED').length}</span>
                 </div>
-                <div className="summary-item">
-                  <span className="summary-label">В процессе:</span>
-                  <span className="summary-value">
-                    {procedures.filter(p => p.status === 'IN_PROGRES').length}
-                  </span>
+                <div className="ad-summary-item">
+                  <span>В процессе:</span>
+                  <span>{procedures.filter(p => p.status === 'IN_PROGRES').length}</span>
                 </div>
-                <div className="summary-item">
-                  <span className="summary-label">Выполнено:</span>
-                  <span className="summary-value">
-                    {procedures.filter(p => p.status === 'COMPLETED').length}
-                  </span>
+                <div className="ad-summary-item">
+                  <span>Выполнено:</span>
+                  <span>{procedures.filter(p => p.status === 'COMPLETED').length}</span>
                 </div>
               </div>
             )}
           </div>
         )}
       </div>
-      
-      {activeTab === 'procedures' && pendingProcedures.length > 0 && (
-        <div className="procedures-progress">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill"
-              style={{ 
-                width: `${(completedProcedures.length / procedures.length) * 100}%` 
-              }}
-            ></div>
-          </div>
-          <div className="progress-text">
-            Выполнено: {completedProcedures.length} из {procedures.length} процедур
-          </div>
-        </div>
-      )}
     </div>
   );
 };

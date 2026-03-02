@@ -1,455 +1,526 @@
 .room-display-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #1e293b;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
-.appointments-display-section {
-  margin-top: 30px;
-  animation: slideIn 0.5s ease-out;
-}
-
-.appointments-display-section h3 {
-  color: #495057;
-  margin-bottom: 15px;
-  font-size: 1.5rem;
-  text-align: center;
-}
-/* Header */
-.page-header {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  padding: 20px 30px;
-  color: white;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.header-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.clinic-name {
-  font-size: 2.5rem;
-  margin: 0 0 10px 0;
-  text-align: center;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.page-title {
-  font-size: 1.8rem;
-  margin: 0 0 15px 0;
-  opacity: 0.9;
-  font-weight: 500;
-  text-align: center;
-}
-
-.api-status {
-  display: inline-block;
-  padding: 8px 20px;
-  border-radius: 25px;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-top: 5px;
-  transition: all 0.3s ease;
-}
-
-.api-status.connected {
-  background: rgba(40, 167, 69, 0.2);
-  color: #28a745;
-  border: 2px solid rgba(40, 167, 69, 0.3);
-}
-
-.api-status.disconnected {
-  background: rgba(220, 53, 69, 0.2);
-  color: #dc3545;
-  border: 2px solid rgba(220, 53, 69, 0.3);
-}
-
-.header-info {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  font-size: 1.1rem;
-  opacity: 0.9;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 15px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-}
-
-/* Main content */
-.page-main {
-  flex: 1;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 30px;
-}
-
-/* Start section */
-.start-section {
-  background: white;
-  border-radius: 20px;
-  padding: 40px;
-  margin-bottom: 30px;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-  text-align: center;
-}
-
-.instruction-text {
-  margin-bottom: 30px;
-}
-
-.instruction-text h3 {
-  font-size: 1.8rem;
-  color: #495057;
-  margin-bottom: 10px;
-}
-
-.instruction-text p {
-  font-size: 1.2rem;
-  color: #6c757d;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.button-container {
-  margin: 30px 0;
-}
-
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 20px;
-  border-radius: 10px;
-  border: 2px solid #f5c6cb;
-  margin: 20px auto;
-  max-width: 600px;
-  text-align: center;
-  animation: shake 0.5s ease;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
-}
-
-.error-hint {
-  font-size: 0.9rem;
-  opacity: 0.8;
-  margin-top: 10px;
-}
-
-.stats-info {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 2px solid #e9ecef;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #495057;
-}
-
-.stat-value.ready {
-  color: #28a745;
-}
-
-/* Rooms section */
-.rooms-section {
-  background: white;
-  border-radius: 20px;
-  padding: 40px;
-  margin-bottom: 30px;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-}
-
-.section-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.section-header h3 {
-  font-size: 1.8rem;
-  color: #495057;
-  margin-bottom: 10px;
-}
-
-.section-subtitle {
-  font-size: 1.2rem;
-  color: #6c757d;
-}
-
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 30px;
-}
-
-.room-container {
-  transition: transform 0.3s ease;
-}
-
-.room-container:hover {
-  transform: translateY(-5px);
-}
-
-.room-card {
-  background: #f8f9fa;
-  border-radius: 15px;
-  padding: 25px;
-  border: 2px solid #e9ecef;
-  height: 100%;
-}
-
+/* Хедер */
 .room-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #dee2e6;
+  padding: 12px 20px;
+  background-color: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.room-title {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
-.room-icon {
-  font-size: 1.5rem;
+.clinic-logo {
+  font-size: 24px;
 }
 
-.room-title h4 {
-  font-size: 1.5rem;
-  color: #495057;
-  margin: 0;
+.clinic-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
 }
 
-.room-stats {
-  display: flex;
-  gap: 10px;
+.room-location {
+  font-size: 16px;
+  color: #64748b;
+  padding-left: 16px;
+  border-left: 1px solid #e2e8f0;
 }
 
-.bed-count {
-  background: #667eea;
-  color: white;
-  padding: 6px 15px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
+.header-center {
+  text-align: center;
 }
 
-.beds-container {
+.current-time {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  align-items: center;
 }
 
-/* Welcome section */
-.welcome-section {
-  margin-top: 30px;
-  animation: slideIn 0.5s ease-out;
+.current-time .time {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.current-time .date {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 4px;
 }
 
-/* Empty state */
-.empty-state {
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connection-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.connection-indicator.connected {
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.connection-indicator.disconnected {
+  background-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Основной контент */
+.room-main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  padding: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+}
+
+/* Панель пациентов */
+.patients-panel {
   background: white;
-  border-radius: 20px;
-  padding: 60px 40px;
-  text-align: center;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 160px);
 }
 
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
-  opacity: 0.5;
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.empty-state h3 {
-  font-size: 1.8rem;
-  color: #495057;
-  margin-bottom: 15px;
-}
-
-.empty-state p {
-  font-size: 1.2rem;
-  color: #6c757d;
-  max-width: 500px;
-  margin: 0 auto 15px;
-}
-
-.empty-hint {
-  font-size: 1rem;
-  opacity: 0.8;
-}
-
-/* Loading state */
-.loading-state {
-  background: white;
-  border-radius: 20px;
-  padding: 60px 40px;
-  text-align: center;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-}
-
-.loading-state p {
-  font-size: 1.2rem;
-  color: #6c757d;
-  margin-top: 20px;
-}
-
-/* Footer */
-.page-footer {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  padding: 20px 30px;
-  color: white;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  margin-top: auto;
-}
-
-.footer-content {
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
 }
 
-.footer-text {
+.panel-header h2 {
   margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.room-stats {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.patients-list {
+  padding: 8px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.patient-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.patient-row:hover {
+  background-color: #f8fafc;
+}
+
+.patient-row.active {
+  background-color: #dbeafe;
+  border-left: 3px solid #3b82f6;
+}
+
+.bed-col {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.name-col {
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.patient-name {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.patient-meta {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.empty-bed {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.status-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.status-col.occupied {
+  color: #10b981;
+}
+
+.status-col.empty {
+  color: #94a3b8;
+}
+
+/* Контентная панель */
+.content-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Карточка пациента */
+.patient-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  flex: 1;
+}
+
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.patient-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.patient-id {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.patient-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.info-value.status-active {
+  color: #10b981;
+}
+
+.info-value.status-archived {
+  color: #94a3b8;
+}
+
+.no-patient-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.no-patient-selected .placeholder-icon {
+  font-size: 48px;
+  opacity: 0.6;
+  margin-bottom: 16px;
+}
+
+/* Панель назначений */
+.prescriptions-panel {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 160px);
+}
+
+.prescriptions-list {
+  padding: 8px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.prescription-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 120px 40px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+}
+
+.prescription-row:hover {
+  background-color: #f8fafc;
+}
+
+.type-col {
+  font-size: 18px;
+  text-align: center;
+  color: #3b82f6;
+}
+
+.name-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prescription-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.prescription-notes {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.freq-col {
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+}
+
+.status-col {
+  display: flex;
+  justify-content: center;
+}
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-dot.active {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-dot.completed {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.status-dot.cancelled {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.empty-prescriptions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-prescriptions .placeholder-icon {
+  font-size: 48px;
+  opacity: 0.6;
+  margin-bottom: 16px;
+}
+
+/* Футер */
+.room-footer {
+  background-color: #0f172a;
+  color: #cbd5e1;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.footer-left {
   opacity: 0.9;
 }
 
-.system-info {
+.footer-right {
+  opacity: 0.7;
+}
+
+/* Состояния загрузки */
+.room-display-page.loading {
   display: flex;
-  gap: 20px;
-  font-size: 0.9rem;
-  opacity: 0.8;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f1f5f9;
 }
 
-.system-version,
-.system-mode {
-  padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+.loading-content {
+  text-align: center;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .page-header {
-    padding: 15px 20px;
+.loading-content .clinic-logo {
+  font-size: 48px;
+  margin-bottom: 24px;
+  color: #3b82f6;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Пустые состояния */
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .room-main {
+    grid-template-columns: 280px 1fr;
   }
   
-  .clinic-name {
-    font-size: 2rem;
+  .patient-info-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .page-title {
-    font-size: 1.4rem;
-  }
-  
-  .header-info {
-    flex-direction: column;
-    gap: 10px;
-    align-items: center;
-  }
-  
-  .page-main {
-    padding: 15px;
-  }
-  
-  .start-section,
-  .rooms-section {
-    padding: 25px;
-  }
-  
-  .rooms-grid {
+}
+
+@media (max-width: 900px) {
+  .room-main {
     grid-template-columns: 1fr;
   }
   
-  .stats-info {
-    flex-direction: column;
-    gap: 20px;
+  .patients-panel {
+    height: auto;
+    max-height: 40vh;
   }
   
-  .footer-content {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
+  .content-panel {
+    height: auto;
   }
   
-  .system-info {
-    flex-direction: column;
-    gap: 10px;
+  .patient-card,
+  .prescriptions-panel {
+    height: auto;
+  }
+  
+  .prescription-row {
+    grid-template-columns: 40px 1fr 100px 40px;
   }
 }
 
-@media (max-width: 480px) {
-  .clinic-name {
-    font-size: 1.6rem;
+@media (max-width: 600px) {
+  .room-header {
+    flex-direction: column;
+    gap: 12px;
   }
   
-  .instruction-text h3,
-  .section-header h3 {
-    font-size: 1.4rem;
+  .header-left {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   
-  .instruction-text p,
-  .section-subtitle {
-    font-size: 1rem;
+  .room-location {
+    padding-left: 0;
+    border-left: none;
+    margin-top: 4px;
   }
   
-  .room-card {
-    padding: 20px;
+  .patient-row {
+    grid-template-columns: 70px 1fr 30px;
+  }
+  
+  .prescription-row {
+    grid-template-columns: 35px 1fr 90px 35px;
+    padding: 10px 16px;
+  }
+  
+  .current-time .time {
+    font-size: 24px;
   }
 }

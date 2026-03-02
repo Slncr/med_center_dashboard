@@ -1,0 +1,202 @@
+/* Префикс ah- = admin header */
+.ah-header {
+  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.ah-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 72px;
+}
+
+/* Логотип и название */
+.ah-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ah-logo-section:hover {
+  opacity: 0.9;
+}
+
+.ah-logo {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.ah-title h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.ah-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+/* Навигация */
+.ah-nav {
+  flex: 1;
+  padding: 0 40px;
+}
+
+.ah-nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+.ah-nav-item {
+  margin: 0;
+}
+
+.ah-nav-link {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ah-nav-link:hover,
+.ah-nav-link:focus {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.ah-nav-link:active {
+  transform: translateY(1px);
+}
+
+/* Информация о пользователе */
+.ah-user-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ah-user-info {
+  text-align: right;
+}
+
+.ah-user-name {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ah-user-role {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ah-logout-btn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ah-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  transform: scale(1.05);
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .ah-nav {
+    padding: 0 20px;
+  }
+  
+  .ah-nav-list {
+    gap: 4px;
+  }
+  
+  .ah-nav-link {
+    padding: 8px 12px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 900px) {
+  .ah-container {
+    padding: 0 16px;
+  }
+  
+  .ah-title h1 {
+    font-size: 22px;
+  }
+  
+  .ah-subtitle {
+    display: none;
+  }
+  
+  .ah-nav {
+    display: none;
+  }
+  
+  .ah-user-name {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .ah-container {
+    height: 64px;
+  }
+  
+  .ah-logo {
+    font-size: 32px;
+  }
+  
+  .ah-title h1 {
+    font-size: 20px;
+  }
+  
+  .ah-user-section {
+    gap: 12px;
+  }
+  
+  .ah-logout-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}

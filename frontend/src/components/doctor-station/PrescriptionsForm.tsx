@@ -14,7 +14,9 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]); // ✅ Состояние для назначений
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null); // ✅ Для модалки
+  const [measurementsFrequency, setMeasurementsFrequency] = useState('1 раз в день');
 
   // Состояние для процедур
   const [procedures, setProcedures] = useState([
@@ -25,6 +27,19 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     { id: 5, name: 'Установка/контроль ПВК', selected: false, frequency: 1 },
     { id: 6, name: 'Другая процедура', selected: false, frequency: 1, customName: '' }
   ]);
+
+  const MEASUREMENT_LABELS: Record<string, string> = {
+    temperature: 'Температура',
+    pulse: 'Пульс',
+    blood_pressure: 'Артериальное давление',
+    respiration_rate: 'Частота дыхания',
+    spO2: 'SpO₂',
+    weight: 'Масса тела',
+    fluid_intake_oral: 'Выпито жидкости',
+    fluid_intake_iv: 'Введено жидкости (парентерально)',
+    urine_output: 'Суточное количество мочи',
+    bowel_movement: 'Стул'
+  };
 
   // Состояние для измерений
   const [measurements, setMeasurements] = useState({
@@ -46,7 +61,6 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     loadPatients();
   }, []);
 
-  // ✅ Эффект для загрузки назначений при выборе пациента
   useEffect(() => {
     if (selectedPatientId) {
       loadPrescriptions(selectedPatientId);
@@ -69,14 +83,12 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     }
   };
 
-  // ✅ Загрузка назначений для выбранного пациента
   const loadPrescriptions = async (patientId: number) => {
     try {
       const data = await apiService.getPrescriptions(patientId);
       setPrescriptions(data);
     } catch (err) {
       console.error('Ошибка загрузки назначений:', err);
-      // Не показываем ошибку пользователю — просто оставляем список пустым
     }
   };
 
@@ -133,7 +145,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     setSuccessMessage(null);
 
     try {
-      // === 1. Создаём ВСЕ выбранные процедуры (независимо от вкладки) ===
+      // === 1. Создаём ВСЕ выбранные процедуры ===
       const selectedProcs = procedures.filter(p => p.selected);
       for (const proc of selectedProcs) {
         await apiService.createPrescription({
@@ -146,17 +158,21 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
         });
       }
 
-      // === 2. Создаём ВСЕ выбранные измерения (независимо от вкладки) ===
+      // === 2. Создаём ВСЕ выбранные измерения ===
       const selectedMeasurements = Object.entries(measurements)
         .filter(([_, v]) => v.selected)
         .map(([key]) => key);
+
+      const translatedMeasurements = selectedMeasurements.map(key => 
+        MEASUREMENT_LABELS[key] || key
+      );
 
       if (selectedMeasurements.length > 0) {
         await apiService.createPrescription({
           patient_id: selectedPatientId,
           prescription_type: 'MEASUREMENT',
-          name: `Измерения: ${selectedMeasurements.join(', ')}`,
-          frequency: 'ежедневно',
+          name: `Измерения: ${translatedMeasurements.join(', ')}`,
+          frequency: measurementsFrequency.trim() || '1 раз в день',
           notes: notes.trim() || 'Рутинные измерения',
           status: 'ACTIVE'
         });
@@ -175,8 +191,6 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
       }
 
       setSuccessMessage('Назначения успешно созданы!');
-      
-      // ✅ После создания — перезагружаем список назначений
       await loadPrescriptions(selectedPatientId);
       
       if (onPrescriptionCreated) {
@@ -193,6 +207,16 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Обработчик открытия модалки
+  const handleOpenDetails = (prescription: Prescription) => {
+    setSelectedPrescription(prescription);
+  };
+
+  // ✅ Обработчик закрытия модалки
+  const handleCloseDetails = () => {
+    setSelectedPrescription(null);
   };
 
   if (loading && patients.length === 0) {
@@ -328,6 +352,15 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
                     </div>
                   ))}
                 </div>
+                <div className="form-group">
+                  <label>Частота выполнения измерений:</label>
+                  <input
+                    type="text"
+                    value={measurementsFrequency}
+                    onChange={(e) => setMeasurementsFrequency(e.target.value)}
+                    placeholder="Например: 3 раза в день, каждые 4 часа и т.д."
+                  />
+                </div>
               </div>
             )}
 
@@ -348,12 +381,12 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
           </form>
         </div>
 
-        {/* Правая колонка: список назначений */}
+        {/* Правая колонка: компактный список назначений */}
         <div className="prescriptions-list-column">
           <h3>📋 Назначения пациента</h3>
           
           {!selectedPatientId ? (
-            <div className="no-patient-selected">
+            <div className="pf-no-patient-selected">
               <p>Выберите пациента, чтобы увидеть его назначения</p>
             </div>
           ) : prescriptions.length === 0 ? (
@@ -361,48 +394,138 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
               <p>У пациента пока нет назначений</p>
             </div>
           ) : (
-            <div className="prescriptions-grid">
+            <div className="prescriptions-compact-list">
               {prescriptions.map(p => (
-                <div key={p.id} className={`prescription-card status-${p.status.toLowerCase()}`}>
-                  <div className="prescription-header">
+                <div 
+                  key={p.id} 
+                  className={`prescription-item status-${p.status.toLowerCase()}`}
+                  onClick={() => handleOpenDetails(p)}
+                >
+
+                  <div className="prescription-item-body">
+                    <div className="prescription-item-name">
+                      {p.name}
+                    </div>
+                    
+                    {p.frequency && (
+                      <div className="prescription-item-meta">
+                        <span className="frequency">{p.frequency}</span>
+                        {p.notes && <span className="notes-indicator">📝</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="prescription-item-header">
                     <span className={`type-badge type-${p.prescription_type.toLowerCase()}`}>
                       {p.prescription_type === 'PROCEDURE' && '💉'}
                       {p.prescription_type === 'MEASUREMENT' && '📊'}
                       {p.prescription_type === 'NOTE' && '📝'}
-                      {p.prescription_type.toLowerCase()}
                     </span>
                     <span className={`status-badge ${p.status.toLowerCase()}`}>
                       {p.status === 'ACTIVE' && 'Активно'}
-                      {p.status === 'COMPLETED' && 'Выполнено'}
-                      {p.status === 'CANCELLED' && 'Отменено'}
+                      {p.status === 'COMPLETED' && '✅'}
+                      {p.status === 'CANCELLED' && '❌'}
                     </span>
-                  </div>
-                  
-                  <div className="prescription-body">
-                    <h4>{p.name}</h4>
-                    
-                    {p.frequency && (
-                      <div className="prescription-detail">
-                        <strong>Частота:</strong> {p.frequency}
-                      </div>
-                    )}
-                    
-                    {p.notes && (
-                      <div className="prescription-detail notes">
-                        <strong>Примечания:</strong> {p.notes}
-                      </div>
-                    )}
-                    
-                    <div className="prescription-meta">
-                      <small>Создано: {new Date(p.created_at).toLocaleString('ru-RU')}</small>
-                    </div>
-                  </div>
+                  </div>                  
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* ✅ Модальное окно с детальной информацией */}
+      {selectedPrescription && (
+        <div className="modal-overlay" onClick={handleCloseDetails}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📋 Детали назначения</h3>
+              <button className="modal-close-btn" onClick={handleCloseDetails}>✕</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="prescription-detail-row">
+                <span className="label">Тип:</span>
+                <span className="value">
+                  <span className={`type-badge type-${selectedPrescription.prescription_type.toLowerCase()}`}>
+                    {selectedPrescription.prescription_type === 'PROCEDURE' && '💉 Процедура'}
+                    {selectedPrescription.prescription_type === 'MEASUREMENT' && '📊 Измерение'}
+                    {selectedPrescription.prescription_type === 'NOTE' && '📝 Примечание'}
+                  </span>
+                </span>
+              </div>
+
+              <div className="prescription-detail-row">
+                <span className="label">Название:</span>
+                <span className="value bold">{selectedPrescription.name}</span>
+              </div>
+
+              {selectedPrescription.frequency && (
+                <div className="prescription-detail-row">
+                  <span className="label">Частота:</span>
+                  <span className="value">{selectedPrescription.frequency}</span>
+                </div>
+              )}
+
+              {selectedPrescription.dosage && (
+                <div className="prescription-detail-row">
+                  <span className="label">Дозировка:</span>
+                  <span className="value">{selectedPrescription.dosage}</span>
+                </div>
+              )}
+
+              {selectedPrescription.notes && (
+                <div className="prescription-detail-row full-width">
+                  <span className="label">Примечания:</span>
+                  <div className="notes-box">
+                    {selectedPrescription.notes}
+                  </div>
+                </div>
+              )}
+
+              <div className="prescription-detail-row">
+                <span className="label">Статус:</span>
+                <span className={`status-badge ${selectedPrescription.status.toLowerCase()}`}>
+                  {selectedPrescription.status === 'ACTIVE' && 'Активно'}
+                  {selectedPrescription.status === 'COMPLETED' && 'Выполнено'}
+                  {selectedPrescription.status === 'CANCELLED' && 'Отменено'}
+                </span>
+              </div>
+
+              <div className="prescription-detail-row">
+                <span className="label">Дата создания:</span>
+                <span className="value">
+                  {new Date(selectedPrescription.created_at).toLocaleString('ru-RU')}
+                </span>
+              </div>
+
+              {selectedPrescription.start_date && (
+                <div className="prescription-detail-row">
+                  <span className="label">Дата начала:</span>
+                  <span className="value">
+                    {new Date(selectedPrescription.start_date).toLocaleString('ru-RU')}
+                  </span>
+                </div>
+              )}
+
+              {selectedPrescription.end_date && (
+                <div className="prescription-detail-row">
+                  <span className="label">Дата окончания:</span>
+                  <span className="value">
+                    {new Date(selectedPrescription.end_date).toLocaleString('ru-RU')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="modal-btn-close" onClick={handleCloseDetails}>
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

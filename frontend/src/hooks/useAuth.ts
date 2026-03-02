@@ -1,3 +1,5 @@
+// src/hooks/useAuth.ts
+
 import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { User, LoginRequest, AuthState } from '../types';
@@ -11,31 +13,48 @@ export const useAuth = () => {
     error: null
   });
 
-  const login = useCallback(async (credentials: LoginRequest): Promise<boolean> => {
+  // ✅ login теперь возвращает профиль пользователя
+  const login = useCallback(async (credentials: LoginRequest): Promise<User | null> => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const response = await apiService.login(credentials);
+      // Шаг 1: Получаем токен
+      const tokenResponse = await apiService.login(credentials);
+      const token = tokenResponse.access_token;
+      
+      // Шаг 2: Получаем профиль пользователя
+      const user = await apiService.getCurrentUser();
+      
+      // Сохраняем в localStorage
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user_profile', JSON.stringify(user));
+      
       setAuthState({
-        user: response.user,
-        token: response.access_token,
+        user,
+        token,
         isAuthenticated: true,
         isLoading: false,
         error: null
       });
-      return true;
+      
+      return user; // ✅ Возвращаем профиль для перенаправления
     } catch (err) {
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
         error: err instanceof Error ? err.message : 'Ошибка аутентификации'
       }));
-      return false;
+      
+      // Очищаем данные при ошибке
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_profile');
+      
+      return null;
     }
   }, []);
 
-  const logout = useCallback(async (): Promise<void> => {
-    await apiService.logout();
+  const logout = useCallback((): void => {
+    apiService.logout();
     setAuthState({
       user: null,
       token: null,
@@ -46,24 +65,52 @@ export const useAuth = () => {
   }, []);
 
   const checkAuth = useCallback(async (): Promise<void> => {
-    const token = apiService.getToken();
+    const token = localStorage.getItem('auth_token');
+    
     if (!token) {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-      return;
-    }
-
-    setAuthState(prev => ({ ...prev, isLoading: true }));
-    try {
-      const user = await apiService.getCurrentUser();
       setAuthState({
-        user,
-        token,
-        isAuthenticated: true,
+        user: null,
+        token: null,
+        isAuthenticated: false,
         isLoading: false,
         error: null
       });
+      return;
+    }
+
+    setAuthState(prev => ({ 
+      ...prev, 
+      token, 
+      isLoading: true 
+    }));
+
+    try {
+      // Пробуем загрузить из кэша
+      const cachedUser = localStorage.getItem('user_profile');
+      if (cachedUser) {
+        const user = JSON.parse(cachedUser);
+        setAuthState({
+          user,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        });
+      }
+      
+      // Асинхронно обновляем профиль с сервера
+      const freshUser = await apiService.getCurrentUser();
+      localStorage.setItem('user_profile', JSON.stringify(freshUser));
+      
+      setAuthState(prev => prev.isAuthenticated ? { 
+        ...prev, 
+        user: freshUser 
+      } : prev);
     } catch (err) {
-      apiService.setToken(null);
+      // При ошибке — сбрасываем только токен
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_profile');
+      
       setAuthState({
         user: null,
         token: null,

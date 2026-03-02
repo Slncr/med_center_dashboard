@@ -125,7 +125,7 @@ async def get_prescriptions_by_patient(
 ):
     prescriptions = db.query(PrescriptionModel).filter(  # ✅ Используем модель БД
         PrescriptionModel.patient_id == patient_id,
-        PrescriptionModel.status != PrescriptionStatus.CANCELLED
+        # PrescriptionModel.status != PrescriptionStatus.CANCELLED
     ).order_by(desc(PrescriptionModel.created_at)).all()
     return prescriptions  # ✅ Автоматически конвертируется в список схем
 
@@ -166,4 +166,24 @@ async def execute_prescription(
     
     db.commit()
     db.refresh(procedure)
-    return procedure  # ✅ Автоматически конвертируется в схему
+    return procedure
+
+@router.patch("/prescriptions/{prescription_id}/cancel", response_model=PrescriptionSchema)
+async def cancel_prescription(
+    prescription_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Отменить назначение"""
+    prescription = db.query(PrescriptionModel).filter(PrescriptionModel.id == prescription_id).first()
+    if not prescription:
+        raise HTTPException(status_code=404, detail="Назначение не найдено")
+    
+    if prescription.status == PrescriptionStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="Назначение уже отменено")
+    
+    prescription.status = PrescriptionStatus.CANCELLED
+    prescription.completed_at = datetime.utcnow()
+    db.commit()
+    db.refresh(prescription)
+    return prescription

@@ -1,295 +1,724 @@
+/* Префикс dd- = doctor dashboard */
 .doctor-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Хедер */
 .doctor-header {
-  background: white;
-  padding: 25px 30px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-  border-bottom: 3px solid #2196F3;
+  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
+  color: white;
+  padding: 20px 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.header-content {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .header-content h1 {
-  margin: 0 0 20px 0;
-  color: #2c3e50;
-  font-size: 2rem;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .header-info {
   display: flex;
-  gap: 30px;
+  gap: 24px;
+  margin-top: 8px;
 }
 
 .info-item {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 20px;
-  background: #e3f2fd;
-  border-radius: 10px;
-  border: 1px solid #bbdefb;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .info-label {
-  font-weight: 500;
-  color: #1565c0;
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 4px;
 }
 
 .info-value {
-  font-weight: bold;
-  color: #0d47a1;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
-.info-item.connected .info-value {
-  color: #2e7d32;
-}
-
-.info-item.disconnected .info-value {
-  color: #c62828;
-}
-
+/* Навигация */
 .doctor-nav {
-  display: flex;
   background: white;
-  padding: 0 30px;
-  border-bottom: 1px solid #e0e0e0;
-  gap: 10px;
-  overflow-x: auto;
+  padding: 0 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 72px;
+  z-index: 900;
 }
 
 .nav-button {
-  padding: 18px 30px;
   background: none;
   border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #546e7a;
+  padding: 16px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #64748b;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.3s ease;
+  position: relative;
+  transition: all 0.2s;
 }
 
 .nav-button:hover {
-  background: #f5f5f5;
-  color: #37474f;
+  color: #334155;
 }
 
 .nav-button.active {
-  color: #2196F3;
-  border-bottom-color: #2196F3;
-  background: #e3f2fd;
+  color: #1e40af;
 }
 
+.nav-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #1e40af;
+  border-radius: 2px 2px 0 0;
+}
+
+/* Основной контент */
 .doctor-main {
-  padding: 30px;
-  max-width: 1400px;
+  flex: 1;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 24px 32px;
   width: 100%;
+}
+
+/* Вкладка "Обзор" */
+.overview-container {
+  padding: 20px 0;
 }
 
 .overview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 25px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
 }
 
 .stat-card {
   background: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-  text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border-top: 5px solid #2196F3;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card h3 {
-  margin: 0 0 15px 0;
-  color: #546e7a;
-  font-size: 1.1rem;
-  font-weight: 500;
+  margin: 0 0 12px 0;
+  color: #4a5568;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .stat-value {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #2196F3;
+  font-size: 42px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+  margin: 8px 0;
+}
+
+.stat-desc {
+  color: #64748b;
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+/* Цветовые варианты карточек */
+.stat-card.primary {
+  border-top: 4px solid #3b82f6;
+}
+
+.stat-card.warning {
+  border-top: 4px solid #f59e0b;
+}
+
+.stat-card.info {
+  border-top: 4px solid #0ea5e9;
+}
+
+.stat-card.success {
+  border-top: 4px solid #10b981;
+}
+
+.stat-card.neutral {
+  border-top: 4px solid #64748b;
+}
+
+/* Карточка списка пациентов */
+.stat-card.patients-list-card {
+  border-top: 4px solid #8b5cf6;
+  padding: 20px;
+}
+
+.patients-mini-list {
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.patient-mini-item {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #f8fafc;
   margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.stat-change {
-  font-size: 0.9rem;
-  color: #78909c;
-  padding: 5px 10px;
-  background: #f5f5f5;
-  border-radius: 15px;
-  display: inline-block;
+.patient-mini-item:hover {
+  background: #edf5ff;
+  transform: translateX(4px);
 }
 
-.patients-list h2 {
-  color: #2c3e50;
-  margin-bottom: 25px;
-  font-size: 1.8rem;
+.patient-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.patient-meta {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.view-all-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: #dbeafe;
+  color: #1e40af;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-all-btn:hover {
+  background: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+/* Ошибки и загрузка статистики */
+.stats-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 16px 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-left: 4px solid #ef4444;
+}
+
+.error-icon {
+  font-size: 24px;
+}
+
+.retry-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn.small {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.retry-btn:hover {
+  background: #b91c1c;
+}
+
+.stats-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.stats-loading p {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* Вкладка "Пациенты" */
+.patients-view {
+  padding: 20px 0;
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.view-header h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.view-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.refresh-btn {
+  background: #f1f5f9;
+  color: #4a5568;
+  border: 1px solid #cbd5e1;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #e2e8f0;
+  transform: rotate(15deg);
 }
 
 .patients-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
 }
 
 .patient-card {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
 }
 
-.patient-card h3 {
-  margin: 0 0 15px 0;
-  color: #37474f;
-  font-size: 1.3rem;
+.patient-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
-.patient-info {
-  color: #546e7a;
-  font-size: 0.95rem;
+.patient-card.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 20px;
-  line-height: 1.5;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.status-active {
-  color: #2e7d32;
+.patient-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.patient-status {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.patient-status.status-active {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.patient-status.status-archived,
+.patient-status.status-discharged {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.detail-label {
+  color: #64748b;
   font-weight: 500;
-  background: #e8f5e9;
-  padding: 2px 8px;
-  border-radius: 10px;
+  font-size: 15px;
 }
 
-.view-button {
-  background: #2196F3;
+.detail-value {
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.open-card-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.open-card-btn:hover {
+  background: linear-gradient(135deg, #1a325a 0%, #162647 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Пустые состояния */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.empty-state div {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-state p {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #4a5568;
+}
+
+.empty-hint {
+  font-size: 17px;
+  opacity: 0.8;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Вкладка "Назначения" */
+.prescriptions-view {
+  padding: 20px 0;
+}
+
+/* .prescriptions-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+} */
+
+.prescriptions-form-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.prescriptions-list-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  height: fit-content;
+}
+
+/* .select-patient-hint {
+  background: #f0f9ff;
+  border-radius: 16px;
+  padding: 40px 30px;
+  text-align: center;
+  border: 2px dashed #93c5fd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.select-patient-hint p {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0 0 24px 0;
+}
+
+.select-patient-hint .hint-icon {
+  font-size: 64px;
+  color: #3b82f6;
+  opacity: 0.7;
+} */
+
+/* Вкладка "Отчёты" */
+.reports-view {
+  padding: 20px 0;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 28px;
+  margin-bottom: 40px;
+}
+
+.report-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+  border-top: 4px solid #8b5cf6;
+}
+
+.report-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.report-card h3 {
+  margin: 0 0 16px 0;
+  color: #1e293b;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.report-card p {
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.report-btn {
+  background: #f0f9ff;
+  color: #1e40af;
+  border: 2px solid #93c5fd;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
   width: 100%;
 }
 
-.view-button:hover {
-  background: #1976d2;
+.report-btn:hover {
+  background: #dbeafe;
+  transform: translateY(-2px);
 }
 
-.prescriptions-view,
-.reports-view {
-  background: white;
-  border-radius: 15px;
-  padding: 40px;
+.reports-footer {
   text-align: center;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+  padding: 30px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-top: 20px;
 }
 
-.prescriptions-view h2,
-.reports-view h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
+.reports-footer p {
+  color: #64748b;
+  font-size: 17px;
+  margin: 0 0 12px 0;
 }
 
-.prescriptions-view p,
-.reports-view p {
-  color: #546e7a;
-  font-size: 1.1rem;
+.report-note {
+  font-size: 15px;
+  opacity: 0.8;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-.doctor-footer {
-  background: white;
-  padding: 20px 30px;
-  text-align: center;
-  color: #78909c;
-  border-top: 1px solid #e0e0e0;
-  margin-top: 30px;
-}
-
-@media (max-width: 768px) {
-  .doctor-header {
-    padding: 20px;
-  }
-  
-  .header-info {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .doctor-nav {
-    padding: 0 15px;
-  }
-  
-  .nav-button {
-    padding: 15px 20px;
-    font-size: 1rem;
-  }
-  
-  .doctor-main {
-    padding: 20px;
-  }
-  
-  .overview-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .patients-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Модальное окно */
+/* Модальное окно пациента */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
   padding: 20px;
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  max-width: 900px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-width: 1200px;
+  max-height: 92vh;
 }
 
-/* Кнопка просмотра карты */
-.view-button {
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.2s;
+/* Футер */
+.doctor-footer {
+  background: rgba(15, 26, 45, 0.95);
+  color: #94a3b8;
+  padding: 24px 32px;
+  text-align: center;
+  border-top: 1px solid rgba(56, 75, 101, 0.4);
+  font-size: 16px;
+  margin-top: auto;
 }
 
-.view-button:hover {
-  background: #1976D2;
+.footer-version {
+  opacity: 0.8;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+  .prescriptions-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-info {
+    gap: 16px;
+  }
+  
+  .info-value {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .doctor-header,
+  .doctor-nav,
+  .doctor-main,
+  .doctor-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  .header-content h1 {
+    font-size: 24px;
+  }
+  
+  .nav-button {
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+  
+  .stat-value {
+    font-size: 36px;
+  }
+  
+  .overview-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .doctor-header {
+    padding: 16px 20px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+  
+  .info-item {
+    align-items: flex-start;
+  }
+  
+  .info-label {
+    margin-bottom: 2px;
+  }
+  
+  .nav-button {
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+  
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-value {
+    font-size: 32px;
+  }
+  
+  .patient-card {
+    padding: 20px;
+  }
+  
+  .patient-name {
+    font-size: 20px;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+  }
 }
