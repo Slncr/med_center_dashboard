@@ -12,6 +12,7 @@ const RoomDisplayPage: React.FC = () => {
   const [apiConnected, setApiConnected] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Обновление времени каждую секунду
   useEffect(() => {
@@ -26,9 +27,11 @@ const RoomDisplayPage: React.FC = () => {
 
   const loadData = async () => {
     try {
-      await apiService.healthCheck();
+      // Проверка подключения к API
+      // await apiService.healthCheck();
       setApiConnected(true);
 
+      // Загрузка данных параллельно
       const [roomsData, patientsData] = await Promise.all([
         apiService.getRooms(),
         apiService.getPatients()
@@ -37,29 +40,18 @@ const RoomDisplayPage: React.FC = () => {
       setRooms(roomsData);
       setPatients(patientsData);
 
-      // Автоматически выбираем первую палату с пациентами
-      const roomWithPatients = roomsData.find(r => 
-        r.beds.some(b => b.patient)
-      );
-      if (roomWithPatients) {
-        setActiveRoomId(roomWithPatients.id);
-        const firstBed = roomWithPatients.beds.find(b => b.patient);
-        if (firstBed) {
-          const patient = patientsData.find(p => p.id === firstBed.patient?.id);
-          if (patient) {
-            handlePatientSelect(patient.id);
-          }
-        }
+      // ✅ Автоматически выбираем первую палату (не только с пациентами)
+      if (roomsData.length > 0) {
+        setActiveRoomId(roomsData[0].id);
       }
     } catch (err) {
       console.error('Ошибка загрузки данных:', err);
       setApiConnected(false);
+      setError('Ошибка подключения к серверу. Проверьте сеть и перезагрузите страницу.');
     } finally {
       setLoading(false);
     }
   };
-
-  const [error, setError] = useState<string | null>(null);
 
   const handlePatientSelect = async (patientId: number) => {
     setSelectedPatientId(patientId);
@@ -72,16 +64,23 @@ const RoomDisplayPage: React.FC = () => {
     } catch (err) {
       console.error('Ошибка загрузки назначений:', err);
       setPrescriptions([]);
+      setError('Ошибка загрузки назначений');
     }
   };
 
-  const getPatientByBedId = (bedId: number): Patient | undefined => {
-    const bed = rooms.flatMap(r => r.beds).find(b => b.id === bedId);
-    return bed?.patient?.id ? patients.find(p => p.id === bed.patient?.id) : undefined;
+  // ✅ Поиск пациента по bed_id (корректная связь)
+  const getPatientForBed = (bedId: number): Patient | undefined => {
+    return patients.find(p => p.bed_id === bedId);
   };
 
   const getRoomById = (roomId: number): Room | undefined => {
     return rooms.find(r => r.id === roomId);
+  };
+
+  const handleRoomSelect = (roomId: number) => {
+    setActiveRoomId(roomId);
+    setSelectedPatientId(null);
+    setPrescriptions([]);
   };
 
   if (loading) {
@@ -90,6 +89,22 @@ const RoomDisplayPage: React.FC = () => {
         <div className="loading-content">
           <div className="clinic-logo">🏥</div>
           <div className="spinner"></div>
+          <p>Загрузка данных...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="room-display-page error">
+        <div className="error-content">
+          <div className="error-icon">⚠️</div>
+          <h2>Ошибка</h2>
+          <p>{error}</p>
+          <button onClick={loadData} className="retry-btn">
+            Повторить попытку
+          </button>
         </div>
       </div>
     );
@@ -105,9 +120,23 @@ const RoomDisplayPage: React.FC = () => {
         <div className="header-left">
           <div className="clinic-logo">🏥</div>
           <div className="clinic-name">Медицинский центр</div>
-          {activeRoom && (
-            <div className="room-location">Палата №{activeRoom.number}</div>
-          )}
+          
+          {/* ✅ Выбор палаты */}
+          <div className="room-selector">
+            <label htmlFor="room-select" className="room-select-label">Палата:</label>
+            <select
+              id="room-select"
+              value={activeRoomId || ''}
+              onChange={(e) => handleRoomSelect(Number(e.target.value))}
+              className="room-select"
+            >
+              {rooms.map(room => (
+                <option key={room.id} value={room.id}>
+                  №{room.number} {room.name ? `(${room.name})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         
         <div className="header-center">
@@ -132,7 +161,9 @@ const RoomDisplayPage: React.FC = () => {
             <h2>Пациенты</h2>
             {activeRoom && (
               <div className="room-stats">
-                {activeRoom.beds.filter(b => b.patient?.id).length} из {activeRoom.beds.length}
+                {activeRoom.beds.filter(bed => 
+                  patients.some(p => p.bed_id === bed.id)
+                ).length} из {activeRoom.beds.length}
               </div>
             )}
           </div>
@@ -140,7 +171,7 @@ const RoomDisplayPage: React.FC = () => {
           <div className="patients-list">
             {activeRoom ? (
               activeRoom.beds.map(bed => {
-                const patient = getPatientByBedId(bed.id);
+                const patient = getPatientForBed(bed.id);
                 return (
                   <div 
                     key={bed.id} 
@@ -166,8 +197,10 @@ const RoomDisplayPage: React.FC = () => {
                   </div>
                 );
               })
+            ) : rooms.length === 0 ? (
+              <div className="empty-state">Нет данных о палатах</div>
             ) : (
-              <div className="empty-state">Нет активных палат</div>
+              <div className="empty-state">Выберите палату из списка выше</div>
             )}
           </div>
         </div>
@@ -243,10 +276,16 @@ const RoomDisplayPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : selectedPatientId ? (
               <div className="empty-prescriptions">
                 <div className="placeholder-icon">📋</div>
-                <p>Нет активных назначений</p>
+                <p>Нет назначений</p>
+                <p className="hint">Обратитесь к лечащему врачу</p>
+              </div>
+            ) : (
+              <div className="empty-prescriptions">
+                <div className="placeholder-icon">👈</div>
+                <p>Выберите пациента для просмотра назначений</p>
               </div>
             )}
           </div>

@@ -7,6 +7,8 @@ import NurseDashboardPage from './pages/NurseDashboardPage';
 import DoctorDashboardPage from './pages/DoctorDashboardPage';
 import RoomDisplayPage from './pages/RoomDisplayPage';
 import MainLayout from './MainLayout';
+import ArchivedPatients from './components/nurse-station/ArchivedPatients';
+import NotificationToast from './components/common/NotificationToast';
 
 // Защита маршрутов
 const ProtectedRoute: React.FC<{ 
@@ -43,6 +45,7 @@ const ProtectedRoute: React.FC<{
 const App: React.FC = () => {
   return (
     <Router>
+      <NotificationToast />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         
@@ -86,6 +89,14 @@ const App: React.FC = () => {
         {/* Редиректы по умолчанию */}
         <Route path="/dashboard" element={<Navigate to="/register" replace />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route 
+          path="/archived" 
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'nurse', 'doctor']}>
+              <ArchivedPatients />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );

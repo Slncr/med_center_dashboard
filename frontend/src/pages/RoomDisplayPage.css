@@ -219,6 +219,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  min-height: 107px;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #e2e8f0;
@@ -392,6 +393,73 @@
   padding: 40px 20px;
 }
 
+.room-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 24px;
+}
+
+.room-select-label {
+  color: rgba(247, 0, 0, 0.9);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.room-select {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(247, 0, 0, 0.9);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.room-select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.room-select option {
+  background: #1a2a4a;
+  color: white;
+}
+
+/* Адаптивность для выбора палаты */
+@media (max-width: 900px) {
+  .room-selector {
+    margin-left: 16px;
+  }
+  
+  .room-select-label {
+    font-size: 15px;
+  }
+  
+  .room-select {
+    padding: 7px 14px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 600px) {
+  .room-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .room-select {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+
 .empty-prescriptions .placeholder-icon {
   font-size: 48px;
   opacity: 0.6;
@@ -457,6 +525,7 @@
   text-align: center;
   color: #64748b;
 }
+
 
 /* Адаптивность */
 @media (max-width: 1200px) {

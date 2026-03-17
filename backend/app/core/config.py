@@ -25,9 +25,10 @@ class Settings(BaseSettings):
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 40
     
-    # Redis
-    REDIS_URL: str = "redis://localhost:6379"
-    
+    # Redis 
+    REDIS_URL: str = "redis://redis:6379/0"
+    CELERY_BROKER_URL: str = "redis://redis:6379/1"
+    CELERY_RESULT_BACKEND: str = "redis://redis:6379/2"    
     # Security
     SECRET_KEY: str = "Gp6qPUYuc6LKlCvGwOuDGLQhXx4jDNqkjugTOUfKdFG"
     ALGORITHM: str = "HS256"

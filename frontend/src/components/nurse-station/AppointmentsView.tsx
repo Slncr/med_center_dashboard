@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Patient, Prescription } from '../../types';
+
 import './AppointmentsView.css';
 
 interface AppointmentsViewProps {
   patientId: number | null;
   onPatientSelect: (patientId: number) => void;
+  // ✅ Добавляем обязательные пропсы для управления извне
+  prescriptions: Prescription[];
+  loading: boolean;
+  onPrescriptionsUpdate: () => void;
 }
 
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatientSelect }) => {

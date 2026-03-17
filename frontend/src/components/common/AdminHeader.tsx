@@ -16,8 +16,8 @@ const AdminHeader: React.FC = () => {
     { label: '👩‍⚕️ Медсёстры', path: '/nurse/appointments' },
     { label: '👨‍⚕️ Врачи', path: '/doctor/patients' },
     { label: '🛏️ Палаты', path: '/room' },
-    { label: '👥 Пациенты', path: '/doctor/patients' },
-    { label: '📋 Назначения', path: '/nurse/appointments' },
+    // { label: '👥 Пациенты', path: '/doctor/patients' },
+    // { label: '📋 Назначения', path: '/nurse/appointments' },
     { label: '⚙️ Персонал', path: '/register' },
   ];
 

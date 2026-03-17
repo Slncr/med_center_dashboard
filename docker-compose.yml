@@ -31,6 +31,24 @@ services:
       timeout: 5s
       retries: 5
 
+  celery:
+    build: ./backend
+    command: celery -A app.tasks.celery_worker.celery_app worker --loglevel=info --pool=solo
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/med_center
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ONE_C_URL=http://host.docker.internal:8080/api  # URL вашей 1С
+    networks:
+      - default
+
   backend:
     build: ./backend
     ports:
@@ -43,6 +61,8 @@ services:
     environment:
       DATABASE_URL: postgresql://med_user:med_pass@postgres:5432/med_center
       REDIS_URL: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379
+      CELERY_RESULT_BACKEND: redis://redis:6379
       SECRET_KEY: development-secret-key-change-in-production
       DEBUG: "True"
       CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"

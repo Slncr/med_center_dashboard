@@ -224,6 +224,63 @@
   opacity: 0.8;
 }
 
+/* Статус вебсокета */
+.ws-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  border-left: 3px solid #3b82f6;
+}
+
+.ws-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.ws-error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border-left: 4px solid #ef4444;
+  font-weight: 500;
+}
+
+.ws-error-banner button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.ws-error-banner button:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
   .dashboard-header {
     flex-direction: column;

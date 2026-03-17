@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePatients } from '../hooks/usePatients';
 import { apiService } from '../services/api';
-import { Patient, Prescription } from '../types';
+import { Patient, Prescription, Room } from '../types';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import PatientCard from '../components/nurse-station/PatientCard';
 import PrescriptionsForm from '../components/doctor-station/PrescriptionsForm';
@@ -16,6 +16,7 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
   const [activeView, setActiveView] = useState<'overview' | 'patients' | 'prescriptions' | 'reports'>('overview');
   const { patients, loading: patientsLoading, refetch: refetchPatients, error: patientsError } = usePatients();
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [rooms, setRooms] = useState<Room[]>([]);
   
   // Статистика для вкладки "Обзор"
   const [stats, setStats] = useState({
@@ -27,6 +28,19 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
   });
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+
+  // ✅ Загружаем палаты при монтировании
+  useEffect(() => {
+    const loadRooms = async () => {
+      try {
+        const roomsData = await apiService.getRooms();
+        setRooms(roomsData);
+      } catch (err) {
+        console.error('Error loading rooms:', err);
+      }
+    };
+    loadRooms();
+  }, []);
 
   useEffect(() => {
     if (patients.length === 0) return;
@@ -85,8 +99,7 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
           }
         });
 
-        // Считаем пациентов, ожидающих осмотра (нет наблюдений за последние 24 часа)
-        // Для упрощения считаем всех пациентов без назначений как ожидающих осмотра
+        // Считаем пациентов, ожидающих осмотра (нет назначений за последние 24 часа)
         const patientsNeedingExamination = patients.filter(p => {
           const hasPrescriptions = allPrescriptions.some(pr => pr.patient_id === p.id);
           return !hasPrescriptions;
@@ -109,6 +122,20 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
 
     loadStats();
   }, [patients]);
+
+  // ✅ Исправленная функция поиска койки и палаты
+  const getPatientRoomAndBed = (patient: Patient) => {
+    if (!patient.bed_id) return { room: undefined, bed: undefined };
+    
+    // Ищем койку по ID во всех палатах
+    for (const room of rooms) {
+      const bed = room.beds.find(b => b.id === patient.bed_id);
+      if (bed) {
+        return { room, bed };
+      }
+    }
+    return { room: undefined, bed: undefined };
+  };
 
   const closePatientCard = () => { 
     setSelectedPatientId(null);
@@ -133,10 +160,10 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
   if (patientsError) {
     return (
       <div className="error-container">
-        <h2>Ошибка загрузки данных</h2>
-        <p>{patientsError}</p>
-        <button onClick={refetchPatients} className="retry-btn">Повторить</button>
-      </div>
+      <h2>Ошибка загрузки данных</h2>
+      <p>{patientsError}</p>
+      <button onClick={refetchPatients} className="retry-btn">Повторить</button>
+    </div>
     );
   }
 
@@ -238,19 +265,23 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
                 <div className="stat-card patients-list-card">
                   <h3>Последние пациенты</h3>
                   <div className="patients-mini-list">
-                    {patients.slice(0, 5).map(patient => (
-                      <div 
-                        key={patient.id} 
-                        className="patient-mini-item"
-                        onClick={() => setSelectedPatientId(patient.id)}
-                      >
-                        <div className="patient-name">{patient.full_name}</div>
-                        <div className="patient-meta">
-                          Койка #{patient.bed_id || '?'} • 
-                          {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                    {patients.slice(0, 5).map(patient => {
+                      const { room, bed } = getPatientRoomAndBed(patient);
+                      return (
+                        <div 
+                          key={patient.id} 
+                          className="patient-mini-item"
+                          onClick={() => setSelectedPatientId(patient.id)}
+                        >
+                          <div className="patient-name">{patient.full_name}</div>
+                          <div className="patient-meta">
+                            Койка #{bed ? bed.number : patient.bed_id || '?'} • 
+                            {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                    
                     {patients.length === 0 && (
                       <div className="empty-state">Нет активных пациентов</div>
                     )}
@@ -286,41 +317,47 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
               </div>
             ) : (
               <div className="patients-grid">
-                {patients.map(patient => (
-                  <div 
-                    key={patient.id} 
-                    className={`patient-card ${selectedPatientId === patient.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedPatientId(patient.id)}
-                  >
-                    <div className="patient-header">
-                      <div className="patient-name">{patient.full_name}</div>
-                      <div className={`patient-status status-${patient.status}`}>
-                        {patient.status === 'active' ? 'Активный' : 'Выписан'}
+                {patients.map(patient => {
+                  const { room, bed } = getPatientRoomAndBed(patient);
+                  return (
+                    <div 
+                      key={patient.id} 
+                      className={`patient-card ${selectedPatientId === patient.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedPatientId(patient.id)}
+                    >
+                      <div className="patient-header">
+                        <div className="patient-name">{patient.full_name}</div>
+                        <div className={`patient-status status-${patient.status}`}>
+                          {patient.status === 'active' ? 'Активный' : 'Выписан'}
+                        </div>
                       </div>
+                      
+                      <div className="patient-details">
+                        <div className="detail-row">
+                          <span className="detail-label">Койка:</span>
+                          <span className="detail-value">
+                            #{bed ? bed.number : patient.bed_id || '—'} 
+                            {room && ` (палата №${room.number})`}
+                          </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Поступил:</span>
+                          <span className="detail-value">
+                            {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                          </span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Подразделение:</span>
+                          <span className="detail-value">{patient.department_name || '—'}</span>
+                        </div>
+                      </div>
+                      
+                      <button className="open-card-btn">
+                        Открыть карту пациента →
+                      </button>
                     </div>
-                    
-                    <div className="patient-details">
-                      <div className="detail-row">
-                        <span className="detail-label">Койка:</span>
-                        <span className="detail-value">#{patient.bed_id || '—'}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Поступил:</span>
-                        <span className="detail-value">
-                          {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Подразделение:</span>
-                        <span className="detail-value">{patient.department_name || '—'}</span>
-                      </div>
-                    </div>
-                    
-                    <button className="open-card-btn">
-                      Открыть карту пациента →
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -350,13 +387,6 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
                   />
                 </div>
               )}
-              
-              {/* {!selectedPatientId && (
-                <div className="select-patient-hint">
-                  <p>👈 Выберите пациента из списка, чтобы увидеть его назначения</p>
-                  <div className="hint-icon">🩺</div>
-                </div>
-              )} */}
             </div>
           </div>
         )}

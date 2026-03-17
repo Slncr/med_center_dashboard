@@ -1,51 +1,85 @@
 import React, { useState, useEffect } from 'react';
-// import { useWebSocket } from '../hooks/useWebSocket';
 import { usePatients } from '../hooks/usePatients';
+import { apiService } from '../services/api';
+import { Prescription } from '../types';
 import PatientList from '../components/nurse-station/PatientList';
 import ObservationsTable from '../components/nurse-station/ObservationsTable';
 import MedicalForm530n from '../components/nurse-station/MedicalForm530n';
 import AppointmentsView from '../components/nurse-station/AppointmentsView';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { WebSocketMessage, PatientSelectedEvent } from '../types';
-import './NurseDashboardPage.css';
+import { useWebSocket, WebSocketMessage } from '../hooks/useWebSocket';
 import { useNavigate } from 'react-router-dom';
+import './NurseDashboardPage.css';
 
 const NurseDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'patients' | 'observations' | 'form530n' | 'appointments'>('patients');
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
-  const [notifications, setNotifications] = useState<string[]>([]);
-  
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
   const { patients, rooms, loading, error, refetch } = usePatients();
+  const navigate = useNavigate();
 
-  const navigate = useNavigate()
-  // const { isConnected, messages, sendMessage } = useWebSocket('nurse', handleWebSocketMessage);
+  // ✅ Подключаемся к вебсокету и обрабатываем сообщения
+  useWebSocket('nurse', (message: WebSocketMessage) => {
+    // ✅ Обрабатываем ТОЛЬКО сообщения для текущего пациента
+    if (message.type === 'prescription_created') {
 
-  function handleWebSocketMessage(message: WebSocketMessage) {
-    console.log('Nurse received:', message);
-    
-    switch (message.event) {
-      case 'patient_selected':
-        const patientEvent = message.data as PatientSelectedEvent;
-        setNotifications(prev => [
-          ...prev,
-          `Пациент ${patientEvent.patient_name} выбран в палате ${patientEvent.room_number}`
+      // 🔔 показываем тост
+      (window as any).showNotification?.({
+        type: 'info',
+        title: 'Новое назначение',
+        message: `${message.name} для пациента`
+      });
+
+      // если открыт тот же пациент — обновляем список
+      if (message.patient_id === selectedPatientId) {
+        setPrescriptions(prev => [
+          {
+            id: message.prescription_id,
+            patient_id: message.patient_id,
+            prescription_type: message.prescription_type,
+            name: message.name,
+            frequency: message.frequency || '',
+            notes: message.notes || '',
+            status: 'ACTIVE',
+            created_at: message.created_at,
+            updated_at: message.created_at,
+            start_date: message.created_at,
+            created_by: 0
+          },
+          ...prev
         ]);
-        refetch();
-        break;
-      
-      case 'notification':
-        setNotifications(prev => [...prev, message.data.message]);
-        break;
+      }
     }
-  }
+  });
+
+  // ✅ Загрузка назначений при выборе пациента
+  useEffect(() => {
+    if (!selectedPatientId) {
+      setPrescriptions([]);
+      return;
+    }
+
+    const loadPrescriptions = async () => {
+      setLoadingPrescriptions(true);
+      try {
+        const data = await apiService.getPrescriptions(selectedPatientId);
+        setPrescriptions(data.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ));
+      } catch (err) {
+        console.error('Ошибка загрузки назначений:', err);
+      } finally {
+        setLoadingPrescriptions(false);
+      }
+    };
+
+    loadPrescriptions();
+  }, [selectedPatientId]);
 
   const handlePatientSelect = (patientId: number) => {
     setSelectedPatientId(patientId);
-    setActiveTab('observations');
-  };
-
-  const handleClearNotifications = () => {
-    setNotifications([]);
+    setActiveTab('appointments');
   };
 
   if (loading) {
@@ -62,7 +96,7 @@ const NurseDashboardPage: React.FC = () => {
       <div className="error-container">
         <h2>Ошибка загрузки данных</h2>
         <p>{error}</p>
-        <button onClick={() => navigate('/login') } className="retry-button">
+        <button onClick={() => navigate('/login')} className="retry-button">
           Войти
         </button>
       </div>
@@ -74,9 +108,6 @@ const NurseDashboardPage: React.FC = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <h1>🩺 Станция медсестры</h1>
-          {/* <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
-            WebSocket: {isConnected ? '✅ Подключен' : '❌ Отключен'}
-          </div> */}
         </div>
         <div className="header-right">
           <div className="time-display">
@@ -87,24 +118,6 @@ const NurseDashboardPage: React.FC = () => {
           </div>
         </div>
       </header>
-
-      {notifications.length > 0 && (
-        <div className="notifications-panel">
-          <div className="notifications-header">
-            <h3>🔔 Уведомления ({notifications.length})</h3>
-            <button onClick={handleClearNotifications} className="clear-button">
-              Очистить
-            </button>
-          </div>
-          <div className="notifications-list">
-            {notifications.slice(-5).map((notification, index) => (
-              <div key={index} className="notification-item">
-                {notification}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <nav className="dashboard-tabs">
         <button 
@@ -129,7 +142,7 @@ const NurseDashboardPage: React.FC = () => {
           className={`tab-button ${activeTab === 'appointments' ? 'active' : ''}`}
           onClick={() => setActiveTab('appointments')}
         >
-          ⏰ Назначения
+          ⏰ Назначения ({prescriptions.filter(p => p.status === 'ACTIVE').length})
         </button>
       </nav>
 
@@ -165,9 +178,21 @@ const NurseDashboardPage: React.FC = () => {
 
         {activeTab === 'appointments' && (
           <div className="tab-content">
+            {/* ✅ Передаём ВСЕ необходимые пропсы */}
             <AppointmentsView 
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
+              prescriptions={prescriptions}      // ✅ Список назначений из состояния
+              loading={loadingPrescriptions}     // ✅ Состояние загрузки
+              onPrescriptionsUpdate={() => {     // ✅ Функция обновления
+                if (selectedPatientId) {
+                  apiService.getPrescriptions(selectedPatientId).then(data => {
+                    setPrescriptions(data.sort((a, b) => 
+                      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    ));
+                  });
+                }
+              }}
             />
           </div>
         )}
@@ -175,10 +200,6 @@ const NurseDashboardPage: React.FC = () => {
 
       <footer className="dashboard-footer">
         <p>Медицинский центр • Станция медсестры • {new Date().getFullYear()}</p>
-        <p className="system-info">
-          Пациентов: {patients.length} | Палат: {rooms.length}
-          {/* | WS: {isConnected ? '✓' : '✗'} */}
-        </p>
       </footer>
     </div>
   );

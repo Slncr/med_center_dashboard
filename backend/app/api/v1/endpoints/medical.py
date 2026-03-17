@@ -7,6 +7,8 @@ from typing import List
 from app.deps import get_current_user
 from app.core.database import get_db
 from app.schemas.user import User
+from app.core.websocket_manager import manager
+
 
 # ✅ Модели (SQLAlchemy) с алиасами
 from app.models.medical import (
@@ -114,6 +116,21 @@ async def create_prescription(
     db.add(db_prescription)
     db.commit()
     db.refresh(db_prescription)
+
+    await manager.broadcast(
+        {
+            "type": "prescription_created",
+            "prescription_id": db_prescription.id,
+            "patient_id": db_prescription.patient_id,
+            "prescription_type": db_prescription.prescription_type,
+            "name": db_prescription.name,
+            "frequency": db_prescription.frequency,
+            "notes": db_prescription.notes,
+            "created_at": db_prescription.created_at.isoformat(),  # ✅ created_at!
+            "created_by": current_user.full_name
+        },
+        "nurse"
+    )
     return db_prescription  # ✅ Автоматически конвертируется в схему
 
 # ✅ Получение назначений пациента
@@ -157,6 +174,17 @@ async def execute_prescription(
         dosage=prescription.dosage,
         frequency=prescription.frequency,
         notes=execution_data.notes or prescription.notes
+    )
+    await manager.broadcast(
+        {
+            "type": "prescription_completed",
+            "prescription_id": prescription_id,
+            "patient_name": prescription.patient.full_name,
+            "prescription_name": prescription.name,
+            "completed_by": current_user.full_name,
+            "timestamp": datetime.utcnow().isoformat()
+        },
+        "nurse"  # Или конкретная станция
     )
     db.add(procedure)
     
