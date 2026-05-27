@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePatients } from '../hooks/usePatients';
 import { apiService } from '../services/api';
 import { Prescription } from '../types';
@@ -9,6 +9,12 @@ import AppointmentsView from '../components/nurse-station/AppointmentsView';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useWebSocket, WebSocketMessage } from '../hooks/useWebSocket';
 import { useNavigate } from 'react-router-dom';
+import {
+  PrescriptionNotificationPayload,
+  queuePrescriptionNotification,
+  showBatchPrescriptionNotification,
+} from '../utils/prescriptionNotifications';
+import type { NotificationInput } from '../components/common/NotificationToast';
 import './NurseDashboardPage.css';
 
 const NurseDashboardPage: React.FC = () => {
@@ -19,41 +25,99 @@ const NurseDashboardPage: React.FC = () => {
   const { patients, rooms, loading, error, refetch } = usePatients();
   const navigate = useNavigate();
 
-  // ✅ Подключаемся к вебсокету и обрабатываем сообщения
-  useWebSocket('nurse', (message: WebSocketMessage) => {
-    // ✅ Обрабатываем ТОЛЬКО сообщения для текущего пациента
-    if (message.type === 'prescription_created') {
+  const openPatientAppointments = useCallback((patientId: number) => {
+    setSelectedPatientId(patientId);
+    setActiveTab('appointments');
+  }, []);
 
-      // 🔔 показываем тост
-      (window as any).showNotification?.({
+  const showPrescriptionAlert = useCallback(
+    (payload: PrescriptionNotificationPayload) => {
+      const countLabel =
+        payload.count === 1
+          ? '1 новое назначение'
+          : `${payload.count} новых назначений`;
+
+      const notification: NotificationInput = {
         type: 'info',
-        title: 'Новое назначение',
-        message: `${message.name} для пациента`
-      });
+        title: 'Новые назначения',
+        message: `${countLabel} для ${payload.patientName}`,
+        groupKey: `prescriptions-patient-${payload.patientId}`,
+        duration: 15000,
+        action: {
+          label: 'Перейти к пациенту',
+          patientId: payload.patientId,
+        },
+      };
 
-      // если открыт тот же пациент — обновляем список
-      if (message.patient_id === selectedPatientId) {
-        setPrescriptions(prev => [
-          {
-            id: message.prescription_id,
-            patient_id: message.patient_id,
-            prescription_type: message.prescription_type,
-            name: message.name,
-            frequency: message.frequency || '',
-            notes: message.notes || '',
-            status: 'ACTIVE',
-            created_at: message.created_at,
-            updated_at: message.created_at,
-            start_date: message.created_at,
-            created_by: 0
-          },
-          ...prev
-        ]);
+      (window as Window & { showNotification?: (n: NotificationInput) => void }).showNotification?.(
+        notification,
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    (window as Window & { navigateToPatient?: (patientId: number) => void }).navigateToPatient =
+      openPatientAppointments;
+    return () => {
+      delete (window as Window & { navigateToPatient?: (patientId: number) => void }).navigateToPatient;
+    };
+  }, [openPatientAppointments]);
+
+  const handleWebSocketMessage = useCallback(
+    (message: WebSocketMessage) => {
+      if (message.type === 'prescriptions_created') {
+        showBatchPrescriptionNotification(message, showPrescriptionAlert);
+        if (message.patient_id === selectedPatientId) {
+          apiService.getPrescriptions(message.patient_id as number).then((data) => {
+            setPrescriptions(
+              data.sort(
+                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+              ),
+            );
+          });
+        }
+        return;
       }
-    }
-  });
 
-  // ✅ Загрузка назначений при выборе пациента
+      if (message.type === 'prescription_created') {
+        queuePrescriptionNotification(message, showPrescriptionAlert);
+        if (message.patient_id === selectedPatientId) {
+          setPrescriptions((prev) => [
+            {
+              id: message.prescription_id,
+              patient_id: message.patient_id,
+              prescription_type: message.prescription_type,
+              name: message.name,
+              frequency: message.frequency || '',
+              notes: message.notes || '',
+              status: 'ACTIVE',
+              created_at: message.created_at,
+              updated_at: message.created_at,
+              start_date: message.created_at,
+              created_by: 0,
+            },
+            ...prev,
+          ]);
+        }
+        return;
+      }
+
+      if (message.type === 'prescription_cancelled' && message.patient_id === selectedPatientId) {
+        apiService.getPrescriptions(message.patient_id as number).then((data) => {
+          setPrescriptions(
+            data.sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+            ),
+          );
+        });
+      }
+    },
+    [selectedPatientId, showPrescriptionAlert],
+  );
+
+  useWebSocket('nurse', handleWebSocketMessage);
+
   useEffect(() => {
     if (!selectedPatientId) {
       setPrescriptions([]);
@@ -64,9 +128,9 @@ const NurseDashboardPage: React.FC = () => {
       setLoadingPrescriptions(true);
       try {
         const data = await apiService.getPrescriptions(selectedPatientId);
-        setPrescriptions(data.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        ));
+        setPrescriptions(
+          data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+        );
       } catch (err) {
         console.error('Ошибка загрузки назначений:', err);
       } finally {
@@ -78,8 +142,7 @@ const NurseDashboardPage: React.FC = () => {
   }, [selectedPatientId]);
 
   const handlePatientSelect = (patientId: number) => {
-    setSelectedPatientId(patientId);
-    setActiveTab('appointments');
+    openPatientAppointments(patientId);
   };
 
   if (loading) {
@@ -113,44 +176,42 @@ const NurseDashboardPage: React.FC = () => {
           <div className="time-display">
             {new Date().toLocaleDateString('ru-RU')} {new Date().toLocaleTimeString('ru-RU')}
           </div>
-          <div className="patient-count">
-            Пациентов: {patients.length}
-          </div>
+          <div className="patient-count">Пациентов: {patients.length}</div>
         </div>
       </header>
 
       <nav className="dashboard-tabs">
-        <button 
+        <button
           className={`tab-button ${activeTab === 'patients' ? 'active' : ''}`}
           onClick={() => setActiveTab('patients')}
         >
           👥 Пациенты
         </button>
-        <button 
+        <button
           className={`tab-button ${activeTab === 'observations' ? 'active' : ''}`}
           onClick={() => setActiveTab('observations')}
         >
           📊 Наблюдения
         </button>
-        <button 
+        <button
           className={`tab-button ${activeTab === 'form530n' ? 'active' : ''}`}
           onClick={() => setActiveTab('form530n')}
         >
           📋 Форма 530н
         </button>
-        <button 
+        <button
           className={`tab-button ${activeTab === 'appointments' ? 'active' : ''}`}
           onClick={() => setActiveTab('appointments')}
         >
-          ⏰ Назначения ({prescriptions.filter(p => p.status === 'ACTIVE').length})
+          ⏰ Назначения ({prescriptions.filter((p) => p.status === 'ACTIVE').length})
         </button>
       </nav>
 
       <main className="dashboard-content">
         {activeTab === 'patients' && (
           <div className="tab-content">
-            <PatientList 
-              patients={patients} 
+            <PatientList
+              patients={patients}
               rooms={rooms}
               onPatientSelect={handlePatientSelect}
               onPatientsUpdate={refetch}
@@ -160,16 +221,18 @@ const NurseDashboardPage: React.FC = () => {
 
         {activeTab === 'observations' && (
           <div className="tab-content">
-            <ObservationsTable 
+            <ObservationsTable
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
+              patients={patients}
+              rooms={rooms}
             />
           </div>
         )}
 
         {activeTab === 'form530n' && (
           <div className="tab-content">
-            <MedicalForm530n 
+            <MedicalForm530n
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
             />
@@ -178,18 +241,20 @@ const NurseDashboardPage: React.FC = () => {
 
         {activeTab === 'appointments' && (
           <div className="tab-content">
-            {/* ✅ Передаём ВСЕ необходимые пропсы */}
-            <AppointmentsView 
+            <AppointmentsView
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
-              prescriptions={prescriptions}      // ✅ Список назначений из состояния
-              loading={loadingPrescriptions}     // ✅ Состояние загрузки
-              onPrescriptionsUpdate={() => {     // ✅ Функция обновления
+              prescriptions={prescriptions}
+              loading={loadingPrescriptions}
+              onPrescriptionsUpdate={() => {
                 if (selectedPatientId) {
-                  apiService.getPrescriptions(selectedPatientId).then(data => {
-                    setPrescriptions(data.sort((a, b) => 
-                      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                    ));
+                  apiService.getPrescriptions(selectedPatientId).then((data) => {
+                    setPrescriptions(
+                      data.sort(
+                        (a, b) =>
+                          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                      ),
+                    );
                   });
                 }
               }}

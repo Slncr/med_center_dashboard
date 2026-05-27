@@ -10,7 +10,6 @@ __all__ = [
     "get_all_rooms_with_beds",
     "get_bed_by_external_id",
     "create_bed",
-    "create_room",
     "get_users",
     "create_user"
 ]

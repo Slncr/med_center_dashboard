@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.config import settings
 from app.schemas.user import Token, User, UserCreate
-from app.crud.user import authenticate_user, create_user, get_user_by_username
+from app.crud.user import authenticate_user, create_user, get_user_by_username, get_user_by_email
 from app.deps import create_access_token, get_current_user
 from app.core.database import get_db
+from app.models.user import UserRole
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from pydantic import BaseModel
 
@@ -39,13 +41,33 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 @router.post("/register", response_model=dict)
-async def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    existing_user = get_user_by_username(db, user.username)
-    if existing_user:
+async def register_user(
+    user: UserCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can register users",
+        )
+    if get_user_by_username(db, user.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
+            detail="Username already registered",
+        )
+    if get_user_by_email(db, user.email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
         )
 
-    created_user = create_user(db, user)
+    try:
+        created_user = create_user(db, user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email already registered",
+        )
     return {"message": "User created successfully", "user_id": created_user.id}

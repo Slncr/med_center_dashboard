@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 
 from app import crud, schemas
+from app.crud.user import get_user_by_username, get_user_by_email
 from app.core.database import get_db
 from app.deps import get_current_user
 from app.models.user import User as UserModel, UserRole
@@ -34,8 +36,8 @@ async def register_user(
     current_user: UserModel = Depends(get_current_user)
 ):
     """Зарегистрировать нового пользователя (только для админа)"""
-    # if current_user.role != UserRole.ADMIN:
-    #     raise HTTPException(status_code=403, detail="Only admin can register users")
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admin can register users")
     
     # # Проверка уникальности логина
     # if crud.get_user_by_username(db, username=user_in.username):
@@ -45,6 +47,14 @@ async def register_user(
     # if crud.get_user_by_email(db, email=user_in.email):
     #     raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Создание пользователя
-    user = crud.create_user(db, user_in)
+    if get_user_by_username(db, user_in.username):
+        raise HTTPException(status_code=400, detail="Username already registered")
+    if get_user_by_email(db, user_in.email):
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    try:
+        user = crud.create_user(db, user_in)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Username or email already registered")
     return user

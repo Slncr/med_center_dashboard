@@ -87,6 +87,23 @@
   line-height: 1.5;
 }
 
+.nt-action {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nt-action:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 /* Кнопка закрытия */
 .nt-close {
   background: none;

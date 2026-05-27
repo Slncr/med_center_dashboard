@@ -13,19 +13,15 @@ logger = logging.getLogger(__name__)
 def sync_patients_with_1c(self):
     """Фоновая синхронизация пациентов с 1С (БЕЗ вебсокетов!)"""
     try:
-        # Создаём отдельную сессию для задачи
         engine = create_engine(settings.DATABASE_URL)
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         db = SessionLocal()
         
-        # Получаем пациентов для синхронизации
         patients = get_patients_needing_sync(db)
         logger.info(f"Начата синхронизация {len(patients)} пациентов с 1С")
         
-        # Инициализируем сервис 1С
-        onec_service = OneCService(settings.ONE_C_URL)
+        onec_service = OneCService(settings.ONEC_BASE_URL or "")
         
-        # Синхронизируем пациентов
         synced_count = 0
         for patient in patients:
             try:

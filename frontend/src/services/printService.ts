@@ -37,19 +37,16 @@ export class PrintService {
    * Печать формы 530н для пациента
    */
   static async printForm530n(
-    patientId: number, 
-    options: PrintForm530nOptions = {}
+    patientId: number,
+    options: PrintForm530nOptions & { date_from?: string; date_to?: string } = {},
   ): Promise<Blob> {
     try {
-      // Получаем данные формы
-      const formData = await apiService.getForm530n(patientId);
-      
-      // Запрашиваем печать с сервера
-      const response = await apiService.printForm530n(patientId);
-      
-      // Создаем Blob для скачивания
-      return new Blob([response], { type: 'application/pdf' });
-      
+      const params =
+        options.date_from || options.date_to
+          ? { date_from: options.date_from, date_to: options.date_to }
+          : undefined;
+      const response = await apiService.printForm530n(patientId, params);
+      return new Blob([response], { type: 'text/html;charset=utf-8' });
     } catch (error) {
       console.error('Ошибка при печати формы 530н:', error);
       throw new Error('Не удалось сгенерировать форму для печати');

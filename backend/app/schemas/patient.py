@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from typing import Optional
 from datetime import datetime
 
@@ -20,6 +20,12 @@ class Patient(BaseModel):
     branch_id: Optional[str] = None
     department_id: Optional[str] = None
     department_name: Optional[str] = None
+    ble_mac: Optional[str] = None
+
+    @field_serializer("status")
+    def serialize_status(self, value) -> str:
+        raw = value.value if hasattr(value, "value") else str(value)
+        return raw.lower()
 
     class Config:
         from_attributes = True

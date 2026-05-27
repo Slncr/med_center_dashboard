@@ -6,16 +6,16 @@ from datetime import datetime
 from app.models.patient import Patient as PatientModel, PatientStatus
 from app.schemas.patient import Patient as PatientSchema
 from app.core.database import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user, require_auth_or_public_display
 from app.models.user import User
 
 router = APIRouter()
 
-# Сначала конкретные пути
+
 @router.get("/", response_model=List[PatientSchema])
 async def get_patients(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User | None = Depends(require_auth_or_public_display),
 ):
     """Получить всех активных пациентов"""
     patients = db.query(PatientModel).filter(PatientModel.status == PatientStatus.ACTIVE).all()
@@ -30,7 +30,24 @@ async def get_archived_patients(
     patients = db.query(PatientModel).filter(PatientModel.status == PatientStatus.DISCHARGED).all()
     return patients
 
-# Потом пути с параметрами
+@router.post("/{patient_id}/select")
+async def select_patient(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Выбор пациента для отображения на планшете палаты."""
+    patient = db.query(PatientModel).filter(PatientModel.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return {
+        "patient_id": patient.id,
+        "full_name": patient.full_name,
+        "bed_id": patient.bed_id,
+        "message": "Patient selected",
+    }
+
+
 @router.get("/{patient_id}", response_model=PatientSchema)
 async def get_patient(
     patient_id: int,

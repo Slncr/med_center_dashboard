@@ -43,3 +43,27 @@ def create_patient(
     db.commit()
     db.refresh(db_patient)
     return db_patient
+
+
+def get_patients_needing_sync(db: Session, limit: int = 100):
+    """Пациенты с external_id для фоновой синхронизации с 1С."""
+    return (
+        db.query(Patient)
+        .filter(
+            Patient.status == PatientStatus.ACTIVE,
+            Patient.external_id.isnot(None),
+        )
+        .limit(limit)
+        .all()
+    )
+
+
+def update_patient_sync_status(db: Session, patient_id: int, result: dict):
+    patient = get_patient_by_id(db, patient_id)
+    if not patient:
+        return None
+    if result.get("success") and result.get("onec_id"):
+        patient.external_id = str(result["onec_id"])
+    db.commit()
+    db.refresh(patient)
+    return patient

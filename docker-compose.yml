@@ -39,15 +39,15 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      backend:
+        condition: service_started
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/med_center
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - ONE_C_URL=http://host.docker.internal:8080/api  # URL вашей 1С
-    networks:
-      - default
+      DATABASE_URL: postgresql://med_user:med_pass@postgres:5432/med_center
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      ONEC_BASE_URL: http://host.docker.internal:8080/api
 
   backend:
     build: ./backend
@@ -57,21 +57,37 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://med_user:med_pass@postgres:5432/med_center
       REDIS_URL: redis://redis:6379
-      CELERY_BROKER_URL: redis://redis:6379
-      CELERY_RESULT_BACKEND: redis://redis:6379
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
       SECRET_KEY: development-secret-key-change-in-production
       DEBUG: "True"
-      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      ALLOW_PUBLIC_ROOM_DISPLAY: "True"
+      BACKEND_CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+      MONITORING_API_URL: "http://172.191.7.50/api"
+      MONITORING_API_TIMEOUT: "5"
     volumes:
       - ./backend:/app
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=2)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     command: >
-      sh -c "sleep 5 && 
-             alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+      sh -c "
+        echo 'Waiting for postgres DNS...' &&
+        for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+          python -c \"import socket; socket.gethostbyname('postgres')\" 2>/dev/null && break;
+          echo \"postgres not ready, retry $$i/15\";
+          sleep 2;
+        done &&
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
 
   frontend:
     build: 
@@ -80,7 +96,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     # environment:
     #   REACT_APP_API_URL: http://backend:8000  # Меняем localhost на backend
     #   REACT_APP_WS_URL: ws://backend:8000/ws  # Меняем localhost на backend

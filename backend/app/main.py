@@ -5,7 +5,8 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.api.v1.api import api_router
-from app.core.database import engine, Base
+from app.core.database import engine
+from app.models.base import Base
 
 
 @asynccontextmanager
@@ -33,19 +34,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Настраиваем CORS
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-      CORSMiddleware,
-      allow_origins=[
-          "http://localhost:3000",
-          "http://127.0.0.1:3000",
-          "http://frontend:3000",
-      ],
-      allow_credentials=True,
-      allow_methods=["*"],
-      allow_headers=["*"],
-    )
+_cors_origins = settings.cors_origins_list()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Подключаем API роутер
 app.include_router(api_router, prefix=settings.API_V1_STR)

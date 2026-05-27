@@ -9,7 +9,7 @@ export type ObservationType =
 
 export type ProcedureStatus = 
   | 'SCHEDULED' 
-  | 'IN_PROGRES' 
+  | 'IN_PROGRESS' 
   | 'COMPLETED' 
   | 'CANCELLED';
 
@@ -60,13 +60,63 @@ export interface Procedure {
   duration?: string;
 }
 
+export interface Form530nPatientInfo {
+  id: number;
+  full_name: string;
+  birth_date?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  medical_record_number?: string | null;
+  admission_date?: string | null;
+  department_name?: string | null;
+  room_number?: string | null;
+  bed_number?: string | null;
+}
+
+export interface Form530nObservationRow {
+  id: number;
+  record_date: string;
+  record_time?: string | null;
+  temperature?: number | null;
+  pulse?: number | null;
+  blood_pressure?: string | null;
+  respiration_rate?: number | null;
+  spO2?: number | null;
+  weight?: number | null;
+  height?: number | null;
+  complaints?: string | null;
+  examination?: string | null;
+  diagnosis?: string | null;
+  recommendations?: string | null;
+}
+
+export interface Form530nPrescriptionItem {
+  id: number;
+  name: string;
+  prescription_type: string;
+  frequency?: string | null;
+  status: string;
+}
+
+export interface Form530nProcedureItem {
+  id: number;
+  name: string;
+  status: string;
+  scheduled_time?: string | null;
+  notes?: string | null;
+}
+
 export interface Form530n {
-  patient_id: number;
-  form_name: string;
-  observations: Observation[];
-  procedures: Procedure[];
-  appointments: Appointment[];
-  last_updated: string;
+  form_code: string;
+  form_title: string;
+  patient: Form530nPatientInfo;
+  period_from: string;
+  period_to: string;
+  generated_at: string;
+  observations: Form530nObservationRow[];
+  prescriptions: Form530nPrescriptionItem[];
+  procedures: Form530nProcedureItem[];
+  observations_count: number;
 }
 
 export interface MedicalRecord {

@@ -15,3 +15,6 @@ class Room(BaseModel):
     floor = Column(Integer)
     wing = Column(String)
     external_id = Column(String, unique=True, index=True)  # UUID из 1С
+    monitor_zone = Column(Integer)  # Зона ATM API (палата 1–3)
+
+    beds = relationship("Bed", back_populates="room")

@@ -2,7 +2,7 @@ from datetime import timedelta
 from fastapi import HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
-from app.models.medical import MedicalRecord, Procedure as ProcedureModel
+from app.models.medical import MedicalRecord, Procedure as ProcedureModel, ProcedureStatus
 from app.schemas.medical import ObservationCreate, ObservationUpdate, ProcedureCreate
 
 def get_observations_by_patient(db: Session, patient_id: int):
@@ -109,11 +109,24 @@ def get_procedures_by_patient(db: Session, patient_id: int):
     procedures = db.query(ProcedureModel).filter(ProcedureModel.patient_id == patient_id).all()
     return procedures
 
+def _normalize_procedure_status(status: str) -> ProcedureStatus:
+    normalized = status.upper().replace("-", "_")
+    if normalized == "IN_PROGRES":
+        normalized = "IN_PROGRESS"
+    try:
+        return ProcedureStatus[normalized]
+    except KeyError:
+        raise HTTPException(status_code=400, detail=f"Invalid procedure status: {status}")
+
+
 def update_procedure_status(db: Session, procedure_id: int, status: str):
     proc = db.query(ProcedureModel).filter(ProcedureModel.id == procedure_id).first()
     if not proc:
         raise HTTPException(status_code=404, detail="Procedure not found")
-    proc.status = status
+    proc.status = _normalize_procedure_status(status)
+    if proc.status == ProcedureStatus.COMPLETED:
+        from datetime import datetime
+        proc.completed_at = datetime.utcnow()
     db.commit()
     db.refresh(proc)
     return proc
@@ -130,16 +143,7 @@ def create_procedure(db: Session, proc: ProcedureCreate, user_id: int):
     db.add(record)
     db.commit()
     db.refresh(record)
-
-    return {
-        "id": record.id,
-        "patient_id": record.patient_id,
-        "name": record.name,
-        "description": record.description,
-        "scheduled_time": record.scheduled_time,
-        "status": record.status,
-        "created_by": record.created_by
-    }
+    return record
 
 def get_appointments_by_patient(db: Session, patient_id: int):
     from app.models.medical import Appointment as AppointmentModel

@@ -1,53 +1,53 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
-from pydantic import AnyHttpUrl, validator
 
 
 class Settings(BaseSettings):
-    # API
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Medical Center Dashboard"
     VERSION: str = "1.0.0"
-    
-    # CORS
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
-    
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(v)
-    
-    # Database
+
+    # CORS: в docker-compose — строка через запятую, не JSON
+    BACKEND_CORS_ORIGINS: str = ""
+
     DATABASE_URL: str = "postgresql://med_user:med_pass@postgres:5432/med_center"
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 40
-    
-    # Redis 
+
     REDIS_URL: str = "redis://redis:6379/0"
     CELERY_BROKER_URL: str = "redis://redis:6379/1"
-    CELERY_RESULT_BACKEND: str = "redis://redis:6379/2"    
-    # Security
+    CELERY_RESULT_BACKEND: str = "redis://redis:6379/2"
+
     SECRET_KEY: str = "Gp6qPUYuc6LKlCvGwOuDGLQhXx4jDNqkjugTOUfKdFG"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 240
-    
-    # 1C
+
     ONEC_BASE_URL: Optional[str] = None
     ONEC_USER: Optional[str] = None
     ONEC_PASSWORD: Optional[str] = None
     ONEC_TIMEOUT: int = 30
-    
-    # Application
+
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    ALLOW_PUBLIC_ROOM_DISPLAY: bool = True
+
+    MONITORING_API_URL: str = "http://172.191.7.50/api"
+    MONITORING_API_TIMEOUT: int = 5
+
+    def cors_origins_list(self) -> List[str]:
+        if self.BACKEND_CORS_ORIGINS.strip():
+            return [o.strip() for o in self.BACKEND_CORS_ORIGINS.split(",") if o.strip()]
+        return [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://frontend:3000",
+        ]
 
 
 settings = Settings()

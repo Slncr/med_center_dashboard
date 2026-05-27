@@ -5,7 +5,7 @@ celery_app = Celery(
     "med_center_tasks",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.tasks"]  # ← Важно: задачи в отдельном файле
+    include=["app.tasks.tasks"],
 )
 
 celery_app.conf.update(

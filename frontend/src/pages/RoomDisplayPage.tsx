@@ -1,18 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
-import { Patient, Room, Prescription } from '../types';
+import { Patient, Room, Prescription, Bed } from '../types';
+import RoomMonitoringTab from '../components/room-display/RoomMonitoringTab';
+import { formatPatientStatusLabel } from '../utils/formatters';
 import './RoomDisplayPage.css';
+
+type RoomTab = 'overview' | 'monitoring';
 
 const RoomDisplayPage: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [apiConnected, setApiConnected] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<RoomTab>('overview');
 
   // Обновление времени каждую секунду
   useEffect(() => {
@@ -53,9 +59,10 @@ const RoomDisplayPage: React.FC = () => {
     }
   };
 
-  const handlePatientSelect = async (patientId: number) => {
+  const handlePatientSelect = async (patientId: number, bedId: number) => {
     setSelectedPatientId(patientId);
-    
+    setSelectedBedId(bedId);
+
     try {
       const data = await apiService.getPrescriptions(patientId);
       setPrescriptions(data.sort((a, b) => 
@@ -68,10 +75,19 @@ const RoomDisplayPage: React.FC = () => {
     }
   };
 
-  // ✅ Поиск пациента по bed_id (корректная связь)
-  const getPatientForBed = (bedId: number): Patient | undefined => {
-    return patients.find(p => p.bed_id === bedId);
-  };
+  /** Пациент на койке: сначала из связи палата→койка→пациент, затем по bed_id. */
+  const getPatientForBed = useCallback(
+    (bed: Bed): Patient | undefined => {
+      if (bed.patient) {
+        const fromList = patients.find((p) => p.id === bed.patient!.id);
+        return fromList ? { ...fromList, ...bed.patient, bed_id: bed.id } : ({ ...bed.patient, bed_id: bed.id } as Patient);
+      }
+      const byBedId = patients.find((p) => p.bed_id === bed.id);
+      if (byBedId) return byBedId;
+      return undefined;
+    },
+    [patients],
+  );
 
   const getRoomById = (roomId: number): Room | undefined => {
     return rooms.find(r => r.id === roomId);
@@ -80,6 +96,7 @@ const RoomDisplayPage: React.FC = () => {
   const handleRoomSelect = (roomId: number) => {
     setActiveRoomId(roomId);
     setSelectedPatientId(null);
+    setSelectedBedId(null);
     setPrescriptions([]);
   };
 
@@ -111,7 +128,11 @@ const RoomDisplayPage: React.FC = () => {
   }
 
   const activeRoom = activeRoomId ? getRoomById(activeRoomId) : null;
-  const selectedPatient = selectedPatientId ? patients.find(p => p.id === selectedPatientId) : null;
+  const selectedBed =
+    activeRoom && selectedBedId != null
+      ? activeRoom.beds.find((b) => b.id === selectedBedId)
+      : undefined;
+  const selectedPatient = selectedBed ? getPatientForBed(selectedBed) : null;
 
   return (
     <div className="room-display-page">
@@ -161,9 +182,7 @@ const RoomDisplayPage: React.FC = () => {
             <h2>Пациенты</h2>
             {activeRoom && (
               <div className="room-stats">
-                {activeRoom.beds.filter(bed => 
-                  patients.some(p => p.bed_id === bed.id)
-                ).length} из {activeRoom.beds.length}
+                {activeRoom.beds.filter((bed) => getPatientForBed(bed)).length} из {activeRoom.beds.length}
               </div>
             )}
           </div>
@@ -171,12 +190,12 @@ const RoomDisplayPage: React.FC = () => {
           <div className="patients-list">
             {activeRoom ? (
               activeRoom.beds.map(bed => {
-                const patient = getPatientForBed(bed.id);
+                const patient = getPatientForBed(bed);
                 return (
                   <div 
                     key={bed.id} 
-                    className={`patient-row ${selectedPatientId === patient?.id ? 'active' : ''}`}
-                    onClick={() => patient && handlePatientSelect(patient.id)}
+                    className={`patient-row ${selectedBedId === bed.id ? 'active' : ''}`}
+                    onClick={() => patient && handlePatientSelect(patient.id, bed.id)}
                   >
                     <div className="bed-col">Койка {bed.number}</div>
                     <div className="name-col">
@@ -207,6 +226,27 @@ const RoomDisplayPage: React.FC = () => {
 
         {/* Основной контент */}
         <div className="content-panel">
+          <div className="room-tabs">
+            <button
+              type="button"
+              className={`room-tab ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Обзор
+            </button>
+            <button
+              type="button"
+              className={`room-tab ${activeTab === 'monitoring' ? 'active' : ''}`}
+              onClick={() => setActiveTab('monitoring')}
+            >
+              Мониторинг
+            </button>
+          </div>
+
+          {activeTab === 'monitoring' ? (
+            <RoomMonitoringTab roomId={activeRoomId} />
+          ) : (
+          <>
           {/* Карточка пациента */}
           <div className="patient-card">
             {selectedPatient ? (
@@ -219,8 +259,8 @@ const RoomDisplayPage: React.FC = () => {
                 <div className="patient-info-grid">
                   <div className="info-item">
                     <div className="info-label">Статус</div>
-                    <div className={`info-value status-${selectedPatient.status}`}>
-                      {selectedPatient.status === 'active' ? 'Активный' : 'Выписан'}
+                    <div className={`info-value status-${selectedPatient.status?.toLowerCase()}`}>
+                      {formatPatientStatusLabel(selectedPatient.status)}
                     </div>
                   </div>
                   <div className="info-item">
@@ -232,7 +272,7 @@ const RoomDisplayPage: React.FC = () => {
                   <div className="info-item">
                     <div className="info-label">Койка</div>
                     <div className="info-value">
-                      {selectedPatient.bed_id || '—'}
+                      {selectedBed != null ? String(selectedBed.number) : '—'}
                     </div>
                   </div>
                 </div>
@@ -289,6 +329,8 @@ const RoomDisplayPage: React.FC = () => {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       </main>
 

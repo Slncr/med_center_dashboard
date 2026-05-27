@@ -11,11 +11,12 @@ export interface Patient {
   bed_id?: number;
   created_by?: number;
   external_id?: string; // UIID из 1С
+  ble_mac?: string;
 }
 
 export interface Bed {
   id: number;
-  number: number;
+  number: number | string;
   room_id: number;
   is_occupied: boolean;
   external_id?: string;

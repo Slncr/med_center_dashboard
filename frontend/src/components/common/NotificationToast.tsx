@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './NotificationToast.css';
 
-interface Notification {
-  id: string;
+export interface NotificationAction {
+  label: string;
+  patientId?: number;
+  onClick?: () => void;
+}
+
+export interface NotificationInput {
   type: 'success' | 'error' | 'info' | 'warning';
   title: string;
   message: string;
+  duration?: number;
+  groupKey?: string;
+  action?: NotificationAction;
+}
+
+interface Notification extends NotificationInput {
+  id: string;
   timestamp: number;
 }
 
@@ -15,48 +27,67 @@ const NotificationToast: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [removing, setRemoving] = useState<string[]>([]);
 
-  const showNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const id = `${notificationId++}`;
-    const newNotification: Notification = {
-      ...notification,
-      id,
-      timestamp: Date.now()
-    };
-    
-    setNotifications(prev => [...prev, newNotification]);
-    
-    // Автоматическое скрытие через 5 секунд
+  const dismiss = useCallback((id: string) => {
+    setRemoving((prev) => [...prev, id]);
     setTimeout(() => {
-      setRemoving(prev => [...prev, id]);
-      setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-        setRemoving(prev => prev.filter(nid => nid !== id));
-      }, 400); // время анимации
-    }, 555000);
-  };
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setRemoving((prev) => prev.filter((nid) => nid !== id));
+    }, 400);
+  }, []);
+
+  const showNotification = useCallback(
+    (notification: NotificationInput) => {
+      const id = `${notificationId++}`;
+      const newNotification: Notification = {
+        ...notification,
+        id,
+        timestamp: Date.now(),
+      };
+
+      setNotifications((prev) => {
+        if (notification.groupKey) {
+          const filtered = prev.filter((n) => n.groupKey !== notification.groupKey);
+          return [...filtered, newNotification];
+        }
+        return [...prev, newNotification];
+      });
+
+      const duration = notification.duration ?? (notification.action ? 12000 : 5000);
+      setTimeout(() => dismiss(id), duration);
+    },
+    [dismiss],
+  );
 
   useEffect(() => {
-    (window as any).showNotification = showNotification;
+    (window as Window & { showNotification?: typeof showNotification }).showNotification =
+      showNotification;
     return () => {
-      delete (window as any).showNotification;
+      delete (window as Window & { showNotification?: typeof showNotification }).showNotification;
     };
-  }, []);
+  }, [showNotification]);
+
+  const handleAction = (notification: Notification) => {
+    if (notification.action?.onClick) {
+      notification.action.onClick();
+    } else if (notification.action?.patientId != null) {
+      const navigate = (
+        window as Window & { navigateToPatient?: (patientId: number) => void }
+      ).navigateToPatient;
+      navigate?.(notification.action.patientId);
+    }
+    dismiss(notification.id);
+  };
 
   if (notifications.length === 0) return null;
 
   return (
     <div className="nt-container">
-      {notifications.map(notification => (
-        <div 
-          key={notification.id} 
-          className={`nt-toast nt-toast-${notification.type} ${removing.includes(notification.id) ? 'slide-out' : 'show'}`}
-          onClick={() => {
-            setRemoving(prev => [...prev, notification.id]);
-            setTimeout(() => {
-              setNotifications(prev => prev.filter(n => n.id !== notification.id));
-              setRemoving(prev => prev.filter(nid => nid !== notification.id));
-            }, 400);
-          }}
+      {notifications.map((notification) => (
+        <div
+          key={notification.id}
+          className={`nt-toast nt-toast-${notification.type} ${
+            removing.includes(notification.id) ? 'slide-out' : 'show'
+          }`}
         >
           <div className="nt-icon">
             {notification.type === 'success' && '✅'}
@@ -67,17 +98,20 @@ const NotificationToast: React.FC = () => {
           <div className="nt-content">
             <div className="nt-title">{notification.title}</div>
             <div className="nt-message">{notification.message}</div>
+            {notification.action && (
+              <button
+                type="button"
+                className="nt-action"
+                onClick={() => handleAction(notification)}
+              >
+                {notification.action.label}
+              </button>
+            )}
           </div>
-          <button 
+          <button
+            type="button"
             className="nt-close"
-            onClick={(e) => {
-              e.stopPropagation();
-              setRemoving(prev => [...prev, notification.id]);
-              setTimeout(() => {
-                setNotifications(prev => prev.filter(n => n.id !== notification.id));
-                setRemoving(prev => prev.filter(nid => nid !== notification.id));
-              }, 400);
-            }}
+            onClick={() => dismiss(notification.id)}
             aria-label="Закрыть уведомление"
           >
             ✕

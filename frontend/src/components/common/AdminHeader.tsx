@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './AdminHeader.css';
 
 const AdminHeader: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   // ✅ Отображаем хедер ТОЛЬКО для админа
@@ -22,8 +22,7 @@ const AdminHeader: React.FC = () => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_profile');
+    logout();
     navigate('/login');
   };
 

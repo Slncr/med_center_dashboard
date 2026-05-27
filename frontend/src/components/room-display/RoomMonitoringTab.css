@@ -1,0 +1,266 @@
+.monitoring-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.monitoring-tab.loading,
+.monitoring-tab.empty {
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  color: #64748b;
+}
+
+.monitoring-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: monitoring-spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes monitoring-spin {
+  to { transform: rotate(360deg); }
+}
+
+.monitoring-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.monitoring-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.monitoring-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.monitoring-dot.online { background: #22c55e; }
+.monitoring-dot.offline { background: #ef4444; }
+
+.monitoring-dot.pulse {
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  animation: monitoring-pulse 0.6s ease-out;
+}
+
+@keyframes monitoring-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45); }
+  100% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+}
+
+.monitoring-updated,
+.monitoring-sensors-updated {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.monitoring-sensors-updated {
+  margin-left: 0;
+}
+
+.monitoring-refresh {
+  padding: 8px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.monitoring-refresh:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.monitoring-meta {
+  font-size: 13px;
+  color: #64748b;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.monitoring-error {
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.monitoring-section h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.monitoring-atmosphere-warn {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.atmosphere-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d4ed8;
+  margin-top: 6px;
+}
+
+.beds-monitoring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.bed-monitor-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.bed-monitor-card.offline {
+  border-color: #fecaca;
+  background: #fffbfb;
+}
+
+.bed-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bed-num {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ble-status {
+  font-size: 12px;
+}
+
+.ble-status.on { color: #16a34a; }
+.ble-status.off { color: #dc2626; }
+
+.bed-patient-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.bed-patient-empty {
+  color: #94a3b8;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.bed-mac {
+  font-size: 11px;
+  color: #64748b;
+  font-family: monospace;
+  margin-bottom: 10px;
+}
+
+.ble-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 10px;
+}
+
+.ble-metric-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #475569;
+}
+
+.ble-metric-row strong {
+  color: #0f172a;
+}
+
+.ble-no-data {
+  font-size: 13px;
+  color: #94a3b8;
+  padding-top: 8px;
+}
+
+.unassigned-ble-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.unassigned-ble-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.unassigned-ble-item code {
+  background: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.ble-metrics.compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: none;
+  padding: 0;
+}

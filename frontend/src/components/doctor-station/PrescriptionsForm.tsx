@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import { Patient, Prescription } from '../../types';
 import './PrescriptionsForm.css';
 
@@ -8,7 +9,9 @@ interface PrescriptionsFormProps {
 }
 
 const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCreated }) => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'procedures' | 'measurements'>('procedures');
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -145,50 +148,60 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     setSuccessMessage(null);
 
     try {
-      // === 1. Создаём ВСЕ выбранные процедуры ===
+      const batch: Array<{
+        prescription_type: 'PROCEDURE' | 'MEASUREMENT' | 'NOTE';
+        name: string;
+        frequency?: string;
+        notes?: string;
+        status?: 'ACTIVE';
+      }> = [];
+
       const selectedProcs = procedures.filter(p => p.selected);
       for (const proc of selectedProcs) {
-        await apiService.createPrescription({
-          patient_id: selectedPatientId,
+        batch.push({
           prescription_type: 'PROCEDURE',
           name: proc.customName || proc.name,
           frequency: `${proc.frequency} раз/день`,
           notes: notes.trim() || undefined,
-          status: 'ACTIVE'
+          status: 'ACTIVE',
         });
       }
 
-      // === 2. Создаём ВСЕ выбранные измерения ===
       const selectedMeasurements = Object.entries(measurements)
         .filter(([_, v]) => v.selected)
         .map(([key]) => key);
 
-      const translatedMeasurements = selectedMeasurements.map(key => 
-        MEASUREMENT_LABELS[key] || key
+      const translatedMeasurements = selectedMeasurements.map(
+        (key) => MEASUREMENT_LABELS[key] || key,
       );
 
       if (selectedMeasurements.length > 0) {
-        await apiService.createPrescription({
-          patient_id: selectedPatientId,
+        batch.push({
           prescription_type: 'MEASUREMENT',
           name: `Измерения: ${translatedMeasurements.join(', ')}`,
           frequency: measurementsFrequency.trim() || '1 раз в день',
           notes: notes.trim() || 'Рутинные измерения',
-          status: 'ACTIVE'
+          status: 'ACTIVE',
         });
       }
 
-      // === 3. Создаём общие примечания (если есть) ===
       if (notes.trim()) {
-        await apiService.createPrescription({
-          patient_id: selectedPatientId,
+        batch.push({
           prescription_type: 'NOTE',
           name: 'Общие примечания',
           frequency: 'однократно',
           notes: notes.trim(),
-          status: 'ACTIVE'
+          status: 'ACTIVE',
         });
       }
+
+      if (batch.length === 0) {
+        setError('Выберите хотя бы одну процедуру или измерение');
+        setLoading(false);
+        return;
+      }
+
+      await apiService.createPrescriptionsBatch(selectedPatientId, batch);
 
       setSuccessMessage('Назначения успешно созданы!');
       await loadPrescriptions(selectedPatientId);
@@ -217,6 +230,34 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   // ✅ Обработчик закрытия модалки
   const handleCloseDetails = () => {
     setSelectedPrescription(null);
+  };
+
+  const canCancelPrescription = (p: Prescription): boolean =>
+    p.status === 'ACTIVE' && user != null && p.created_by === user.id;
+
+  const handleCancelPrescription = async (p: Prescription) => {
+    if (!canCancelPrescription(p)) return;
+    if (!window.confirm(`Отменить назначение «${p.name}»?`)) return;
+
+    setCancellingId(p.id);
+    setError(null);
+    try {
+      const updated = await apiService.cancelPrescription(p.id);
+      setPrescriptions((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      if (selectedPrescription?.id === updated.id) {
+        setSelectedPrescription(updated);
+      }
+      setSuccessMessage(`Назначение «${p.name}» отменено`);
+      onPrescriptionCreated?.();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : null;
+      setError(typeof msg === 'string' ? msg : 'Не удалось отменить назначение');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   if (loading && patients.length === 0) {
@@ -519,7 +560,17 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
             </div>
 
             <div className="modal-footer">
-              <button className="modal-btn-close" onClick={handleCloseDetails}>
+              {selectedPrescription && canCancelPrescription(selectedPrescription) && (
+                <button
+                  type="button"
+                  className="modal-btn-cancel"
+                  disabled={cancellingId === selectedPrescription.id}
+                  onClick={() => void handleCancelPrescription(selectedPrescription)}
+                >
+                  {cancellingId === selectedPrescription.id ? 'Отмена…' : 'Отменить назначение'}
+                </button>
+              )}
+              <button type="button" className="modal-btn-close" onClick={handleCloseDetails}>
                 Закрыть
               </button>
             </div>

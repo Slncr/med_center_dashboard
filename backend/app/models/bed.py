@@ -11,4 +11,5 @@ class Bed(BaseModel):
     is_occupied = Column(Boolean, default=False)
     external_id = Column(String, unique=True, index=True)
 
+    room = relationship("Room", back_populates="beds")
     patients = relationship("Patient", back_populates="bed")

@@ -6,11 +6,11 @@ from .patient import Patient
 from .user import User
 from enum import Enum as PyEnum
 
-class ProcedureStatus(PyEnum):
-    SCHEDULED = "scheduled"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+class ProcedureStatus(str, PyEnum):
+    SCHEDULED = "SCHEDULED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 class MedicalRecord(BaseModel):
     __tablename__ = "medical_records"
@@ -105,7 +105,8 @@ class Prescription(BaseModel):
     start_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     end_date = Column(DateTime)                    # Дата окончания назначения
     status = Column(SQLEnum(PrescriptionStatus), default=PrescriptionStatus.ACTIVE, nullable=False)
-    
+    completed_at = Column(DateTime)
+
     # Relationships
     patient = relationship("Patient", back_populates="prescriptions")
     created_by_user = relationship("User", back_populates="prescriptions")

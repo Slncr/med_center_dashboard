@@ -66,7 +66,7 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
   const getStatusColor = (status: ProcedureStatus): string => {
     switch (status) {
       case 'SCHEDULED': return 'status-pending';
-      case 'IN_PROGRES': return 'status-in-progress';
+      case 'IN_PROGRESS': return 'status-in-progress';
       case 'COMPLETED': return 'status-completed';
       case 'CANCELLED': return 'status-cancelled';
       default: return '';
@@ -76,7 +76,7 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
   const getStatusText = (status: ProcedureStatus): string => {
     switch (status) {
       case 'SCHEDULED': return 'Запланировано';
-      case 'IN_PROGRES': return 'В процессе';
+      case 'IN_PROGRESS': return 'В процессе';
       case 'COMPLETED': return 'Выполнено';
       case 'CANCELLED': return 'Отменено';
       default: return status;
@@ -287,7 +287,7 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
                       <button
                         type="button"
                         className="action-button start-button"
-                        onClick={() => handleStatusChange(procedure.id!, 'IN_PROGRES')}
+                        onClick={() => handleStatusChange(procedure.id!, 'IN_PROGRESS')}
                         disabled={disabled}
                       >
                         Начать
@@ -302,7 +302,7 @@ const ProcedureSection: React.FC<ProcedureSectionProps> = ({
                       </button>
                     </>
                   )}
-                  {procedure.status === 'IN_PROGRES' && (
+                  {procedure.status === 'IN_PROGRESS' && (
                     <button
                       type="button"
                       className="action-button complete-button"

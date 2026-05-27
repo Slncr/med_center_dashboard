@@ -1,10 +1,10 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 from .patient import Patient
 
 class Bed(BaseModel):
     id: int
-    number: int
+    number: Union[str, int]
     patient: Optional[Patient] = None
 
 class Room(BaseModel):

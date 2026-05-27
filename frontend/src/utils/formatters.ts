@@ -51,3 +51,15 @@ export const formatBedNumber = (bed: number): string => {
 export const formatTemperature = (temp?: number): string => {
   return temp ? `${temp.toFixed(1)}°C` : '—';
 };
+
+/** ACTIVE / active / DISCHARGED / discharged → active | discharged */
+export const normalizePatientStatus = (status?: string | null): 'active' | 'discharged' => {
+  const s = String(status ?? '').toLowerCase();
+  return s === 'active' ? 'active' : 'discharged';
+};
+
+export const formatPatientStatusLabel = (status?: string | null): string =>
+  normalizePatientStatus(status) === 'active' ? 'Активный' : 'Выписан';
+
+export const isPatientActive = (status?: string | null): boolean =>
+  normalizePatientStatus(status) === 'active';

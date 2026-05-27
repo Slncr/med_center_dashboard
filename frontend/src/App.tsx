@@ -77,14 +77,7 @@ const App: React.FC = () => {
           } 
         />
         
-        <Route 
-          path="/room" 
-          element={
-            <ProtectedRoute allowedRoles={['admin', 'nurse', 'doctor']}>
-              <RoomDisplayPage />
-            </ProtectedRoute>
-          } 
-        />
+        <Route path="/room" element={<MainLayout><RoomDisplayPage /></MainLayout>} />
         
         {/* Редиректы по умолчанию */}
         <Route path="/dashboard" element={<Navigate to="/register" replace />} />

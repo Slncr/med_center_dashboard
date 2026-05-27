@@ -1,4 +1,3 @@
-// src/hooks/useWebSocket.ts
 import { useEffect, useRef } from 'react';
 
 export interface WebSocketMessage {
@@ -6,57 +5,51 @@ export interface WebSocketMessage {
   [key: string]: any;
 }
 
-export const useWebSocket = (room: string, onMessage: (message: WebSocketMessage) => void) => {
+export const useWebSocket = (
+  room: string,
+  onMessage: (message: WebSocketMessage) => void
+) => {
   const socketRef = useRef<WebSocket | null>(null);
+  const onMessageRef = useRef(onMessage);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (!token || !room) {
-      console.error('❌ Нет токена или комнаты для вебсокета');
       return;
     }
 
-    // ✅ Относительный путь — проксируется через /api/v1/ws
-    // const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    // const wsUrl = `${protocol}://${window.location.host}/api/v1/ws/${room}?token=${token}`;
-    const wsUrl = `ws://localhost:8000/api/v1/ws/${room}?token=${token}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${protocol}://${window.location.host}/api/v1/ws/${room}?token=${token}`;
 
-    console.log(`🔌 Подключение к вебсокету: ${wsUrl}`);
-    
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log(`✅ WS подключён к комнате: ${room}`);
+      console.log(`WS connected: ${room}`);
     };
 
     socket.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
-        console.log('📨 WS message:', message);
-        onMessage(message);
+        onMessageRef.current(message);
       } catch (e) {
-        console.error('❌ Ошибка парсинга WS:', e);
-      }
-    };
-
-    socket.onclose = (event) => {
-      if (event.code !== 1000) {
-        console.log(`⚠️ WS закрыт: ${event.code} ${event.reason || 'без причины'}`);
+        console.error('WS parse error:', e);
       }
     };
 
     socket.onerror = (error) => {
-      console.error('❌ WS ошибка:', error);
+      console.error('WS error:', error);
     };
 
-    // ✅ Защита от утечек: закрываем ТОЛЬКО существующий сокет
     return () => {
       if (socketRef.current) {
-        console.log('🧹 Очистка вебсокета');
         socketRef.current.close(1000, 'Component unmounted');
         socketRef.current = null;
       }
     };
-  }, [room, onMessage]);
+  }, [room]);
 };

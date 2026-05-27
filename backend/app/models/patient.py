@@ -4,8 +4,8 @@ from .base import BaseModel
 import enum
 
 class PatientStatus(str, enum.Enum):
-    ACTIVE = "active"
-    DISCHARGED = "discharged"
+    ACTIVE = "ACTIVE"
+    DISCHARGED = "DISCHARGED"
 
 class Patient(BaseModel):
     __tablename__ = "patients"
@@ -27,6 +27,7 @@ class Patient(BaseModel):
     branch_id = Column(String)    # Филиал из 1С
     department_id = Column(String)  # Подразделение из 1С
     department_name = Column(String)  # Название подразделения
+    ble_mac = Column(String, index=True)  # MAC браслета без двоеточий
 
     # Связи
     bed = relationship("Bed", back_populates="patients")

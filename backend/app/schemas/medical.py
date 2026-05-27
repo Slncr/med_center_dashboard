@@ -112,6 +112,15 @@ class PrescriptionBase(BaseModel):
 class PrescriptionCreate(PrescriptionBase):
     patient_id: int
 
+
+class PrescriptionBatchItem(PrescriptionBase):
+    """Один элемент пакета назначений (без patient_id)."""
+
+
+class PrescriptionsBatchCreate(BaseModel):
+    patient_id: int
+    prescriptions: List[PrescriptionBatchItem]
+
 class Prescription(PrescriptionBase):
     id: int
     patient_id: int

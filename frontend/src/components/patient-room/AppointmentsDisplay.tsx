@@ -71,7 +71,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   const getProcedureStatusText = (status: string): string => {
     switch (status) {
       case 'SCHEDULED': return 'Запланировано';
-      case 'IN_PROGRESS': return 'В процессе';
+      case 'IN_PROGRESSS': return 'В процессе';
       case 'COMPLETED': return '✅ Выполнено';
       case 'CANCELLED': return '❌ Отменено';
       default: return status;
@@ -81,7 +81,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   const getProcedureStatusClass = (status: string): string => {
     switch (status) {
       case 'SCHEDULED': return 'ad-status-scheduled';
-      case 'IN_PROGRESS': return 'ad-status-in-progress';
+      case 'IN_PROGRESSS': return 'ad-status-in-progress';
       case 'COMPLETED': return 'ad-status-completed';
       case 'CANCELLED': return 'ad-status-cancelled';
       default: return '';
@@ -115,7 +115,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   }
 
   const pendingProcedures = procedures.filter(p => 
-    p.status === 'SCHEDULED' || p.status === 'IN_PROGRES'
+    p.status === 'SCHEDULED' || p.status === 'IN_PROGRESS'
   );
   const completedProcedures = procedures.filter(p => p.status === 'COMPLETED');
 
@@ -250,7 +250,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                               className="ad-btn ad-btn-warning" 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleProcedureStatusChange(procedure.id!, 'IN_PROGRES');
+                                handleProcedureStatusChange(procedure.id!, 'IN_PROGRESS');
                               }}
                             >
                               Начать
@@ -267,7 +267,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                           </>
                         )}
                         
-                        {procedure.status === 'IN_PROGRES' && (
+                        {procedure.status === 'IN_PROGRESS' && (
                           <button 
                             className="ad-btn ad-btn-success" 
                             onClick={(e) => {
@@ -293,7 +293,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
                 </div>
                 <div className="ad-summary-item">
                   <span>В процессе:</span>
-                  <span>{procedures.filter(p => p.status === 'IN_PROGRES').length}</span>
+                  <span>{procedures.filter(p => p.status === 'IN_PROGRESS').length}</span>
                 </div>
                 <div className="ad-summary-item">
                   <span>Выполнено:</span>
