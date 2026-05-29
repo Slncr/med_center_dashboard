@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Patient, Room } from '../../types';
 import './PatientList.css';
 import PatientCard from './PatientCard';
-import { usePatients } from '../../hooks/usePatients';
 import apiService from '../../services/api';
 
 interface PatientListProps {
@@ -39,8 +38,6 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
     }
   }
 
-  const { refetch } = usePatients();
-
   // Найти палату по `patient.bed_id` и связь с койкой
   const getPatientRoomAndBed = (patient: Patient) => {
     for (const room of rooms) {
@@ -76,7 +73,9 @@ const PatientList: React.FC<PatientListProps> = ({ patients, rooms, onPatientSel
             <div key={patient.id} className="patient-card">
               <div className="patient-header">
                 <h3>{patient.full_name}</h3>
-                <span className={`patient-status ${patient.status}`}>{patient.status}</span>
+                <span className={`patient-status ${patient.status}`}>
+                  {patient.status === 'active' ? 'Активный' : 'Выписан'}
+                </span>
               </div>
 
               <div className="patient-info">

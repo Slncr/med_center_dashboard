@@ -1,38 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
 import { Patient, Room } from '../types';
+import { SYNC_1C_INTERVAL_MS } from '../utils/constants';
 
 export const usePatients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
-  const fetchPatients = useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchPatients = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const data = await apiService.getPatients();
-      setPatients(data);
+      if (mountedRef.current) setPatients(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки пациентов');
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки пациентов');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current && !silent) setLoading(false);
     }
   }, []);
 
-  const fetchRooms = useCallback(async () => {
-    setLoading(true);
+  const fetchRooms = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const data = await apiService.getRooms();
-      setRooms(data);
+      if (mountedRef.current) setRooms(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки палат');
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки палат');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current && !silent) setLoading(false);
     }
   }, []);
+
+  const refreshAll = useCallback(
+    async (silent = false) => {
+      await Promise.all([fetchPatients(silent), fetchRooms(silent)]);
+    },
+    [fetchPatients, fetchRooms],
+  );
 
   const selectPatient = useCallback(async (patientId: number): Promise<boolean> => {
     try {
@@ -45,9 +65,25 @@ export const usePatients = () => {
   }, []);
 
   useEffect(() => {
-    fetchRooms();
-    fetchPatients();
-  }, [fetchRooms, fetchPatients]);
+    void refreshAll(false);
+
+    const syncFrom1CAndRefresh = async () => {
+      try {
+        await apiService.syncWith1C();
+      } catch {
+        // Нет прав (врач) или 1С недоступна — обновим список из БД после серверного синка
+      }
+      if (mountedRef.current) {
+        await refreshAll(true);
+      }
+    };
+
+    const interval = setInterval(() => {
+      void syncFrom1CAndRefresh();
+    }, SYNC_1C_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [refreshAll]);
 
   return {
     patients,
@@ -57,6 +93,6 @@ export const usePatients = () => {
     fetchPatients,
     fetchRooms,
     selectPatient,
-    refetch: fetchPatients
+    refetch: () => refreshAll(true),
   };
 };

@@ -23,3 +23,4 @@ class User(BaseModel):
     appointments = relationship("Appointment", back_populates="doctor")
     procedures = relationship("Procedure", back_populates="created_by_user")
     prescriptions = relationship("Prescription", back_populates="created_by_user")
+    prescription_packages = relationship("PrescriptionPackage", back_populates="created_by_user")

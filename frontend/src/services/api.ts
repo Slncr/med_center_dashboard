@@ -2,8 +2,9 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { 
-  Patient, 
-  Room, 
+  Patient,
+  PatientFeatureFlags,
+  Room,
   PatientSelectResponse, 
   Observation, 
   Procedure, 
@@ -12,10 +13,16 @@ import {
   User,
   LoginRequest,
   Prescription,
+  PrescriptionPackage,
   HealthCheckResponse,
   ApiResponse,
   MonitoringDashboard,
 } from '../types';
+import type {
+  BraceletCheckResult,
+  BraceletOverview,
+  PatientVitalThresholds,
+} from '../types/braceletAlerts';
 
 const API_BASE_URL = '/api/v1';
 
@@ -137,6 +144,17 @@ class ApiService {
     return response.data;
   }
 
+  async updatePatientFeatureFlags(
+    patientId: number,
+    flags: PatientFeatureFlags,
+  ): Promise<Patient> {
+    const response = await this.api.patch<Patient>(
+      `/patients/${patientId}/feature-flags`,
+      flags,
+    );
+    return response.data;
+  }
+
   // Палаты
   async getRooms(): Promise<Room[]> {
     const response = await this.api.get<Room[]>('/rooms/');
@@ -218,25 +236,36 @@ class ApiService {
 
   async createPrescriptionsBatch(
     patientId: number,
-    prescriptions: Array<{
-      prescription_type: 'PROCEDURE' | 'MEASUREMENT' | 'NOTE';
-      name: string;
-      frequency?: string;
-      dosage?: string;
-      notes?: string;
-      status?: 'ACTIVE';
-    }>,
+    payload: {
+      general_notes?: string;
+      prescriptions: Array<{
+        prescription_type: 'PROCEDURE' | 'MEASUREMENT';
+        name: string;
+        frequency?: string;
+        executions_required?: number;
+        dosage?: string;
+        notes?: string;
+        status?: 'ACTIVE';
+      }>;
+    },
   ): Promise<Prescription[]> {
     const response = await this.api.post<Prescription[]>('/medical/prescriptions/batch', {
       patient_id: patientId,
-      prescriptions,
+      general_notes: payload.general_notes,
+      prescriptions: payload.prescriptions,
     });
     return response.data;
   }
 
   async getPrescriptions(patientId: number): Promise<Prescription[]> {
-    // ✅ Получаем назначения, НЕ наблюдения!
     const response = await this.api.get<Prescription[]>(`/medical/prescriptions/patient/${patientId}`);
+    return response.data;
+  }
+
+  async getPrescriptionPackages(patientId: number): Promise<PrescriptionPackage[]> {
+    const response = await this.api.get<PrescriptionPackage[]>(
+      `/medical/prescription-packages/patient/${patientId}`,
+    );
     return response.data;
   }
 
@@ -322,6 +351,47 @@ class ApiService {
 
   async getMonitoringHealth(): Promise<Record<string, unknown>> {
     const response = await this.api.get<Record<string, unknown>>('/monitoring/health');
+    return response.data;
+  }
+
+  // Мониторинг браслетов и оповещения MAX
+  async getBraceletOverview(): Promise<BraceletOverview> {
+    const response = await this.api.get<BraceletOverview>('/bracelet-alerts/overview');
+    return response.data;
+  }
+
+  async checkBraceletAlerts(): Promise<BraceletCheckResult> {
+    const response = await this.api.post<BraceletCheckResult>('/bracelet-alerts/check');
+    return response.data;
+  }
+
+  async testBraceletMaxBot(): Promise<{ ok: boolean }> {
+    const response = await this.api.post<{ ok: boolean }>('/bracelet-alerts/test-max');
+    return response.data;
+  }
+
+  async getPatientVitalThresholds(patientId: number): Promise<PatientVitalThresholds> {
+    const response = await this.api.get<PatientVitalThresholds>(
+      `/bracelet-alerts/patients/${patientId}/thresholds`,
+    );
+    return response.data;
+  }
+
+  async updatePatientVitalThresholds(
+    patientId: number,
+    body: Record<string, Record<string, number>>,
+  ): Promise<PatientVitalThresholds> {
+    const response = await this.api.put<PatientVitalThresholds>(
+      `/bracelet-alerts/patients/${patientId}/thresholds`,
+      body,
+    );
+    return response.data;
+  }
+
+  async resetPatientVitalThresholds(patientId: number): Promise<PatientVitalThresholds> {
+    const response = await this.api.delete<PatientVitalThresholds>(
+      `/bracelet-alerts/patients/${patientId}/thresholds`,
+    );
     return response.data;
   }
 }

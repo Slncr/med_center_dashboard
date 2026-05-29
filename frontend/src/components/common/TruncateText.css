@@ -1,0 +1,12 @@
+.truncate-text {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.truncate-text.empty {
+  color: #94a3b8;
+}

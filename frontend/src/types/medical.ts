@@ -146,9 +146,12 @@ export interface Prescription {
   id: number;
   patient_id: number;
   created_by: number;
+  package_id?: number | null;
   prescription_type: PrescriptionType;
   name: string;
   frequency?: string;
+  executions_required?: number;
+  executions_done?: number;
   dosage?: string;
   notes?: string;
   start_date: string;
@@ -156,6 +159,19 @@ export interface Prescription {
   status: PrescriptionStatus;
   completed_at?: string;
   created_at: string;
+}
+
+export type PrescriptionPackageStatus = 'ACTIVE' | 'COMPLETED';
+
+export interface PrescriptionPackage {
+  id: number;
+  patient_id: number;
+  created_by: number;
+  general_notes?: string | null;
+  status: PrescriptionPackageStatus;
+  completed_at?: string | null;
+  created_at: string;
+  prescriptions: Prescription[];
 }
 
 // ✅ Для выполнения назначения медсестрой

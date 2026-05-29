@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, patients, rooms, medical, users, integration, monitoring
+from app.api.v1.endpoints import auth, patients, rooms, medical, users, integration, monitoring, bracelet_alerts
 from app.api.v1.endpoints import ws as ws_router
 
 api_router = APIRouter()
@@ -11,4 +11,5 @@ api_router.include_router(patients.router, prefix="/patients", tags=["patients"]
 api_router.include_router(rooms.router, prefix="/rooms", tags=["rooms"])
 api_router.include_router(medical.router, prefix="/medical", tags=["Medical"])
 api_router.include_router(monitoring.router)
+api_router.include_router(bracelet_alerts.router)
 api_router.include_router(ws_router.router)

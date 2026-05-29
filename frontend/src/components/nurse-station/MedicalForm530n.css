@@ -202,6 +202,14 @@
   margin: 4px 0 0;
 }
 
+.f530-filters-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 900px;
+}
+
 .f530-filters {
   display: flex;
   flex-wrap: wrap;
@@ -384,6 +392,129 @@
   color: #94a3b8;
   font-size: 14px;
   margin: 0;
+}
+
+.f530-side-block h3 {
+  font-size: 16px;
+  margin: 0 0 12px;
+  color: #0f172a;
+}
+
+.f530-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.f530-assignment-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.f530-assignment-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.f530-assignment-head .f530-tag {
+  margin-left: 0;
+}
+
+.f530-assignment-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.f530-assignment-meta {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.f530-assignment-notes {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.f530-assignment-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+}
+
+.f530-assignment-status.status-active {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.f530-assignment-status.status-completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.f530-btn.active {
+  background: #1e40af;
+  color: #fff;
+}
+
+.f530-manual-badge {
+  margin-left: 10px;
+  padding: 3px 8px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.f530-cell-input {
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.f530-cell-input.narrow {
+  max-width: 52px;
+}
+
+.f530-bp-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.f530-notes-edit .f530-cell-input {
+  margin-bottom: 4px;
+}
+
+.f530-col-actions {
+  width: 36px;
+}
+
+.f530-row-remove {
+  border: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.f530-table .f530-notes {
+  max-width: 200px;
 }
 
 @media print {

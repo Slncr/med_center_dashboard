@@ -1,0 +1,114 @@
+.patient-thresholds-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.patient-thresholds-form.loading,
+.patient-thresholds-form.error {
+  padding: 20px;
+  color: #64748b;
+}
+
+.patient-thresholds-form__header h3 {
+  margin: 0 0 6px;
+  color: #1e293b;
+}
+
+.patient-thresholds-form__patient {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.patient-thresholds-form__desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 640px;
+}
+
+.patient-thresholds-form__error {
+  padding: 10px 12px;
+  background: #fef2f2;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.patient-thresholds-form__badge {
+  display: inline-block;
+  padding: 6px 10px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.patient-thresholds-form__effective {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #475569;
+  padding: 10px 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.patient-thresholds-form__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.patient-thresholds-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.patient-thresholds-form__actions button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.patient-thresholds-form__actions button.primary {
+  background: #4caf50;
+  color: #fff;
+}
+
+.patient-thresholds-form__actions button.secondary {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.patient-thresholds-form__actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.patient-thresholds-form.compact {
+  margin-top: 12px;
+}
+
+.patient-thresholds-form.compact .patient-thresholds-form__effective {
+  font-size: 0.8rem;
+}
+
+.patient-thresholds-form.compact .patient-thresholds-form__actions {
+  margin-top: 8px;
+}
+
+.patient-thresholds-form.compact .patient-thresholds-form__actions button {
+  flex: 1;
+  min-width: 120px;
+}

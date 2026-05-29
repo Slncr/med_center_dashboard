@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
-import { Patient, Prescription } from '../../types';
+import { Patient, Prescription, PrescriptionPackage } from '../../types';
+import { formatPackageTitle, packageStatusLabel } from '../../utils/prescriptionPackages';
+import PrescriptionPackageModal from '../nurse-station/PrescriptionPackageModal';
 import './PrescriptionsForm.css';
 
 interface PrescriptionsFormProps {
@@ -17,18 +19,18 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null); // ✅ Для модалки
-  const [measurementsFrequency, setMeasurementsFrequency] = useState('1 раз в день');
+  const [packages, setPackages] = useState<PrescriptionPackage[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<PrescriptionPackage | null>(null);
+  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
 
   // Состояние для процедур
   const [procedures, setProcedures] = useState([
-    { id: 1, name: 'Санитарная обработка и смена белья', selected: false, frequency: 1 },
-    { id: 2, name: 'Ванна', selected: false, frequency: 1 },
-    { id: 3, name: 'Перевязка', selected: false, frequency: 1 },
-    { id: 4, name: 'Проверка на педикулёз/чесотку', selected: false, frequency: 1 },
-    { id: 5, name: 'Установка/контроль ПВК', selected: false, frequency: 1 },
-    { id: 6, name: 'Другая процедура', selected: false, frequency: 1, customName: '' }
+    { id: 1, name: 'Санитарная обработка и смена белья', selected: false, frequency: 1, notes: '' },
+    { id: 2, name: 'Ванна', selected: false, frequency: 1, notes: '' },
+    { id: 3, name: 'Перевязка', selected: false, frequency: 1, notes: '' },
+    { id: 4, name: 'Проверка на педикулёз/чесотку', selected: false, frequency: 1, notes: '' },
+    { id: 5, name: 'Установка/контроль ПВК', selected: false, frequency: 1, notes: '' },
+    { id: 6, name: 'Другая процедура', selected: false, frequency: 1, customName: '', notes: '' },
   ]);
 
   const MEASUREMENT_LABELS: Record<string, string> = {
@@ -46,16 +48,16 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
 
   // Состояние для измерений
   const [measurements, setMeasurements] = useState({
-    temperature: { selected: false, frequency: 1 },
-    pulse: { selected: false, frequency: 1 },
-    blood_pressure: { selected: false, frequency: 1 },
-    respiration_rate: { selected: false, frequency: 1 },
-    spO2: { selected: false, frequency: 1 },
-    weight: { selected: false, frequency: 1 },
-    fluid_intake_oral: { selected: false, frequency: 1 },
-    fluid_intake_iv: { selected: false, frequency: 1 },
-    urine_output: { selected: false, frequency: 1 },
-    bowel_movement: { selected: false, frequency: 1 }
+    temperature: { selected: false, frequency: 1, notes: '' },
+    pulse: { selected: false, frequency: 1, notes: '' },
+    blood_pressure: { selected: false, frequency: 1, notes: '' },
+    respiration_rate: { selected: false, frequency: 1, notes: '' },
+    spO2: { selected: false, frequency: 1, notes: '' },
+    weight: { selected: false, frequency: 1, notes: '' },
+    fluid_intake_oral: { selected: false, frequency: 1, notes: '' },
+    fluid_intake_iv: { selected: false, frequency: 1, notes: '' },
+    urine_output: { selected: false, frequency: 1, notes: '' },
+    bowel_movement: { selected: false, frequency: 1, notes: '' },
   });
 
   const [notes, setNotes] = useState('');
@@ -68,7 +70,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     if (selectedPatientId) {
       loadPrescriptions(selectedPatientId);
     } else {
-      setPrescriptions([]);
+      setPackages([]);
     }
   }, [selectedPatientId]);
 
@@ -88,8 +90,8 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
 
   const loadPrescriptions = async (patientId: number) => {
     try {
-      const data = await apiService.getPrescriptions(patientId);
-      setPrescriptions(data);
+      const data = await apiService.getPrescriptionPackages(patientId);
+      setPackages(data);
     } catch (err) {
       console.error('Ошибка загрузки назначений:', err);
     }
@@ -97,16 +99,16 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
 
   const resetAllMeasurements = () => {
     setMeasurements({
-      temperature: { selected: false, frequency: 1 },
-      pulse: { selected: false, frequency: 1 },
-      blood_pressure: { selected: false, frequency: 1 },
-      respiration_rate: { selected: false, frequency: 1 },
-      spO2: { selected: false, frequency: 1 },
-      weight: { selected: false, frequency: 1 },
-      fluid_intake_oral: { selected: false, frequency: 1 },
-      fluid_intake_iv: { selected: false, frequency: 1 },
-      urine_output: { selected: false, frequency: 1 },
-      bowel_movement: { selected: false, frequency: 1 }
+      temperature: { selected: false, frequency: 1, notes: '' },
+      pulse: { selected: false, frequency: 1, notes: '' },
+      blood_pressure: { selected: false, frequency: 1, notes: '' },
+      respiration_rate: { selected: false, frequency: 1, notes: '' },
+      spO2: { selected: false, frequency: 1, notes: '' },
+      weight: { selected: false, frequency: 1, notes: '' },
+      fluid_intake_oral: { selected: false, frequency: 1, notes: '' },
+      fluid_intake_iv: { selected: false, frequency: 1, notes: '' },
+      urine_output: { selected: false, frequency: 1, notes: '' },
+      bowel_movement: { selected: false, frequency: 1, notes: '' },
     });
   };
 
@@ -149,9 +151,10 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
 
     try {
       const batch: Array<{
-        prescription_type: 'PROCEDURE' | 'MEASUREMENT' | 'NOTE';
+        prescription_type: 'PROCEDURE' | 'MEASUREMENT';
         name: string;
         frequency?: string;
+        executions_required?: number;
         notes?: string;
         status?: 'ACTIVE';
       }> = [];
@@ -162,35 +165,20 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
           prescription_type: 'PROCEDURE',
           name: proc.customName || proc.name,
           frequency: `${proc.frequency} раз/день`,
-          notes: notes.trim() || undefined,
+          executions_required: proc.frequency,
+          notes: proc.notes.trim() || undefined,
           status: 'ACTIVE',
         });
       }
 
-      const selectedMeasurements = Object.entries(measurements)
-        .filter(([_, v]) => v.selected)
-        .map(([key]) => key);
-
-      const translatedMeasurements = selectedMeasurements.map(
-        (key) => MEASUREMENT_LABELS[key] || key,
-      );
-
-      if (selectedMeasurements.length > 0) {
+      for (const [key, value] of Object.entries(measurements)) {
+        if (!value.selected) continue;
         batch.push({
           prescription_type: 'MEASUREMENT',
-          name: `Измерения: ${translatedMeasurements.join(', ')}`,
-          frequency: measurementsFrequency.trim() || '1 раз в день',
-          notes: notes.trim() || 'Рутинные измерения',
-          status: 'ACTIVE',
-        });
-      }
-
-      if (notes.trim()) {
-        batch.push({
-          prescription_type: 'NOTE',
-          name: 'Общие примечания',
-          frequency: 'однократно',
-          notes: notes.trim(),
+          name: MEASUREMENT_LABELS[key] || key,
+          frequency: `${value.frequency} раз/день`,
+          executions_required: value.frequency,
+          notes: value.notes.trim() || undefined,
           status: 'ACTIVE',
         });
       }
@@ -201,7 +189,10 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
         return;
       }
 
-      await apiService.createPrescriptionsBatch(selectedPatientId, batch);
+      await apiService.createPrescriptionsBatch(selectedPatientId, {
+        general_notes: notes.trim() || undefined,
+        prescriptions: batch,
+      });
 
       setSuccessMessage('Назначения успешно созданы!');
       await loadPrescriptions(selectedPatientId);
@@ -211,7 +202,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
       }
 
       // Сброс формы
-      setProcedures(prev => prev.map(p => ({ ...p, selected: false, customName: '' })));
+      setProcedures(prev => prev.map(p => ({ ...p, selected: false, customName: '', notes: '' })));
       resetAllMeasurements();
       setNotes('');
     } catch (err) {
@@ -242,10 +233,12 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
     setCancellingId(p.id);
     setError(null);
     try {
-      const updated = await apiService.cancelPrescription(p.id);
-      setPrescriptions((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      if (selectedPrescription?.id === updated.id) {
-        setSelectedPrescription(updated);
+      await apiService.cancelPrescription(p.id);
+      if (selectedPatientId) {
+        await loadPrescriptions(selectedPatientId);
+      }
+      if (selectedPrescription?.id === p.id) {
+        setSelectedPrescription(null);
       }
       setSuccessMessage(`Назначение «${p.name}» отменено`);
       onPrescriptionCreated?.();
@@ -324,16 +317,31 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
                         <span>{proc.name}</span>
                       </label>
                       {proc.selected && (
-                        <div className="frequency-input">
-                          <label>Раз в день:</label>
+                        <>
+                          <div className="frequency-input">
+                            <label>Раз в день:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="24"
+                              value={proc.frequency}
+                              onChange={(e) => handleProcedureFrequency(proc.id, Number(e.target.value))}
+                            />
+                          </div>
                           <input
-                            type="number"
-                            min="1"
-                            max="24"
-                            value={proc.frequency}
-                            onChange={(e) => handleProcedureFrequency(proc.id, Number(e.target.value))}
+                            type="text"
+                            className="item-notes-input"
+                            placeholder="Примечание к процедуре"
+                            value={proc.notes}
+                            onChange={(e) =>
+                              setProcedures((prev) =>
+                                prev.map((p) =>
+                                  p.id === proc.id ? { ...p, notes: e.target.value } : p,
+                                ),
+                              )
+                            }
                           />
-                        </div>
+                        </>
                       )}
                       {proc.id === 6 && proc.selected && (
                         <input
@@ -379,37 +387,47 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
                         </span>
                       </label>
                       {value.selected && (
-                        <div className="frequency-input">
-                          <label>Раз в день:</label>
+                        <>
+                          <div className="frequency-input">
+                            <label>Раз в день:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="24"
+                              value={value.frequency}
+                              onChange={(e) =>
+                                handleMeasurementFrequency(
+                                  key as keyof typeof measurements,
+                                  Number(e.target.value),
+                                )
+                              }
+                            />
+                          </div>
                           <input
-                            type="number"
-                            min="1"
-                            max="24"
-                            value={value.frequency}
-                            onChange={(e) => handleMeasurementFrequency(key as keyof typeof measurements, Number(e.target.value))}
+                            type="text"
+                            className="item-notes-input"
+                            placeholder="Примечание к измерению"
+                            value={value.notes}
+                            onChange={(e) =>
+                              setMeasurements((prev) => ({
+                                ...prev,
+                                [key]: { ...prev[key as keyof typeof measurements], notes: e.target.value },
+                              }))
+                            }
                           />
-                        </div>
+                        </>
                       )}
                     </div>
                   ))}
-                </div>
-                <div className="form-group">
-                  <label>Частота выполнения измерений:</label>
-                  <input
-                    type="text"
-                    value={measurementsFrequency}
-                    onChange={(e) => setMeasurementsFrequency(e.target.value)}
-                    placeholder="Например: 3 раза в день, каждые 4 часа и т.д."
-                  />
                 </div>
               </div>
             )}
 
             {/* Примечания */}
             <div className="form-section">
-              <h3>3. Примечания</h3>
+              <h3>3. Общие примечания</h3>
               <textarea
-                placeholder="Дополнительные инструкции для медперсонала..."
+                placeholder="Общие инструкции ко всему назначению (не к отдельной процедуре)..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
@@ -430,44 +448,29 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
             <div className="pf-no-patient-selected">
               <p>Выберите пациента, чтобы увидеть его назначения</p>
             </div>
-          ) : prescriptions.length === 0 ? (
+          ) : packages.length === 0 ? (
             <div className="empty-list">
               <p>У пациента пока нет назначений</p>
             </div>
           ) : (
             <div className="prescriptions-compact-list">
-              {prescriptions.map(p => (
-                <div 
-                  key={p.id} 
-                  className={`prescription-item status-${p.status.toLowerCase()}`}
-                  onClick={() => handleOpenDetails(p)}
+              {packages.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  className={`prescription-item status-${pkg.status.toLowerCase()}`}
+                  onClick={() => setSelectedPackage(pkg)}
                 >
-
                   <div className="prescription-item-body">
-                    <div className="prescription-item-name">
-                      {p.name}
-                    </div>
-                    
-                    {p.frequency && (
+                    <div className="prescription-item-name">{formatPackageTitle(pkg)}</div>
+                    {pkg.general_notes && (
                       <div className="prescription-item-meta">
-                        <span className="frequency">{p.frequency}</span>
-                        {p.notes && <span className="notes-indicator">📝</span>}
+                        <span className="notes-indicator">📝 Общие примечания</span>
                       </div>
                     )}
                   </div>
-
                   <div className="prescription-item-header">
-                    <span className={`type-badge type-${p.prescription_type.toLowerCase()}`}>
-                      {p.prescription_type === 'PROCEDURE' && '💉'}
-                      {p.prescription_type === 'MEASUREMENT' && '📊'}
-                      {p.prescription_type === 'NOTE' && '📝'}
-                    </span>
-                    <span className={`status-badge ${p.status.toLowerCase()}`}>
-                      {p.status === 'ACTIVE' && 'Активно'}
-                      {p.status === 'COMPLETED' && '✅'}
-                      {p.status === 'CANCELLED' && '❌'}
-                    </span>
-                  </div>                  
+                    <span className="status-badge">{packageStatusLabel(pkg)}</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -475,7 +478,13 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
         </div>
       </div>
 
-      {/* ✅ Модальное окно с детальной информацией */}
+      {selectedPackage && (
+        <PrescriptionPackageModal
+          pkg={selectedPackage}
+          onClose={() => setSelectedPackage(null)}
+        />
+      )}
+
       {selectedPrescription && (
         <div className="modal-overlay" onClick={handleCloseDetails}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -559,7 +568,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
               )}
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-actions">
               {selectedPrescription && canCancelPrescription(selectedPrescription) && (
                 <button
                   type="button"

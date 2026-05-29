@@ -1,13 +1,36 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { apiService } from '../../services/api';
-import { Form530n, Patient } from '../../types';
+import { Form530n, Form530nObservationRow, Patient } from '../../types';
+import TruncateText from '../common/TruncateText';
 import LoadingSpinner from '../common/LoadingSpinner';
+import {
+  getPrescriptionStatusLabel,
+  getProcedureStatusLabel,
+  formatMoscowDate,
+  formatMoscowTime,
+} from '../../utils/formatters';
 import './MedicalForm530n.css';
 
 interface MedicalForm530nProps {
   patientId: number | null;
   onPatientSelect: (patientId: number) => void;
 }
+
+type EditableRow = {
+  id?: number;
+  localId: string;
+  record_date: string;
+  record_time: string;
+  temperature: string;
+  pulse: string;
+  bp_sys: string;
+  bp_dia: string;
+  respiration_rate: string;
+  spO2: string;
+  weight: string;
+  complaints: string;
+  examination: string;
+};
 
 const formatDate = (iso: string): string => {
   try {
@@ -19,14 +42,62 @@ const formatDate = (iso: string): string => {
 
 const toInputDate = (d: Date): string => d.toISOString().split('T')[0];
 
+const emptyRow = (recordDate: string): EditableRow => ({
+  localId: crypto.randomUUID(),
+  record_date: recordDate,
+  record_time: '',
+  temperature: '',
+  pulse: '',
+  bp_sys: '',
+  bp_dia: '',
+  respiration_rate: '',
+  spO2: '',
+  weight: '',
+  complaints: '',
+  examination: '',
+});
+
+const rowFromObservation = (row: Form530nObservationRow): EditableRow => {
+  const [bp_sys, bp_dia] = (row.blood_pressure || '').split('/');
+  return {
+    id: row.id,
+    localId: String(row.id),
+    record_date: row.record_date,
+    record_time: row.record_time || '',
+    temperature: row.temperature != null ? String(row.temperature) : '',
+    pulse: row.pulse != null ? String(row.pulse) : '',
+    bp_sys: bp_sys?.trim() || '',
+    bp_dia: bp_dia?.trim() || '',
+    respiration_rate: row.respiration_rate != null ? String(row.respiration_rate) : '',
+    spO2: row.spO2 != null ? String(row.spO2) : '',
+    weight: row.weight != null ? String(row.weight) : '',
+    complaints: row.complaints || '',
+    examination: row.examination || '',
+  };
+};
+
+const prescTypeLabel = (type: string) => {
+  switch (type) {
+    case 'PROCEDURE':
+      return 'Процедура';
+    case 'MEASUREMENT':
+      return 'Измерение';
+    default:
+      return type;
+  }
+};
+
 const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientSelect }) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [localPatientId, setLocalPatientId] = useState<number | null>(patientId);
   const [form, setForm] = useState<Form530n | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [manualMode, setManualMode] = useState(false);
+  const [editableRows, setEditableRows] = useState<EditableRow[]>([]);
 
   const activePatientId = localPatientId ?? patientId;
 
@@ -48,10 +119,12 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
       if (dateTo) params.date_to = dateTo;
       const data = await apiService.getForm530n(activePatientId, params);
       setForm(data);
+      setEditableRows(data.observations.map(rowFromObservation));
       if (!dateFrom) setDateFrom(data.period_from);
       if (!dateTo) setDateTo(data.period_to);
     } catch (err) {
       setForm(null);
+      setEditableRows([]);
       setError(err instanceof Error ? err.message : 'Не удалось сформировать форму');
     } finally {
       setLoading(false);
@@ -63,6 +136,7 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
       void loadForm();
     } else {
       setForm(null);
+      setEditableRows([]);
     }
   }, [activePatientId, loadForm]);
 
@@ -71,6 +145,7 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
     onPatientSelect(id);
     setDateFrom('');
     setDateTo('');
+    setManualMode(false);
   };
 
   const handlePrint = async () => {
@@ -102,6 +177,71 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
     setDateTo(toInputDate(to));
   };
 
+  const updateRow = (localId: string, field: keyof EditableRow, value: string) => {
+    setEditableRows((prev) =>
+      prev.map((r) => (r.localId === localId ? { ...r, [field]: value } : r)),
+    );
+  };
+
+  const addRow = () => {
+    const defaultDate = dateTo || dateFrom || toInputDate(new Date());
+    setEditableRows((prev) => [...prev, emptyRow(defaultDate)]);
+    setManualMode(true);
+  };
+
+  const removeRow = (localId: string) => {
+    setEditableRows((prev) => prev.filter((r) => r.localId !== localId));
+  };
+
+  const saveManualRows = async () => {
+    if (!activePatientId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      for (const row of editableRows) {
+        const payload = {
+          patient_id: activePatientId,
+          record_date: row.record_date,
+          temperature: row.temperature ? parseFloat(row.temperature) : null,
+          pulse: row.pulse ? parseInt(row.pulse, 10) : null,
+          blood_pressure_systolic: row.bp_sys ? parseInt(row.bp_sys, 10) : null,
+          blood_pressure_diastolic: row.bp_dia ? parseInt(row.bp_dia, 10) : null,
+          respiration_rate: row.respiration_rate ? parseInt(row.respiration_rate, 10) : null,
+          spO2: row.spO2 ? parseInt(row.spO2, 10) : null,
+          weight: row.weight ? parseFloat(row.weight) : null,
+          complaints: row.complaints || null,
+          examination: row.examination || null,
+        };
+
+        if (row.id) {
+          await apiService.updateObservation(row.id, payload);
+        } else if (
+          row.temperature ||
+          row.pulse ||
+          row.bp_sys ||
+          row.bp_dia ||
+          row.complaints ||
+          row.examination
+        ) {
+          await apiService.createObservation(payload);
+        }
+      }
+      await loadForm();
+      setManualMode(false);
+    } catch {
+      setError('Ошибка сохранения записей');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const enableManualMode = () => {
+    setManualMode(true);
+    if (editableRows.length === 0) {
+      addRow();
+    }
+  };
+
   if (!activePatientId) {
     return (
       <div className="medical-form-530n">
@@ -120,9 +260,9 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
               <option value="" disabled>
                 — Выберите пациента —
               </option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.full_name}
+              {patients.map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {pt.full_name}
                 </option>
               ))}
             </select>
@@ -173,9 +313,37 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
         <button type="button" className="f530-btn secondary" onClick={() => setPeriodDays(14)}>
           14 дней
         </button>
-        <button type="button" className="f530-btn primary" onClick={() => void loadForm()} disabled={loading}>
-          {loading ? 'Формирование…' : 'Сформировать'}
+        <button
+          type="button"
+          className="f530-btn primary"
+          onClick={() => void loadForm()}
+          disabled={loading}
+          title="Загрузить наблюдения, активные назначения и процедуры за выбранный период"
+        >
+          {loading ? 'Загрузка…' : 'Обновить за период'}
         </button>
+        <button
+          type="button"
+          className={`f530-btn secondary ${manualMode ? 'active' : ''}`}
+          onClick={enableManualMode}
+        >
+          Ручной ввод
+        </button>
+        {manualMode && (
+          <>
+            <button type="button" className="f530-btn secondary" onClick={addRow}>
+              + Строка
+            </button>
+            <button
+              type="button"
+              className="f530-btn primary"
+              onClick={() => void saveManualRows()}
+              disabled={saving}
+            >
+              {saving ? 'Сохранение…' : 'Сохранить записи'}
+            </button>
+          </>
+        )}
         <button
           type="button"
           className="f530-btn print"
@@ -185,6 +353,11 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
           Печать
         </button>
       </div>
+
+      <p className="f530-filters-hint">
+        «Обновить за период» подтягивает из системы записи наблюдений, активные назначения и
+        выполненные процедуры за даты «С» — «По». Ручной ввод добавляет или правит строки листа.
+      </p>
 
       {error && <div className="f530-error">{error}</div>}
 
@@ -232,11 +405,9 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
             <div className="f530-meta">
               Записей наблюдений: <strong>{form.observations_count}</strong>
               {' · '}
-              Сформировано: {formatDate(form.generated_at)}{' '}
-              {new Date(form.generated_at).toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              Сформировано: {formatMoscowDate(form.generated_at)}{' '}
+              {formatMoscowTime(form.generated_at)}
+              {manualMode && <span className="f530-manual-badge">Режим ручного ввода</span>}
             </div>
           </div>
 
@@ -244,6 +415,7 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
             <table className="f530-table">
               <thead>
                 <tr>
+                  {manualMode && <th className="f530-col-actions" />}
                   <th>Дата</th>
                   <th>Время</th>
                   <th>t°</th>
@@ -256,65 +428,193 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
                 </tr>
               </thead>
               <tbody>
-                {form.observations.length === 0 ? (
+                {editableRows.length === 0 && !manualMode ? (
                   <tr>
                     <td colSpan={9} className="f530-empty">
-                      Нет наблюдений за период. Добавьте данные на вкладке «Наблюдения».
+                      Нет наблюдений за период. Нажмите «Ручной ввод» для заполнения листа.
+                    </td>
+                  </tr>
+                ) : editableRows.length === 0 && manualMode ? (
+                  <tr>
+                    <td colSpan={10} className="f530-empty">
+                      Нажмите «+ Строка», чтобы добавить запись.
                     </td>
                   </tr>
                 ) : (
-                  form.observations.map((row) => (
-                    <tr key={row.id}>
-                      <td>{formatDate(row.record_date)}</td>
-                      <td>{row.record_time || '—'}</td>
-                      <td>{row.temperature ?? '—'}</td>
-                      <td>{row.pulse ?? '—'}</td>
-                      <td>{row.blood_pressure ?? '—'}</td>
-                      <td>{row.respiration_rate ?? '—'}</td>
-                      <td>{row.spO2 ?? '—'}</td>
-                      <td>{row.weight ?? '—'}</td>
-                      <td className="f530-notes">
-                        {row.complaints || row.examination || '—'}
-                      </td>
-                    </tr>
-                  ))
+                  editableRows.map((row) =>
+                    manualMode ? (
+                      <tr key={row.localId}>
+                        <td className="f530-col-actions">
+                          <button
+                            type="button"
+                            className="f530-row-remove"
+                            onClick={() => removeRow(row.localId)}
+                            title="Удалить строку"
+                          >
+                            ✕
+                          </button>
+                        </td>
+                        <td>
+                          <input
+                            type="date"
+                            className="f530-cell-input"
+                            value={row.record_date}
+                            onChange={(e) => updateRow(row.localId, 'record_date', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.record_time}
+                            placeholder="08:00"
+                            onChange={(e) => updateRow(row.localId, 'record_time', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.temperature}
+                            onChange={(e) => updateRow(row.localId, 'temperature', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.pulse}
+                            onChange={(e) => updateRow(row.localId, 'pulse', e.target.value)}
+                          />
+                        </td>
+                        <td className="f530-bp-cell">
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.bp_sys}
+                            placeholder="120"
+                            onChange={(e) => updateRow(row.localId, 'bp_sys', e.target.value)}
+                          />
+                          <span>/</span>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.bp_dia}
+                            placeholder="80"
+                            onChange={(e) => updateRow(row.localId, 'bp_dia', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.respiration_rate}
+                            onChange={(e) => updateRow(row.localId, 'respiration_rate', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.spO2}
+                            onChange={(e) => updateRow(row.localId, 'spO2', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="f530-cell-input narrow"
+                            value={row.weight}
+                            onChange={(e) => updateRow(row.localId, 'weight', e.target.value)}
+                          />
+                        </td>
+                        <td className="f530-notes-edit">
+                          <input
+                            className="f530-cell-input"
+                            value={row.complaints}
+                            placeholder="Жалобы"
+                            onChange={(e) => updateRow(row.localId, 'complaints', e.target.value)}
+                          />
+                          <input
+                            className="f530-cell-input"
+                            value={row.examination}
+                            placeholder="Осмотр"
+                            onChange={(e) => updateRow(row.localId, 'examination', e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={row.localId}>
+                        <td>{formatDate(row.record_date)}</td>
+                        <td>{row.record_time || '—'}</td>
+                        <td>{row.temperature || '—'}</td>
+                        <td>{row.pulse || '—'}</td>
+                        <td>
+                          {row.bp_sys || row.bp_dia
+                            ? `${row.bp_sys || '—'}/${row.bp_dia || '—'}`
+                            : '—'}
+                        </td>
+                        <td>{row.respiration_rate || '—'}</td>
+                        <td>{row.spO2 || '—'}</td>
+                        <td>{row.weight || '—'}</td>
+                        <td className="f530-notes">
+                          <TruncateText
+                            text={[row.complaints, row.examination].filter(Boolean).join(' · ') || '—'}
+                          />
+                        </td>
+                      </tr>
+                    ),
+                  )
                 )}
               </tbody>
             </table>
           </div>
 
           <div className="f530-side-sections">
-            <section>
-              <h3>Активные назначения</h3>
+            <section className="f530-side-block">
+              <h3>Активные назначения ({form.prescriptions.length})</h3>
               {form.prescriptions.length === 0 ? (
                 <p className="f530-muted">Нет активных назначений</p>
               ) : (
-                <ul>
+                <div className="f530-cards">
                   {form.prescriptions.map((rx) => (
-                    <li key={rx.id}>
-                      {rx.name}
-                      <span className="f530-tag">{rx.prescription_type}</span>
-                      {rx.frequency && <em> — {rx.frequency}</em>}
-                    </li>
+                    <div key={rx.id} className="f530-assignment-card">
+                      <div className="f530-assignment-head">
+                        <span className="f530-tag">{prescTypeLabel(rx.prescription_type)}</span>
+                        <span className={`f530-assignment-status status-${rx.status.toLowerCase()}`}>
+                          {rx.status === 'ACTIVE' ? 'Активно' : rx.status}
+                        </span>
+                      </div>
+                      <div className="f530-assignment-name">{rx.name}</div>
+                      {rx.frequency && (
+                        <div className="f530-assignment-meta">Частота: {rx.frequency}</div>
+                      )}
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </section>
-            <section>
-              <h3>Процедуры за период</h3>
+            <section className="f530-side-block">
+              <h3>Процедуры за период ({form.procedures.length})</h3>
               {form.procedures.length === 0 ? (
                 <p className="f530-muted">Нет процедур</p>
               ) : (
-                <ul>
+                <div className="f530-cards">
                   {form.procedures.map((pr) => (
-                    <li key={pr.id}>
-                      {pr.name} — {pr.status}
+                    <div key={pr.id} className="f530-assignment-card">
+                      <div className="f530-assignment-head">
+                        <span className="f530-tag">Выполнение</span>
+                        <span className={`f530-assignment-status status-${(pr.status || '').toLowerCase()}`}>
+                          {getProcedureStatusLabel(pr.status)}
+                        </span>
+                      </div>
+                      <div className="f530-assignment-name">{pr.name}</div>
                       {pr.scheduled_time && (
-                        <em> ({formatDate(pr.scheduled_time)})</em>
+                        <div className="f530-assignment-meta">
+                          {formatMoscowDate(pr.scheduled_time)}{' '}
+                          {formatMoscowTime(pr.scheduled_time)}
+                        </div>
                       )}
-                    </li>
+                      {pr.notes && (
+                        <div className="f530-assignment-notes">
+                          <TruncateText text={pr.notes} />
+                        </div>
+                      )}
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </section>
           </div>

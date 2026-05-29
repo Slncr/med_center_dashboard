@@ -12,6 +12,19 @@ export interface Patient {
   created_by?: number;
   external_id?: string; // UIID из 1С
   ble_mac?: string;
+  flag_white?: boolean;
+  flag_yellow?: boolean;
+  flag_red?: boolean;
+  flag_orange?: boolean;
+  flag_green?: boolean;
+}
+
+export interface PatientFeatureFlags {
+  flag_white: boolean;
+  flag_yellow: boolean;
+  flag_red: boolean;
+  flag_orange: boolean;
+  flag_green: boolean;
 }
 
 export interface Bed {

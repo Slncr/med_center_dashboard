@@ -1,0 +1,93 @@
+.metric-threshold-fields {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #fafbfc;
+}
+
+.metric-threshold-fields.is-active {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.metric-threshold-fields__toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.metric-threshold-fields.is-active .metric-threshold-fields__toggle-row {
+  border-color: #4caf50;
+  background: #f0fdf4;
+}
+
+.metric-threshold-fields__checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-top: 2px;
+  accent-color: #16a34a;
+  cursor: pointer;
+}
+
+.metric-threshold-fields__toggle-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  color: #334155;
+  flex: 1;
+}
+
+.metric-threshold-fields__toggle-label strong {
+  font-size: 0.95rem;
+}
+
+.metric-threshold-fields__hint {
+  font-weight: 400;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.metric-threshold-fields__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.metric-threshold-fields__group h4 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.metric-threshold-fields__group--critical h4 {
+  color: #b91c1c;
+}
+
+.metric-threshold-fields__group label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.metric-threshold-fields__group input {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.metric-threshold-fields__group input::placeholder {
+  color: #94a3b8;
+}

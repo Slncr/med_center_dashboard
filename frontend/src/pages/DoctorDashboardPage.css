@@ -608,12 +608,16 @@
 
 .modal-content {
   width: 100%;
-  max-width: 1200px;
-  max-height: 92vh;
+  max-width: min(96vw, 1520px);
+  max-height: 94vh;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
 }
 
-/* Футер */
+/* Футер — отключён */
 .doctor-footer {
+  display: none;
   background: rgba(15, 26, 45, 0.95);
   color: #94a3b8;
   padding: 24px 32px;

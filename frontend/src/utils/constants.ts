@@ -5,8 +5,11 @@ export const API_CONFIG = {
   BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
   WS_URL: process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws',
   TIMEOUT: 10000,
-  RETRY_ATTEMPTS: 3
+  RETRY_ATTEMPTS: 3,
 };
+
+/** Периодическая синхронизация пациентов с 1С (мс) */
+export const SYNC_1C_INTERVAL_MS = 60 * 60 * 1000; // 1 час
 
 // Статусы пациентов
 export const PATIENT_STATUSES = {

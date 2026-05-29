@@ -26,6 +26,19 @@ export const formatTime = (date: string | Date): string => {
   });
 };
 
+const MSK_OPTIONS: Intl.DateTimeFormatOptions = { timeZone: 'Europe/Moscow' };
+
+/** Дата и время по Москве (для меток с сервера в UTC/MSK). */
+export const formatMoscowDate = (date: string | Date): string =>
+  new Date(date).toLocaleDateString('ru-RU', MSK_OPTIONS);
+
+export const formatMoscowTime = (date: string | Date): string =>
+  new Date(date).toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+    ...MSK_OPTIONS,
+  });
+
 export const formatBloodPressure = (systolic?: number, diastolic?: number): string => {
   if (!systolic || !diastolic) return '—';
   return `${systolic}/${diastolic}`;
@@ -63,3 +76,33 @@ export const formatPatientStatusLabel = (status?: string | null): string =>
 
 export const isPatientActive = (status?: string | null): boolean =>
   normalizePatientStatus(status) === 'active';
+
+/** Статус назначения (ACTIVE / COMPLETED / CANCELLED) → по-русски */
+export const getPrescriptionStatusLabel = (status?: string | null): string => {
+  switch (String(status ?? '').toUpperCase()) {
+    case 'ACTIVE':
+      return 'Активно';
+    case 'COMPLETED':
+      return 'Выполнено';
+    case 'CANCELLED':
+      return 'Отменено';
+    default:
+      return '—';
+  }
+};
+
+/** Статус процедуры → по-русски */
+export const getProcedureStatusLabel = (status?: string | null): string => {
+  switch (String(status ?? '').toUpperCase()) {
+    case 'SCHEDULED':
+      return 'Запланировано';
+    case 'IN_PROGRESS':
+      return 'Выполняется';
+    case 'COMPLETED':
+      return 'Выполнено';
+    case 'CANCELLED':
+      return 'Отменено';
+    default:
+      return '—';
+  }
+};

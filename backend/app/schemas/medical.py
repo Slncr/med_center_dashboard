@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date, datetime
 
-from app.models.medical import PrescriptionStatus, PrescriptionType
+from app.models.medical import PrescriptionPackageStatus, PrescriptionStatus, PrescriptionType
 
 class ObservationBase(BaseModel):
     temperature: Optional[float] = None
@@ -115,17 +115,37 @@ class PrescriptionCreate(PrescriptionBase):
 
 class PrescriptionBatchItem(PrescriptionBase):
     """Один элемент пакета назначений (без patient_id)."""
+    executions_required: Optional[int] = None
 
 
 class PrescriptionsBatchCreate(BaseModel):
     patient_id: int
+    general_notes: Optional[str] = None
     prescriptions: List[PrescriptionBatchItem]
+
 
 class Prescription(PrescriptionBase):
     id: int
     patient_id: int
     created_by: int
+    package_id: Optional[int] = None
+    executions_required: int = 1
+    executions_done: int = 0
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PrescriptionPackage(BaseModel):
+    id: int
+    patient_id: int
+    created_by: int
+    general_notes: Optional[str] = None
+    status: PrescriptionPackageStatus
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+    prescriptions: List[Prescription] = []
 
     class Config:
         from_attributes = True

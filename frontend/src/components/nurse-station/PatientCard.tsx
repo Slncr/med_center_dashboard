@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
-import { Patient, Observation, Procedure, Prescription } from '../../types';
+import { Patient, Observation, Prescription, PrescriptionPackage, PatientFeatureFlags } from '../../types';
+import {
+  DEFAULT_FEATURE_FLAGS,
+  flagsFromPatient,
+  toggleFeatureFlag,
+} from '../../utils/patientFlags';
+import {
+  filterWorkItems,
+  formatPackageTitle,
+  packageStatusLabel,
+  prescriptionProgress,
+} from '../../utils/prescriptionPackages';
+import TruncateText from '../common/TruncateText';
+import PrescriptionPackageModal from './PrescriptionPackageModal';
+import { PatientVitalThresholdsForm } from '../bracelet-monitoring';
 import './PatientCard.css';
 
 interface PatientCardProps {
@@ -14,13 +28,22 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'observations' | 'procedures' | 'prescriptions'>('info');
-  const [expandedPrescriptionId, setExpandedPrescriptionId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    | 'info'
+    | 'observations'
+    | 'procedures'
+    | 'measurements'
+    | 'prescriptions'
+    | 'statuses'
+    | 'bracelet'
+  >('info');
+  const [selectedPackage, setSelectedPackage] = useState<PrescriptionPackage | null>(null);
+  const [featureFlags, setFeatureFlags] = useState<PatientFeatureFlags>(DEFAULT_FEATURE_FLAGS);
 
   const [editData, setEditData] = useState<Partial<Patient>>({});
   const [observations, setObservations] = useState<Observation[]>([]);
-  const [procedures, setProcedures] = useState<Procedure[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [packages, setPackages] = useState<PrescriptionPackage[]>([]);
 
   useEffect(() => {
     loadPatient();
@@ -33,6 +56,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     try {
       const data = await apiService.getPatient(patientId);
       setPatient(data);
+      setFeatureFlags(flagsFromPatient(data));
       setEditData({
         full_name: data.full_name,
         birth_date: data.birth_date,
@@ -50,18 +74,21 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
 
   const loadMedicalRecords = async () => {
     try {
-      const [obsData, procData, prescData] = await Promise.all([
+      const [obsData, prescData, pkgData] = await Promise.all([
         apiService.getObservations(patientId),
-        apiService.getProcedures(patientId),
-        apiService.getPrescriptions(patientId)
+        apiService.getPrescriptions(patientId),
+        apiService.getPrescriptionPackages(patientId),
       ]);
       setObservations(obsData);
-      setProcedures(Array.isArray(procData) ? procData : procData.data || []);
       setPrescriptions(prescData);
+      setPackages(pkgData);
     } catch (err) {
       console.error('Ошибка загрузки медицинских записей:', err);
     }
   };
+
+  const procedureItems = filterWorkItems(prescriptions, 'PROCEDURE');
+  const measurementItems = filterWorkItems(prescriptions, 'MEASUREMENT');
 
   const handleInputChange = (field: keyof Partial<Patient>, value: any) => {
     setEditData(prev => ({ ...prev, [field]: value }));
@@ -82,24 +109,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     }
   };
 
-  const getPrescriptionTypeLabel = (type: string) => {
-    switch (type) {
-      case 'PROCEDURE': return '💉';
-      case 'MEASUREMENT': return '📊';
-      case 'NOTE': return '📝';
-      default: return '❓';
-    }
-  };
-
-  const getPrescriptionStatusLabel = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return 'Активно';
-      case 'COMPLETED': return '✅ Выполнено';
-      case 'CANCELLED': return '❌ Отменено';
-      default: return status;
-    }
-  };
-
   const getPatientStatusLabel = (status: string) => {
     switch (status) {
       case 'active': return 'Активный';
@@ -109,8 +118,27 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     }
   };
 
-  const togglePrescription = (id: number) => {
-    setExpandedPrescriptionId(prev => prev === id ? null : id);
+  const getItemStatusLabel = (p: Prescription) => {
+    if (p.status === 'COMPLETED') return 'Выполнено';
+    if (p.status === 'CANCELLED') return 'Отменено';
+    const req = p.executions_required ?? 1;
+    const done = p.executions_done ?? 0;
+    if (done > 0) return `В процессе (${done}/${req})`;
+    return 'Не выполнено';
+  };
+
+  const handleFeatureFlagToggle = async (name: keyof PatientFeatureFlags) => {
+    const next = toggleFeatureFlag(featureFlags, name);
+    setFeatureFlags(next);
+    try {
+      const updated = await apiService.updatePatientFeatureFlags(patientId, next);
+      setPatient(updated);
+      setFeatureFlags(flagsFromPatient(updated));
+    } catch (err) {
+      console.error('Ошибка сохранения статусов:', err);
+      setError('Ошибка сохранения статусов пациента');
+      if (patient) setFeatureFlags(flagsFromPatient(patient));
+    }
   };
 
   if (loading) return (
@@ -223,13 +251,31 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
                 className={`pc-tab-btn ${activeTab === 'procedures' ? 'active' : ''}`}
                 onClick={() => setActiveTab('procedures')}
               >
-                💉 Процедуры ({procedures.length})
+                💉 Процедуры ({procedureItems.length})
+              </button>
+              <button
+                className={`pc-tab-btn ${activeTab === 'measurements' ? 'active' : ''}`}
+                onClick={() => setActiveTab('measurements')}
+              >
+                📊 Измерения ({measurementItems.length})
               </button>
               <button
                 className={`pc-tab-btn ${activeTab === 'prescriptions' ? 'active' : ''}`}
                 onClick={() => setActiveTab('prescriptions')}
               >
-                📋 Назначения ({prescriptions.length})
+                📋 Назначения ({packages.length})
+              </button>
+              <button
+                className={`pc-tab-btn ${activeTab === 'statuses' ? 'active' : ''}`}
+                onClick={() => setActiveTab('statuses')}
+              >
+                🚩 Статусы
+              </button>
+              <button
+                className={`pc-tab-btn ${activeTab === 'bracelet' ? 'active' : ''}`}
+                onClick={() => setActiveTab('bracelet')}
+              >
+                ⌚ Браслет
               </button>
             </div>
 
@@ -273,32 +319,25 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
               )}
 
               {activeTab === 'procedures' && (
-                <div className="pc-records-list">
-                  {procedures.length > 0 ? procedures.map(proc => (
-                    <div key={proc.id} className="pc-record-card">
-                      <div className="pc-record-header">
-                        <span className="pc-record-title">{proc.name}</span>
-                        <span className={`pc-status-badge pc-status-${proc.status.toLowerCase()}`}>
-                          {proc.status}
+                <div className="pc-work-items-list">
+                  {procedureItems.length > 0 ? procedureItems.map((p) => (
+                    <div key={p.id} className={`pc-work-item pc-status-${p.status.toLowerCase()}`}>
+                      <div className="pc-work-item-header">
+                        <span className="pc-work-item-name">{p.name}</span>
+                        <span className={`pc-work-item-status pc-status-${p.status.toLowerCase()}`}>
+                          {getItemStatusLabel(p)}
                         </span>
                       </div>
-                      <div className="pc-record-body">
-                        {proc.description && (
-                          <div className="pc-record-field">
-                            <strong>Описание:</strong> {proc.description}
-                          </div>
-                        )}
-                        {proc.scheduled_time && (
-                          <div className="pc-record-field">
-                            <strong>Время:</strong> {new Date(proc.scheduled_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        )}
-                        {proc.dosage && (
-                          <div className="pc-record-field">
-                            <strong>Дозировка:</strong> {proc.dosage}
-                          </div>
-                        )}
+                      <div className="pc-work-item-meta">
+                        <span>Частота: {p.frequency || '—'}</span>
+                        <span>Выполнено: {prescriptionProgress(p)}</span>
                       </div>
+                      {p.notes && (
+                        <div className="pc-work-item-notes">
+                          <strong>Примечание:</strong>{' '}
+                          <TruncateText text={p.notes} className="pc-work-item-notes-text" />
+                        </div>
+                      )}
                     </div>
                   )) : (
                     <div className="pc-no-records">Нет процедур</div>
@@ -306,82 +345,120 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
                 </div>
               )}
 
-              {activeTab === 'prescriptions' && (
-                <div className="pc-prescriptions-list">
-                  {prescriptions.length > 0 ? (
-                    <>
-                      {prescriptions.map(p => (
-                        <React.Fragment key={p.id}>
-                          <div 
-                            className={`pc-prescription-item pc-status-${p.status.toLowerCase()} ${expandedPrescriptionId === p.id ? 'expanded' : ''}`}
-                            onClick={() => togglePrescription(p.id)}
-                          >
-                            <div className="pc-presc-type">
-                              {getPrescriptionTypeLabel(p.prescription_type)}
-                            </div>
-                            <div className="pc-presc-main">
-                              <div className="pc-presc-name" title={p.name}>
-                                {p.name.length > 60 ? `${p.name.substring(0, 60)}...` : p.name}
-                              </div>
-                              {p.notes && (
-                                <div className="pc-presc-notes" title={p.notes}>
-                                  📝 {p.notes.length > 50 ? `${p.notes.substring(0, 50)}...` : p.notes}
-                                </div>
-                              )}
-                            </div>
-                            <div className="pc-presc-meta">
-                              <div className="pc-presc-freq">{p.frequency || '—'}</div>
-                              <div className={`pc-presc-status pc-status-${p.status.toLowerCase()}`}>
-                                {p.status === 'ACTIVE' ? 'Активно' : p.status === 'COMPLETED' ? '✅' : '❌'}
-                              </div>
-                            </div>
-                            <div className="pc-presc-toggle">
-                              {expandedPrescriptionId === p.id ? '▴' : '▾'}
-                            </div>
-                          </div>
-                          
-                          {expandedPrescriptionId === p.id && (
-                            <div className="pc-prescription-detail">
-                              <div className="pc-detail-row">
-                                <span className="pc-detail-label">Полное название:</span>
-                                <span className="pc-detail-value">{p.name}</span>
-                              </div>
-                              {p.notes && (
-                                <div className="pc-detail-row">
-                                  <span className="pc-detail-label">Примечания:</span>
-                                  <span className="pc-detail-value">{p.notes}</span>
-                                </div>
-                              )}
-                              <div className="pc-detail-row">
-                                <span className="pc-detail-label">Частота:</span>
-                                <span className="pc-detail-value">{p.frequency || '—'}</span>
-                              </div>
-                              <div className="pc-detail-row">
-                                <span className="pc-detail-label">Статус:</span>
-                                <span className={`pc-detail-value pc-status-${p.status.toLowerCase()}`}>
-                                  {getPrescriptionStatusLabel(p.status)}
-                                </span>
-                              </div>
-                              <div className="pc-detail-row">
-                                <span className="pc-detail-label">Создано:</span>
-                                <span className="pc-detail-value">
-                                  {new Date(p.created_at).toLocaleString('ru-RU')}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="pc-no-records">Нет назначений</div>
+              {activeTab === 'measurements' && (
+                <div className="pc-work-items-list">
+                  {measurementItems.length > 0 ? measurementItems.map((p) => (
+                    <div key={p.id} className={`pc-work-item pc-status-${p.status.toLowerCase()}`}>
+                      <div className="pc-work-item-header">
+                        <span className="pc-work-item-name">{p.name}</span>
+                        <span className={`pc-work-item-status pc-status-${p.status.toLowerCase()}`}>
+                          {getItemStatusLabel(p)}
+                        </span>
+                      </div>
+                      <div className="pc-work-item-meta">
+                        <span>Частота: {p.frequency || '—'}</span>
+                        <span>Выполнено: {prescriptionProgress(p)}</span>
+                      </div>
+                      {p.notes && (
+                        <div className="pc-work-item-notes">
+                          <strong>Примечание:</strong>{' '}
+                          <TruncateText text={p.notes} className="pc-work-item-notes-text" />
+                        </div>
+                      )}
+                    </div>
+                  )) : (
+                    <div className="pc-no-records">Нет измерений</div>
                   )}
+                </div>
+              )}
+
+              {activeTab === 'prescriptions' && (
+                <div className="pc-packages-list">
+                  {packages.length > 0 ? packages.map((pkg) => (
+                    <div
+                      key={pkg.id}
+                      className={`pc-package-item pkg-status-${pkg.status.toLowerCase()}`}
+                      onClick={() => setSelectedPackage(pkg)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && setSelectedPackage(pkg)}
+                    >
+                      <span className="pc-package-title">{formatPackageTitle(pkg)}</span>
+                      <span className={`pc-package-status pkg-status-${pkg.status.toLowerCase()}`}>
+                        {packageStatusLabel(pkg)}
+                      </span>
+                    </div>
+                  )) : (
+                    <div className="pc-no-records">Нет пакетов назначений</div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'statuses' && (
+                <div className="pc-statuses-tab">
+                  <ul className="pc-status-flags-list">
+                    <label className="pc-status-checkbox white">
+                      <input
+                        type="checkbox"
+                        checked={featureFlags.flag_white}
+                        onChange={() => void handleFeatureFlagToggle('flag_white')}
+                      />
+                      <span>Белый — все ок</span>
+                    </label>
+                    <label className="pc-status-checkbox yellow">
+                      <input
+                        type="checkbox"
+                        checked={featureFlags.flag_yellow}
+                        onChange={() => void handleFeatureFlagToggle('flag_yellow')}
+                      />
+                      <span>Желтый — риск падения</span>
+                    </label>
+                    <label className="pc-status-checkbox red">
+                      <input
+                        type="checkbox"
+                        checked={featureFlags.flag_red}
+                        onChange={() => void handleFeatureFlagToggle('flag_red')}
+                      />
+                      <span>Красный — аллергия</span>
+                    </label>
+                    <label className="pc-status-checkbox orange">
+                      <input
+                        type="checkbox"
+                        checked={featureFlags.flag_orange}
+                        onChange={() => void handleFeatureFlagToggle('flag_orange')}
+                      />
+                      <span>Оранжевый — инфекция</span>
+                    </label>
+                    <label className="pc-status-checkbox green">
+                      <input
+                        type="checkbox"
+                        checked={featureFlags.flag_green}
+                        onChange={() => void handleFeatureFlagToggle('flag_green')}
+                      />
+                      <span>Зеленый — диета</span>
+                    </label>
+                  </ul>
+                </div>
+              )}
+
+              {activeTab === 'bracelet' && (
+                <div className="pc-bracelet-tab">
+                  <PatientVitalThresholdsForm
+                    patientId={patientId}
+                    patientName={patient.full_name}
+                  />
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+      {selectedPackage && (
+        <PrescriptionPackageModal
+          pkg={selectedPackage}
+          onClose={() => setSelectedPackage(null)}
+        />
+      )}
     </div>
   );
 };

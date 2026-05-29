@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Patient, Prescription } from '../../types';
-
+import { prescriptionProgress } from '../../utils/prescriptionPackages';
+import { getPrescriptionStatusLabel } from '../../utils/formatters';
 import './AppointmentsView.css';
 
 interface AppointmentsViewProps {
@@ -167,7 +168,8 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
     }
   };
 
-  const filteredPrescriptions = prescriptions.filter(p => {
+  const filteredPrescriptions = prescriptions.filter((p) => {
+    if (p.prescription_type === 'NOTE') return false;
     if (filterStatus === 'all') return true;
     const status = (p.status || '').toLowerCase();
     return status === filterStatus;
@@ -283,9 +285,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
                       </div>
                       
                       <div className="av-presc-meta">
-                        <div className="av-presc-freq">{p.frequency || '—'}</div>
+                        <div className="av-presc-freq">
+                          {p.frequency || '—'} · {prescriptionProgress(p)}
+                        </div>
                         <div className={`av-presc-status ${getPrescriptionStatusClass(p.status)}`}>
-                          {p.status === 'ACTIVE' ? 'Активно' : p.status === 'COMPLETED' ? '✅' : '❌'}
+                          {getPrescriptionStatusLabel(p.status)}
                         </div>
                       </div>
                       

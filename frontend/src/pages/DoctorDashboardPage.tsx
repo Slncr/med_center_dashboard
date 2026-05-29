@@ -423,10 +423,6 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
               </div>
             </div>
             
-            <div className="reports-footer">
-              <p>Все отчёты формируются на основе актуальных данных из системы</p>
-              <p className="report-note">Для экспорта в Excel или PDF используйте кнопку "Экспорт" в интерфейсе отчёта</p>
-            </div>
           </div>
         )}
       </main>
@@ -443,10 +439,6 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
         </div>
       )}
 
-      <footer className="doctor-footer">
-        <p>Медицинский центр • Кабинет врача • {new Date().getFullYear()}</p>
-        <p className="footer-version">Версия 1.2</p>
-      </footer>
     </div>
   );
 };

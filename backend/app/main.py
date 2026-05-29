@@ -5,8 +5,6 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.api.v1.api import api_router
-from app.core.database import engine
-from app.models.base import Base
 
 
 @asynccontextmanager
@@ -16,10 +14,8 @@ async def lifespan(app: FastAPI):
     """
     print("🚀 Starting up...")
     
-    # Создаем таблицы в базе данных (только для разработки!)
-    # В production используйте Alembic миграции
-    if settings.ENVIRONMENT == "development":
-        Base.metadata.create_all(bind=engine)
+    # Схема БД — только через Alembic (docker CMD: alembic upgrade head).
+    # create_all конфликтует с миграциями (дубли enum/таблиц в PostgreSQL).
     
     yield
     

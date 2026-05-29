@@ -1,125 +1,207 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { apiService } from '../services/api';
-import { Patient, Room, Prescription, Bed } from '../types';
-import RoomMonitoringTab from '../components/room-display/RoomMonitoringTab';
-import { formatPatientStatusLabel } from '../utils/formatters';
+import { Room } from '../types';
+import { BedMonitoringView, MonitoringDashboard } from '../types/monitoring';
+import BedSchematic from '../components/room-display/BedSchematic';
+import { bedFlagsFromPatient } from '../utils/patientFlags';
 import './RoomDisplayPage.css';
 
-type RoomTab = 'overview' | 'monitoring';
+const POLL_MS = 3000;
+
+const METRIC_LABELS: Record<string, string> = {
+  temp: 'Температура',
+  hum: 'Влажность',
+  press: 'Арт. давление',
+  co2: 'CO₂',
+  pulse: 'Пульс',
+  puls: 'Пульс',
+  pulse_rate: 'Пульс',
+  bpm: 'Пульс',
+  hr: 'ЧСС',
+  hrv: 'Вариабельность ЧСС',
+  sleep: 'Сон',
+  stress: 'Стресс',
+  bp: 'Арт. давление',
+  spo2: 'SpO₂',
+  sp_o2: 'SpO₂',
+  oxygen: 'Кислород',
+  respiration: 'Дыхание',
+  rr: 'Дыхание',
+  battery: 'Батарея',
+  rssi: 'Уровень сигнала',
+};
+
+const ATM_ICONS: Record<string, string> = {
+  temp: '🌡️',
+  hum: '💧',
+  press: '📊',
+  co2: '🌬️',
+};
+
+const unwrapMetric = (value: unknown): unknown => {
+  if (value && typeof value === 'object' && 'value' in (value as object)) {
+    return (value as { value: unknown }).value;
+  }
+  return value;
+};
+
+const formatMetricValue = (key: string, value: unknown): string => {
+  const v = unwrapMetric(value);
+  const normalizedKey = normalizeMetricKey(key);
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? 'да' : 'нет';
+  if (normalizedKey === 'bp') return String(v);
+  if (typeof v === 'number') {
+    if (normalizedKey === 'temp') return `${v.toFixed(1)} °C`;
+    if (normalizedKey === 'hum') return `${Math.round(v)} %`;
+    if (normalizedKey === 'press') return `${Math.round(v)} мм`;
+    if (normalizedKey === 'co2') return `${Math.round(v)} ppm`;
+    return Number.isInteger(v) ? `${v}` : v.toFixed(1);
+  }
+  return String(v);
+};
+
+const normalizeMetricKey = (rawKey: string): string => rawKey.trim().toLowerCase();
+
+const getMetricLabel = (rawKey: string): string => {
+  const key = normalizeMetricKey(rawKey);
+  if (METRIC_LABELS[key]) return METRIC_LABELS[key];
+  return rawKey.replace(/_/g, ' ');
+};
+
+const formatTime = (date: Date): string =>
+  date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 const RoomDisplayPage: React.FC = () => {
+  const { monitorId: monitorIdFromPath } = useParams<{ monitorId: string }>();
+  const [searchParams] = useSearchParams();
+
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
-  const [selectedBedId, setSelectedBedId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dashboard, setDashboard] = useState<MonitoringDashboard | null>(null);
+  const [roomsLoading, setRoomsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<RoomTab>('overview');
 
-  // Обновление времени каждую секунду
+  const monitorId = monitorIdFromPath ?? searchParams.get('monitorId') ?? searchParams.get('monitor_id');
+  const isTestMode = !monitorId;
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Автоматическая загрузка данных
   useEffect(() => {
-    loadData();
-  }, []);
+    const loadRooms = async () => {
+      try {
+        const roomsData = await apiService.getRooms();
+        setRooms(roomsData);
+        setApiConnected(true);
+        if (roomsData.length === 0) {
+          setError('Нет данных о палатах');
+          return;
+        }
 
-  const loadData = async () => {
-    try {
-      // Проверка подключения к API
-      // await apiService.healthCheck();
-      setApiConnected(true);
+        if (monitorId) {
+          const parsedMonitor = Number(monitorId);
+          if (!Number.isNaN(parsedMonitor)) {
+            const matched = roomsData.find((room) => room.id === parsedMonitor);
+            if (matched) {
+              setActiveRoomId(matched.id);
+              return;
+            }
+          }
+          setError(`Монитор ${monitorId} не привязан к палате`);
+        }
 
-      // Загрузка данных параллельно
-      const [roomsData, patientsData] = await Promise.all([
-        apiService.getRooms(),
-        apiService.getPatients()
-      ]);
-
-      setRooms(roomsData);
-      setPatients(patientsData);
-
-      // ✅ Автоматически выбираем первую палату (не только с пациентами)
-      if (roomsData.length > 0) {
         setActiveRoomId(roomsData[0].id);
+      } catch (err) {
+        console.error('Ошибка загрузки палат:', err);
+        setApiConnected(false);
+        setError('Ошибка подключения к серверу');
+      } finally {
+        setRoomsLoading(false);
       }
-    } catch (err) {
-      console.error('Ошибка загрузки данных:', err);
-      setApiConnected(false);
-      setError('Ошибка подключения к серверу. Проверьте сеть и перезагрузите страницу.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const handlePatientSelect = async (patientId: number, bedId: number) => {
-    setSelectedPatientId(patientId);
-    setSelectedBedId(bedId);
+    void loadRooms();
+  }, [monitorId]);
+
+  const loadDashboard = useCallback(async (silent: boolean) => {
+    if (!activeRoomId) return;
 
     try {
-      const data = await apiService.getPrescriptions(patientId);
-      setPrescriptions(data.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ));
-    } catch (err) {
-      console.error('Ошибка загрузки назначений:', err);
-      setPrescriptions([]);
-      setError('Ошибка загрузки назначений');
-    }
-  };
+      if (silent) setRefreshing(true);
 
-  /** Пациент на койке: сначала из связи палата→койка→пациент, затем по bed_id. */
-  const getPatientForBed = useCallback(
-    (bed: Bed): Patient | undefined => {
-      if (bed.patient) {
-        const fromList = patients.find((p) => p.id === bed.patient!.id);
-        return fromList ? { ...fromList, ...bed.patient, bed_id: bed.id } : ({ ...bed.patient, bed_id: bed.id } as Patient);
-      }
-      const byBedId = patients.find((p) => p.bed_id === bed.id);
-      if (byBedId) return byBedId;
-      return undefined;
-    },
-    [patients],
+      const [data, roomsData] = await Promise.all([
+        apiService.getMonitoringDashboard(activeRoomId),
+        apiService.getRooms(),
+      ]);
+      setDashboard(data);
+      setRooms(roomsData);
+      setApiConnected(data.connected);
+      setLastUpdatedAt(new Date());
+    } catch (err) {
+      setApiConnected(false);
+      console.error('Ошибка загрузки мониторинга:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeRoomId]);
+
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    void loadDashboard(false);
+    const interval = setInterval(() => {
+      void loadDashboard(true);
+    }, POLL_MS);
+
+    return () => clearInterval(interval);
+  }, [activeRoomId, loadDashboard]);
+
+  const activeRoom = useMemo(
+    () => rooms.find((room) => room.id === activeRoomId) ?? null,
+    [activeRoomId, rooms],
   );
 
-  const getRoomById = (roomId: number): Room | undefined => {
-    return rooms.find(r => r.id === roomId);
-  };
+  const bedMetricsMap = useMemo(() => {
+    const byId = new Map<number, BedMonitoringView>();
+    dashboard?.beds.forEach((bed) => byId.set(bed.bed_id, bed));
+    return byId;
+  }, [dashboard]);
 
-  const handleRoomSelect = (roomId: number) => {
+  const atmosphere = dashboard?.atmosphere;
+
+  const handleRoomChange = (roomId: number) => {
     setActiveRoomId(roomId);
-    setSelectedPatientId(null);
-    setSelectedBedId(null);
-    setPrescriptions([]);
+    setDashboard(null);
   };
 
-  if (loading) {
+  if (roomsLoading) {
     return (
       <div className="room-display-page loading">
         <div className="loading-content">
           <div className="clinic-logo">🏥</div>
-          <div className="spinner"></div>
-          <p>Загрузка данных...</p>
+          <div className="spinner" />
+          <p>Загрузка экрана палаты...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !activeRoom) {
     return (
       <div className="room-display-page error">
         <div className="error-content">
           <div className="error-icon">⚠️</div>
           <h2>Ошибка</h2>
           <p>{error}</p>
-          <button onClick={loadData} className="retry-btn">
+          <button type="button" onClick={() => window.location.reload()} className="retry-btn">
             Повторить попытку
           </button>
         </div>
@@ -127,217 +209,128 @@ const RoomDisplayPage: React.FC = () => {
     );
   }
 
-  const activeRoom = activeRoomId ? getRoomById(activeRoomId) : null;
-  const selectedBed =
-    activeRoom && selectedBedId != null
-      ? activeRoom.beds.find((b) => b.id === selectedBedId)
-      : undefined;
-  const selectedPatient = selectedBed ? getPatientForBed(selectedBed) : null;
-
   return (
     <div className="room-display-page">
-      {/* Хедер */}
       <header className="room-header">
         <div className="header-left">
           <div className="clinic-logo">🏥</div>
           <div className="clinic-name">Медицинский центр</div>
-          
-          {/* ✅ Выбор палаты */}
-          <div className="room-selector">
-            <label htmlFor="room-select" className="room-select-label">Палата:</label>
+          <div className="room-title">
+            {activeRoom ? `Палата №${activeRoom.number}` : 'Палата не выбрана'}
+            {monitorId && <span className="monitor-badge">Монитор {monitorId}</span>}
+            {isTestMode && <span className="test-badge">Тест</span>}
+          </div>
+        </div>
+
+        {isTestMode && rooms.length > 0 && (
+          <div className="room-test-selector">
+            <label htmlFor="room-test-select">Палата для теста</label>
             <select
-              id="room-select"
-              value={activeRoomId || ''}
-              onChange={(e) => handleRoomSelect(Number(e.target.value))}
-              className="room-select"
+              id="room-test-select"
+              value={activeRoomId ?? ''}
+              onChange={(e) => handleRoomChange(Number(e.target.value))}
             >
-              {rooms.map(room => (
+              {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
-                  №{room.number} {room.name ? `(${room.name})` : ''}
+                  №{room.number}
+                  {room.name ? ` — ${room.name}` : ''}
                 </option>
               ))}
             </select>
           </div>
-        </div>
-        
+        )}
+
         <div className="header-center">
           <div className="current-time">
-            <span className="time">{currentTime.toLocaleTimeString('ru-RU', { 
-              hour: '2-digit', 
-              minute: '2-digit'
-            })}</span>
+            <span className="time">
+              {currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            </span>
             <span className="date">{currentTime.toLocaleDateString('ru-RU')}</span>
           </div>
         </div>
-        
+
         <div className="header-right">
-          <div className={`connection-indicator ${apiConnected ? 'connected' : 'disconnected'}`}></div>
+          <div className={`connection-indicator ${apiConnected ? 'connected' : 'disconnected'}`} />
+          {lastUpdatedAt && <div className="updated-label">Обновлено: {formatTime(lastUpdatedAt)}</div>}
         </div>
       </header>
 
       <main className="room-main">
-        {/* Список пациентов */}
-        <div className="patients-panel">
-          <div className="panel-header">
-            <h2>Пациенты</h2>
-            {activeRoom && (
-              <div className="room-stats">
-                {activeRoom.beds.filter((bed) => getPatientForBed(bed)).length} из {activeRoom.beds.length}
-              </div>
-            )}
-          </div>
-          
-          <div className="patients-list">
-            {activeRoom ? (
-              activeRoom.beds.map(bed => {
-                const patient = getPatientForBed(bed);
-                return (
-                  <div 
-                    key={bed.id} 
-                    className={`patient-row ${selectedBedId === bed.id ? 'active' : ''}`}
-                    onClick={() => patient && handlePatientSelect(patient.id, bed.id)}
-                  >
-                    <div className="bed-col">Койка {bed.number}</div>
-                    <div className="name-col">
-                      {patient ? (
-                        <>
-                          <div className="patient-name">{patient.full_name}</div>
-                          <div className="patient-meta">
-                            Поступил: {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="empty-bed">Свободна</div>
-                      )}
-                    </div>
-                    <div className={`status-col ${patient ? 'occupied' : 'empty'}`}>
-                      {patient ? '●' : '○'}
-                    </div>
+        <section className="beds-panel">
+          {activeRoom ? (
+            activeRoom.beds.map((bed) => {
+              const bedData = bedMetricsMap.get(bed.id);
+              const isOccupied = Boolean(bed.patient);
+              const metrics = bedData?.ble?.metrics ?? {};
+              const metricEntries = Object.entries(metrics).filter(
+                ([key]) => {
+                  const normalized = normalizeMetricKey(key);
+                  return !['steps', 'wear', 'battery', 'rssi'].includes(normalized);
+                },
+              ).sort(([a], [b]) => getMetricLabel(a).localeCompare(getMetricLabel(b), 'ru'));
+              const hasMetrics = metricEntries.length > 0;
+
+              return (
+                <article key={bed.id} className={`bed-strip ${isOccupied ? 'occupied' : 'free'}`}>
+                  <BedSchematic
+                    occupied={isOccupied}
+                    bedNumber={bed.number}
+                    flags={bedFlagsFromPatient(bed.patient)}
+                  />
+
+                  <div className="bed-metrics">
+                    {hasMetrics ? (
+                      metricEntries.map(([key, value]) => (
+                        <div key={key} className="metric-chip">
+                          <span>{getMetricLabel(key)}</span>
+                          <strong>{formatMetricValue(key, value)}</strong>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="metric-empty">
+                        {isOccupied ? 'Нет данных с браслета' : 'Койка свободна'}
+                      </div>
+                    )}
                   </div>
-                );
-              })
-            ) : rooms.length === 0 ? (
-              <div className="empty-state">Нет данных о палатах</div>
-            ) : (
-              <div className="empty-state">Выберите палату из списка выше</div>
-            )}
-          </div>
-        </div>
-
-        {/* Основной контент */}
-        <div className="content-panel">
-          <div className="room-tabs">
-            <button
-              type="button"
-              className={`room-tab ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
-            >
-              Обзор
-            </button>
-            <button
-              type="button"
-              className={`room-tab ${activeTab === 'monitoring' ? 'active' : ''}`}
-              onClick={() => setActiveTab('monitoring')}
-            >
-              Мониторинг
-            </button>
-          </div>
-
-          {activeTab === 'monitoring' ? (
-            <RoomMonitoringTab roomId={activeRoomId} />
+                </article>
+              );
+            })
           ) : (
-          <>
-          {/* Карточка пациента */}
-          <div className="patient-card">
-            {selectedPatient ? (
-              <>
-                <div className="patient-header">
-                  <h1>{selectedPatient.full_name}</h1>
-                  <div className="patient-id">ID: {selectedPatient.id}</div>
-                </div>
-                
-                <div className="patient-info-grid">
-                  <div className="info-item">
-                    <div className="info-label">Статус</div>
-                    <div className={`info-value status-${selectedPatient.status?.toLowerCase()}`}>
-                      {formatPatientStatusLabel(selectedPatient.status)}
-                    </div>
-                  </div>
-                  <div className="info-item">
-                    <div className="info-label">Поступление</div>
-                    <div className="info-value">
-                      {new Date(selectedPatient.admission_date).toLocaleDateString('ru-RU')}
-                    </div>
-                  </div>
-                  <div className="info-item">
-                    <div className="info-label">Койка</div>
-                    <div className="info-value">
-                      {selectedBed != null ? String(selectedBed.number) : '—'}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="no-patient-selected">
-                <div className="placeholder-icon">👤</div>
-                <p>Выберите пациента из списка слева</p>
-              </div>
-            )}
-          </div>
-
-          {/* Назначения */}
-          <div className="prescriptions-panel">
-            <div className="panel-header">
-              <h2>Назначения</h2>
-              <div className="prescriptions-count">{prescriptions.length}</div>
-            </div>
-            
-            {prescriptions.length > 0 ? (
-              <div className="prescriptions-list">
-                {prescriptions.map(p => (
-                  <div key={p.id} className={`prescription-row status-${p.status.toLowerCase()}`}>
-                    <div className="type-col">
-                      {p.prescription_type === 'PROCEDURE' && '💉'}
-                      {p.prescription_type === 'MEASUREMENT' && '📊'}
-                      {p.prescription_type === 'NOTE' && '📝'}
-                    </div>
-                    <div className="name-col">
-                      <div className="prescription-name">{p.name}</div>
-                      {p.notes && (
-                        <div className="prescription-notes">{p.notes}</div>
-                      )}
-                    </div>
-                    <div className="freq-col">{p.frequency || '—'}</div>
-                    <div className="status-col">
-                      {p.status === 'ACTIVE' && <span className="status-dot active"></span>}
-                      {p.status === 'COMPLETED' && <span className="status-dot completed">✓</span>}
-                      {p.status === 'CANCELLED' && <span className="status-dot cancelled">×</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : selectedPatientId ? (
-              <div className="empty-prescriptions">
-                <div className="placeholder-icon">📋</div>
-                <p>Нет назначений</p>
-                <p className="hint">Обратитесь к лечащему врачу</p>
-              </div>
-            ) : (
-              <div className="empty-prescriptions">
-                <div className="placeholder-icon">👈</div>
-                <p>Выберите пациента для просмотра назначений</p>
-              </div>
-            )}
-          </div>
-          </>
+            <div className="empty-state">Палата не найдена</div>
           )}
-        </div>
-      </main>
+        </section>
 
-      <footer className="room-footer">
-        <div className="footer-left">Медицинский центр • Планшет у палаты</div>
-        <div className="footer-right">v1.2</div>
-      </footer>
+        <aside className="atmosphere-column">
+          <div className="column-header">
+            <h2>Атмосфера</h2>
+            {dashboard?.monitor_zone != null && (
+              <div className="zone-badge">Зона {dashboard.monitor_zone}</div>
+            )}
+          </div>
+
+          {atmosphere ? (
+            <div className="atmosphere-list">
+              {(['temp', 'hum', 'press', 'co2'] as const).map((key) => (
+                <div key={key} className={`atmosphere-item atmosphere-${key}`}>
+                  <div className="atmosphere-item-label">
+                    <span className="atmosphere-icon">{ATM_ICONS[key]}</span>
+                    <span>{METRIC_LABELS[key]}</span>
+                  </div>
+                  <strong>{formatMetricValue(key, atmosphere[key])}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="metric-empty">Нет атмосферных данных</div>
+          )}
+
+          {dashboard?.atmosphere_error && (
+            <div className="atmosphere-error">{dashboard.atmosphere_error}</div>
+          )}
+
+          {refreshing && <div className="refresh-badge">Обновление коек…</div>}
+        </aside>
+      </main>
     </div>
   );
 };

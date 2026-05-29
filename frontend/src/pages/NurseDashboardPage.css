@@ -210,6 +210,7 @@
 }
 
 .dashboard-footer {
+  display: none;
   background: white;
   padding: 15px 30px;
   text-align: center;

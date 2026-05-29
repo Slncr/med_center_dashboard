@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
 
@@ -39,6 +40,29 @@ class Settings(BaseSettings):
 
     MONITORING_API_URL: str = "http://172.191.7.50/api"
     MONITORING_API_TIMEOUT: int = 5
+
+    # Оповещения по браслетам → MAX
+    BRACELET_ALERTS_ENABLED: bool = True
+    BRACELET_ALERT_CHECK_INTERVAL_SEC: int = 60
+    BRACELET_ALERT_COOLDOWN_SEC: int = 900
+    MAX_BOT_TOKEN: Optional[str] = None
+    MAX_ALERT_CHAT_ID: Optional[int] = None
+    MAX_API_BASE_URL: str = "https://platform-api.max.ru"
+    MAX_API_TIMEOUT: int = 10
+
+    @field_validator("MAX_BOT_TOKEN", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, value: object) -> object:
+        if value == "" or value is None:
+            return None
+        return value
+
+    @field_validator("MAX_ALERT_CHAT_ID", mode="before")
+    @classmethod
+    def empty_chat_id_to_none(cls, value: object) -> object:
+        if value == "" or value is None:
+            return None
+        return value
 
     def cors_origins_list(self) -> List[str]:
         if self.BACKEND_CORS_ORIGINS.strip():

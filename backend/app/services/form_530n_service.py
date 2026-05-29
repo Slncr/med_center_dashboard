@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.bed import Bed
 from app.models.medical import MedicalRecord, Prescription, PrescriptionStatus, Procedure
 from app.models.patient import Patient
+from app.utils.timezone import format_time_moscow, now_moscow
 from app.schemas.form_530n import (
     Form530nObservationRow,
     Form530nPatientInfo,
@@ -103,9 +104,7 @@ def build_form_530n(
 
     observation_rows: list[Form530nObservationRow] = []
     for rec in records:
-        record_time = None
-        if rec.created_at:
-            record_time = rec.created_at.strftime("%H:%M")
+        record_time = format_time_moscow(rec.created_at)
         observation_rows.append(
             Form530nObservationRow(
                 id=rec.id,
@@ -174,7 +173,7 @@ def build_form_530n(
         patient=patient_info,
         period_from=period_from,
         period_to=period_to,
-        generated_at=datetime.utcnow(),
+        generated_at=now_moscow(),
         observations=observation_rows,
         prescriptions=prescription_items,
         procedures=procedure_items,

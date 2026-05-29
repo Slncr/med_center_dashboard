@@ -77,7 +77,8 @@ const App: React.FC = () => {
           } 
         />
         
-        <Route path="/room" element={<MainLayout><RoomDisplayPage /></MainLayout>} />
+        <Route path="/room" element={<RoomDisplayPage />} />
+        <Route path="/room/:monitorId" element={<RoomDisplayPage />} />
         
         {/* Редиректы по умолчанию */}
         <Route path="/dashboard" element={<Navigate to="/register" replace />} />

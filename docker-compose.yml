@@ -48,6 +48,28 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       ONEC_BASE_URL: http://host.docker.internal:8080/api
+      BRACELET_ALERTS_ENABLED: "True"
+      BRACELET_ALERT_CHECK_INTERVAL_SEC: "60"
+      BRACELET_ALERT_COOLDOWN_SEC: "900"
+      MONITORING_API_URL: "http://172.191.7.50/api"
+      MONITORING_API_TIMEOUT: "5"
+
+  celery-beat:
+    build: ./backend
+    command: celery -A app.tasks.celery_worker.celery_app beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql://med_user:med_pass@postgres:5432/med_center
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      BRACELET_ALERTS_ENABLED: "True"
+      BRACELET_ALERT_CHECK_INTERVAL_SEC: "60"
 
   backend:
     build: ./backend
@@ -69,6 +91,9 @@ services:
       BACKEND_CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
       MONITORING_API_URL: "http://172.191.7.50/api"
       MONITORING_API_TIMEOUT: "5"
+      BRACELET_ALERTS_ENABLED: "True"
+      BRACELET_ALERT_CHECK_INTERVAL_SEC: "60"
+      BRACELET_ALERT_COOLDOWN_SEC: "900"
     volumes:
       - ./backend:/app
     healthcheck:

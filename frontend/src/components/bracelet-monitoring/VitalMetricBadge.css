@@ -1,0 +1,48 @@
+.vital-metric-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  min-width: 100px;
+}
+
+.vital-metric-badge__label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vital-metric-badge__value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.vital-metric-badge__status {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.vital-level--warning {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.vital-level--warning .vital-metric-badge__value,
+.vital-level--warning .vital-metric-badge__status {
+  color: #b45309;
+}
+
+.vital-level--critical {
+  border-color: #f87171;
+  background: #fef2f2;
+}
+
+.vital-level--critical .vital-metric-badge__value,
+.vital-level--critical .vital-metric-badge__status {
+  color: #b91c1c;
+}

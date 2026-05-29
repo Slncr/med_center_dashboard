@@ -1,0 +1,91 @@
+.bracelet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.bracelet-toolbar__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.bracelet-toolbar__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.bracelet-toolbar__dot.online {
+  background: #22c55e;
+}
+
+.bracelet-toolbar__dot.offline {
+  background: #ef4444;
+}
+
+.bracelet-toolbar__meta {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.bracelet-toolbar__warn {
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.bracelet-toolbar__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.bracelet-toolbar__stats .has-alerts {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.bracelet-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bracelet-toolbar__actions button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #4caf50;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.bracelet-toolbar__actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bracelet-toolbar__actions button.secondary {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.bracelet-toolbar__actions button:hover:not(:disabled) {
+  filter: brightness(0.95);
+}

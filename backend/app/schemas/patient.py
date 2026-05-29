@@ -22,6 +22,12 @@ class Patient(BaseModel):
     department_name: Optional[str] = None
     ble_mac: Optional[str] = None
 
+    flag_white: bool = False
+    flag_yellow: bool = False
+    flag_red: bool = False
+    flag_orange: bool = False
+    flag_green: bool = False
+
     @field_serializer("status")
     def serialize_status(self, value) -> str:
         raw = value.value if hasattr(value, "value") else str(value)
@@ -29,3 +35,11 @@ class Patient(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PatientFeatureFlagsUpdate(BaseModel):
+    flag_white: bool = False
+    flag_yellow: bool = False
+    flag_red: bool = False
+    flag_orange: bool = False
+    flag_green: bool = False

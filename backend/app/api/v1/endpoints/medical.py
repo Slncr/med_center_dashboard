@@ -15,7 +15,9 @@ from app.core.websocket_manager import manager
 # ✅ Модели (SQLAlchemy) с алиасами
 from app.models.medical import (
     Prescription as PrescriptionModel,
+    PrescriptionPackage as PrescriptionPackageModel,
     PrescriptionStatus,
+    PrescriptionType,
     Procedure as ProcedureModel,
     ProcedureStatus,
 )
@@ -36,7 +38,12 @@ from app.schemas.medical import (
     PrescriptionCreate,
     PrescriptionsBatchCreate,
     Prescription as PrescriptionSchema,  # Схема для ответа (Pydantic)
+    PrescriptionPackage as PrescriptionPackageSchema,
     PrescriptionExecution  # Новая схема для выполнения назначения
+)
+from app.services.prescription_package_service import (
+    parse_executions_required,
+    refresh_package_status,
 )
 
 # ✅ CRUD функции
@@ -171,21 +178,41 @@ async def create_prescriptions_batch(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not body.prescriptions:
-        raise HTTPException(status_code=400, detail="Список назначений пуст")
+    items = [
+        i
+        for i in body.prescriptions
+        if i.prescription_type in (PrescriptionType.PROCEDURE, PrescriptionType.MEASUREMENT)
+    ]
+    if not items:
+        raise HTTPException(
+            status_code=400,
+            detail="Выберите хотя бы одну процедуру или измерение",
+        )
 
     patient = db.query(Patient).filter(Patient.id == body.patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    package = PrescriptionPackageModel(
+        patient_id=body.patient_id,
+        created_by=current_user.id,
+        general_notes=body.general_notes.strip() if body.general_notes else None,
+    )
+    db.add(package)
+    db.flush()
+
     created: List[PrescriptionModel] = []
-    for item in body.prescriptions:
+    for item in items:
+        required = parse_executions_required(item.frequency, item.executions_required)
         db_prescription = PrescriptionModel(
             patient_id=body.patient_id,
             created_by=current_user.id,
+            package_id=package.id,
             prescription_type=item.prescription_type,
             name=item.name,
             frequency=item.frequency,
+            executions_required=required,
+            executions_done=0,
             dosage=item.dosage,
             notes=item.notes,
             start_date=item.start_date or datetime.utcnow(),
@@ -198,12 +225,14 @@ async def create_prescriptions_batch(
     db.commit()
     for p in created:
         db.refresh(p)
+    db.refresh(package)
 
     await manager.broadcast(
         {
             "type": "prescriptions_created",
             "patient_id": body.patient_id,
             "patient_name": patient.full_name,
+            "package_id": package.id,
             "count": len(created),
             "prescription_ids": [p.id for p in created],
             "created_at": datetime.utcnow().isoformat(),
@@ -212,6 +241,25 @@ async def create_prescriptions_batch(
         "nurse",
     )
     return created
+
+
+@router.get(
+    "/prescription-packages/patient/{patient_id}",
+    response_model=List[PrescriptionPackageSchema],
+)
+async def get_prescription_packages_by_patient(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(require_auth_or_public_display),
+):
+    packages = (
+        db.query(PrescriptionPackageModel)
+        .options(joinedload(PrescriptionPackageModel.prescriptions))
+        .filter(PrescriptionPackageModel.patient_id == patient_id)
+        .order_by(desc(PrescriptionPackageModel.created_at))
+        .all()
+    )
+    return packages
 
 
 # ✅ Получение назначений пациента
@@ -235,44 +283,56 @@ async def execute_prescription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    prescription = db.query(PrescriptionModel).filter(
-        PrescriptionModel.id == prescription_id
-    ).first()
+    prescription = (
+        db.query(PrescriptionModel)
+        .options(joinedload(PrescriptionModel.patient))
+        .filter(PrescriptionModel.id == prescription_id)
+        .first()
+    )
     if not prescription:
         raise HTTPException(status_code=404, detail="Назначение не найдено")
     
     if prescription.status != PrescriptionStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Назначение уже выполнено или отменено")
-    
-    # Создаём запись в процедурах (фактическое выполнение)
-    procedure = ProcedureModel(  # ✅ Используем модель БД
+
+    if prescription.executions_done >= prescription.executions_required:
+        raise HTTPException(status_code=400, detail="Все выполнения по этому назначению уже сделаны")
+
+    procedure = ProcedureModel(
         patient_id=prescription.patient_id,
         created_by=current_user.id,
         name=prescription.name,
-        description=f"Выполнено по назначению #{prescription.id}",
+        description=(
+            f"Выполнено по назначению #{prescription.id} "
+            f"({prescription.executions_done + 1}/{prescription.executions_required})"
+        ),
         scheduled_time=datetime.utcnow(),
         status=ProcedureStatus.COMPLETED,
         dosage=prescription.dosage,
         frequency=prescription.frequency,
-        notes=execution_data.notes or prescription.notes
-    )
-    await manager.broadcast(
-        {
-            "type": "prescription_completed",
-            "prescription_id": prescription_id,
-            "patient_name": prescription.patient.full_name,
-            "prescription_name": prescription.name,
-            "completed_by": current_user.full_name,
-            "timestamp": datetime.utcnow().isoformat()
-        },
-        "nurse"  # Или конкретная станция
+        notes=execution_data.notes or prescription.notes,
     )
     db.add(procedure)
-    
-    # Обновляем статус назначения
-    prescription.status = PrescriptionStatus.COMPLETED
-    prescription.completed_at = datetime.utcnow()
-    
+
+    prescription.executions_done += 1
+    if prescription.executions_done >= prescription.executions_required:
+        prescription.status = PrescriptionStatus.COMPLETED
+        prescription.completed_at = datetime.utcnow()
+        await manager.broadcast(
+            {
+                "type": "prescription_completed",
+                "prescription_id": prescription_id,
+                "patient_name": prescription.patient.full_name,
+                "prescription_name": prescription.name,
+                "completed_by": current_user.full_name,
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+            "nurse",
+        )
+
+    if prescription.package_id:
+        refresh_package_status(db, prescription.package_id)
+
     db.commit()
     db.refresh(procedure)
     return procedure

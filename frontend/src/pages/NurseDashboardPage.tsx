@@ -6,6 +6,7 @@ import PatientList from '../components/nurse-station/PatientList';
 import ObservationsTable from '../components/nurse-station/ObservationsTable';
 import MedicalForm530n from '../components/nurse-station/MedicalForm530n';
 import AppointmentsView from '../components/nurse-station/AppointmentsView';
+import { BraceletAlertsPanel } from '../components/bracelet-monitoring';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useWebSocket, WebSocketMessage } from '../hooks/useWebSocket';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +19,9 @@ import type { NotificationInput } from '../components/common/NotificationToast';
 import './NurseDashboardPage.css';
 
 const NurseDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'patients' | 'observations' | 'form530n' | 'appointments'>('patients');
+  const [activeTab, setActiveTab] = useState<
+    'patients' | 'observations' | 'form530n' | 'appointments' | 'bracelets'
+  >('patients');
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
@@ -66,6 +69,15 @@ const NurseDashboardPage: React.FC = () => {
 
   const handleWebSocketMessage = useCallback(
     (message: WebSocketMessage) => {
+      if (
+        message.type === 'prescriptions_created' ||
+        message.type === 'prescription_created' ||
+        message.type === 'prescription_cancelled' ||
+        message.type === 'prescription_completed'
+      ) {
+        void refetch();
+      }
+
       if (message.type === 'prescriptions_created') {
         showBatchPrescriptionNotification(message, showPrescriptionAlert);
         if (message.patient_id === selectedPatientId) {
@@ -113,7 +125,7 @@ const NurseDashboardPage: React.FC = () => {
         });
       }
     },
-    [selectedPatientId, showPrescriptionAlert],
+    [selectedPatientId, showPrescriptionAlert, refetch],
   );
 
   useWebSocket('nurse', handleWebSocketMessage);
@@ -205,6 +217,12 @@ const NurseDashboardPage: React.FC = () => {
         >
           ⏰ Назначения ({prescriptions.filter((p) => p.status === 'ACTIVE').length})
         </button>
+        <button
+          className={`tab-button ${activeTab === 'bracelets' ? 'active' : ''}`}
+          onClick={() => setActiveTab('bracelets')}
+        >
+          ⌚ Браслеты
+        </button>
       </nav>
 
       <main className="dashboard-content">
@@ -239,6 +257,12 @@ const NurseDashboardPage: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'bracelets' && (
+          <div className="tab-content">
+            <BraceletAlertsPanel />
+          </div>
+        )}
+
         {activeTab === 'appointments' && (
           <div className="tab-content">
             <AppointmentsView
@@ -263,9 +287,6 @@ const NurseDashboardPage: React.FC = () => {
         )}
       </main>
 
-      <footer className="dashboard-footer">
-        <p>Медицинский центр • Станция медсестры • {new Date().getFullYear()}</p>
-      </footer>
     </div>
   );
 };
