@@ -79,6 +79,9 @@
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .patient-card:hover {
@@ -99,6 +102,10 @@
   color: #2c3e50;
   font-size: 1.3rem;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .patient-status {
@@ -149,6 +156,10 @@
   color: #495057;
   font-weight: 500;
   font-size: 0.95rem;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
 .patient-actions {

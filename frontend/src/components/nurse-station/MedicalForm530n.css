@@ -534,7 +534,7 @@
   .f530-filters,
   .f530-header,
   .dashboard-header,
-  .dashboard-tabs,
+  .nurse-dashboard__nav,
   .dashboard-footer,
   .no-print {
     display: none !important;

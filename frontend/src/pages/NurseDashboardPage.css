@@ -126,15 +126,33 @@
   color: #495057;
 }
 
-.dashboard-tabs {
+.nurse-dashboard__nav {
   display: flex;
+  align-items: stretch;
+  justify-content: space-between;
   background: white;
   border-bottom: 1px solid #dee2e6;
   padding: 0 30px;
-  gap: 5px;
+  gap: 16px;
 }
 
-.tab-button {
+.nurse-dashboard__nav-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.nurse-dashboard__nav-end {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 16px;
+  border-left: 1px solid #e9ecef;
+}
+
+.nurse-dashboard__tab {
   padding: 15px 25px;
   background: none;
   border: none;
@@ -147,15 +165,20 @@
   position: relative;
 }
 
-.tab-button:hover {
+.nurse-dashboard__tab:hover {
   color: #495057;
   background: #f8f9fa;
 }
 
-.tab-button.active {
+.nurse-dashboard__tab.active {
   color: #4CAF50;
   border-bottom-color: #4CAF50;
   background: #f1f8e9;
+}
+
+.tab-content--rooms {
+  padding: 0;
+  max-width: none;
 }
 
 .dashboard-content {
@@ -293,12 +316,25 @@
     align-items: center;
   }
   
-  .dashboard-tabs {
-    flex-wrap: wrap;
+  .nurse-dashboard__nav {
+    flex-direction: column;
+    align-items: stretch;
     padding: 0 15px;
   }
+
+  .nurse-dashboard__nav-main {
+    flex-wrap: wrap;
+  }
+
+  .nurse-dashboard__nav-end {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid #e9ecef;
+    justify-content: flex-end;
+  }
   
-  .tab-button {
+  .nurse-dashboard__tab {
     flex: 1;
     min-width: 120px;
     padding: 12px 15px;

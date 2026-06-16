@@ -14,6 +14,7 @@ import './MedicalForm530n.css';
 interface MedicalForm530nProps {
   patientId: number | null;
   onPatientSelect: (patientId: number) => void;
+  patientOptions?: Patient[];
 }
 
 type EditableRow = {
@@ -42,8 +43,23 @@ const formatDate = (iso: string): string => {
 
 const toInputDate = (d: Date): string => d.toISOString().split('T')[0];
 
+let localRowIdSeq = 0;
+
+/** ID строки без crypto.randomUUID (нет в части Opera / Яндекс.Браузера и без HTTPS). */
+const newLocalRowId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      /* secure context / старый движок */
+    }
+  }
+  localRowIdSeq += 1;
+  return `f530-row-${Date.now()}-${localRowIdSeq}`;
+};
+
 const emptyRow = (recordDate: string): EditableRow => ({
-  localId: crypto.randomUUID(),
+  localId: newLocalRowId(),
   record_date: recordDate,
   record_time: '',
   temperature: '',
@@ -87,7 +103,11 @@ const prescTypeLabel = (type: string) => {
   }
 };
 
-const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientSelect }) => {
+const MedicalForm530n: React.FC<MedicalForm530nProps> = ({
+  patientId,
+  onPatientSelect,
+  patientOptions,
+}) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [localPatientId, setLocalPatientId] = useState<number | null>(patientId);
   const [form, setForm] = useState<Form530n | null>(null);
@@ -106,8 +126,12 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
   }, [patientId]);
 
   useEffect(() => {
+    if (patientOptions) {
+      setPatients(patientOptions);
+      return;
+    }
     apiService.getPatients().then(setPatients).catch(() => setPatients([]));
-  }, []);
+  }, [patientOptions]);
 
   const loadForm = useCallback(async () => {
     if (!activePatientId) return;
@@ -236,11 +260,16 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
   };
 
   const enableManualMode = () => {
+    setError(null);
     setManualMode(true);
     if (editableRows.length === 0) {
-      addRow();
+      const defaultDate = dateTo || dateFrom || toInputDate(new Date());
+      setEditableRows([emptyRow(defaultDate)]);
     }
   };
+
+  const tableColSpan = manualMode ? 10 : 9;
+  const selectedPatient = patients.find((pt) => pt.id === activePatientId);
 
   if (!activePatientId) {
     return (
@@ -367,23 +396,23 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
         </div>
       )}
 
-      {form && !loading && (
+      {(form || manualMode) && !loading && (
         <div className="form-preview f530-preview" id="form-530n-print-area">
           <div className="f530-patient-card">
             <div className="f530-patient-grid">
               <div>
                 <span className="label">Пациент</span>
-                <strong>{p?.full_name}</strong>
+                <strong>{p?.full_name ?? selectedPatient?.full_name ?? '—'}</strong>
               </div>
               <div>
                 <span className="label">Возраст / пол</span>
                 <strong>
-                  {p?.age ?? '—'} / {p?.gender ?? '—'}
+                  {p?.age ?? '—'} / {p?.gender ?? selectedPatient?.gender ?? '—'}
                 </strong>
               </div>
               <div>
                 <span className="label">№ истории</span>
-                <strong>{p?.medical_record_number || '—'}</strong>
+                <strong>{p?.medical_record_number || selectedPatient?.medical_record_number || '—'}</strong>
               </div>
               <div>
                 <span className="label">Палата / койка</span>
@@ -393,20 +422,30 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
               </div>
               <div>
                 <span className="label">Отделение</span>
-                <strong>{p?.department_name || '—'}</strong>
+                <strong>{p?.department_name || selectedPatient?.department_name || '—'}</strong>
               </div>
               <div>
                 <span className="label">Период</span>
                 <strong>
-                  {formatDate(form.period_from)} — {formatDate(form.period_to)}
+                  {form
+                    ? `${formatDate(form.period_from)} — ${formatDate(form.period_to)}`
+                    : `${dateFrom || '—'} — ${dateTo || '—'}`}
                 </strong>
               </div>
             </div>
             <div className="f530-meta">
-              Записей наблюдений: <strong>{form.observations_count}</strong>
-              {' · '}
-              Сформировано: {formatMoscowDate(form.generated_at)}{' '}
-              {formatMoscowTime(form.generated_at)}
+              {form ? (
+                <>
+                  Записей наблюдений: <strong>{form.observations_count}</strong>
+                  {' · '}
+                  Сформировано: {formatMoscowDate(form.generated_at)}{' '}
+                  {formatMoscowTime(form.generated_at)}
+                </>
+              ) : (
+                <span className="f530-muted">
+                  Нажмите «Обновить за период» или заполните строки вручную и сохраните.
+                </span>
+              )}
               {manualMode && <span className="f530-manual-badge">Режим ручного ввода</span>}
             </div>
           </div>
@@ -430,13 +469,13 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
               <tbody>
                 {editableRows.length === 0 && !manualMode ? (
                   <tr>
-                    <td colSpan={9} className="f530-empty">
+                    <td colSpan={tableColSpan} className="f530-empty">
                       Нет наблюдений за период. Нажмите «Ручной ввод» для заполнения листа.
                     </td>
                   </tr>
                 ) : editableRows.length === 0 && manualMode ? (
                   <tr>
-                    <td colSpan={10} className="f530-empty">
+                    <td colSpan={tableColSpan} className="f530-empty">
                       Нажмите «+ Строка», чтобы добавить запись.
                     </td>
                   </tr>
@@ -562,6 +601,7 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
             </table>
           </div>
 
+          {form && (
           <div className="f530-side-sections">
             <section className="f530-side-block">
               <h3>Активные назначения ({form.prescriptions.length})</h3>
@@ -618,6 +658,7 @@ const MedicalForm530n: React.FC<MedicalForm530nProps> = ({ patientId, onPatientS
               )}
             </section>
           </div>
+          )}
         </div>
       )}
     </div>

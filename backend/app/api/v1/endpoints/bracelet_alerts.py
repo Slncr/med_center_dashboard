@@ -2,6 +2,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.bracelet_alerts.assignment import (
+    assign_bracelet_to_patient,
+    distribute_unassigned_bracelets,
+    get_unassigned_devices,
+    unassign_bracelet_from_patient,
+)
 from app.bracelet_alerts.max_notifier import MaxBotNotifier
 from app.bracelet_alerts.patient_thresholds import (
     build_thresholds_response,
@@ -18,12 +24,18 @@ from app.core.database import get_db
 from app.deps import get_current_active_user
 from app.models.user import User, UserRole
 from app.schemas.bracelet_alerts import (
+    AssignBraceletRequest,
+    AssignBraceletResponse,
+    BraceletAssignmentPair,
     BraceletCheckResponse,
     BraceletOverviewResponse,
+    DistributeBraceletsResponse,
     MetricThresholdValues,
     PatientBraceletView,
     PatientVitalThresholdsResponse,
     PatientVitalThresholdsUpdate,
+    UnassignBraceletResponse,
+    UnassignedBleDeviceView,
     VitalAlertView,
 )
 
@@ -129,17 +141,83 @@ def bracelet_overview(
     service = BraceletAlertService()
     result = service.get_overview(db)
     notifier = MaxBotNotifier()
+    unassigned_raw, _, unassigned_err = get_unassigned_devices(db)
+    patients_without_mac = sum(1 for s in result.snapshots if not s.ble_mac)
+    overview_error = result.error or unassigned_err
     return BraceletOverviewResponse(
         checked_at=result.checked_at,
         patients_total=result.patients_total,
         patients_with_ble=result.patients_with_ble,
         patients_online=result.patients_online,
+        patients_without_mac=patients_without_mac,
         alerts_found=result.alerts_found,
         monitoring_connected=result.monitoring_connected,
         max_bot_configured=notifier.is_configured,
         alerts_enabled=settings.BRACELET_ALERTS_ENABLED,
-        error=result.error,
+        error=overview_error,
         patients=[_snapshot_to_view(s) for s in result.snapshots],
+        unassigned_devices=[
+            UnassignedBleDeviceView(
+                mac=d["mac"],
+                online=d.get("online"),
+                metrics=d.get("metrics") or {},
+            )
+            for d in unassigned_raw
+        ],
+    )
+
+
+@router.delete("/patients/{patient_id}/bracelet", response_model=UnassignBraceletResponse)
+def unassign_bracelet(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Отвязать браслет от пациента."""
+    _require_nurse_or_admin(current_user)
+    try:
+        data = unassign_bracelet_from_patient(db, patient_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return UnassignBraceletResponse(**data)
+
+
+@router.post("/assign-bracelet", response_model=AssignBraceletResponse)
+def assign_bracelet(
+    body: AssignBraceletRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Привязать выбранный браслет к выбранному пациенту."""
+    _require_nurse_or_admin(current_user)
+    try:
+        data = assign_bracelet_to_patient(db, body.patient_id, body.ble_mac)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return AssignBraceletResponse(
+        pair=BraceletAssignmentPair(**data["pair"]),
+        monitoring_connected=data["monitoring_connected"],
+        message=data["message"],
+        error=data.get("error"),
+    )
+
+
+@router.post("/distribute-bracelets", response_model=DistributeBraceletsResponse)
+def distribute_bracelets(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Привязать свободные браслеты к пациентам без MAC."""
+    _require_nurse_or_admin(current_user)
+    data = distribute_unassigned_bracelets(db)
+    return DistributeBraceletsResponse(
+        assigned_count=data["assigned_count"],
+        pairs=data["pairs"],
+        patients_without_mac_remaining=data["patients_without_mac_remaining"],
+        unassigned_devices_remaining=data["unassigned_devices_remaining"],
+        monitoring_connected=data["monitoring_connected"],
+        message=data["message"],
+        error=data.get("error"),
     )
 
 

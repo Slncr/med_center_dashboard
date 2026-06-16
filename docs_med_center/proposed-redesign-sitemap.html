@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Med Center Dashboard — Proposed redesign sitemap</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      padding: 24px 28px 36px;
+    }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { font-size: 14px; color: #767676; margin-bottom: 16px; }
+    #diagram {
+      display: block;
+      width: 100%;
+      max-width: 1360px;
+      height: auto;
+      border: 1px solid #e5e5e5;
+    }
+    .note { margin-top: 16px; font-size: 12px; color: #767676; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>Proposed redesign sitemap</h1>
+  <p class="subtitle">Med Center Dashboard · блоки и стрелки из одной таблицы координат</p>
+  <svg id="diagram" xmlns="http://www.w3.org/2000/svg"></svg>
+  <p class="note">Обновите страницу (F5). Пунктир — условные переходы (модалки, state). Текст: docs/SITEMAP.md</p>
+
+  <script>
+    (function () {
+      const RED = '#e60023';
+      const BLACK = '#111';
+      const GRAY = '#767676';
+
+      /** @typedef {'page'|'multi'|'decision'} NodeType */
+
+      /**
+       * @param {string} id
+       * @param {number} x
+       * @param {number} y
+       * @param {number} w
+       * @param {number} h
+       * @param {string} title
+       * @param {string} [url]
+       * @param {NodeType} [type]
+       * @param {boolean} [dashed]
+       */
+      function node(id, x, y, w, h, title, url = '', type = 'page', dashed = false) {
+        return { id, x, y, w, h, title, url, type, dashed };
+      }
+
+      const N = {
+        // Entry
+        n00: node('0.0', 40, 100, 96, 52, '/', '→ /login'),
+        n10: node('1.0', 180, 100, 118, 52, 'Login', '/login'),
+        d11: node('1.1', 340, 90, 100, 100, 'Роль после входа', '', 'decision'),
+        n20: node('2.0', 520, 56, 168, 52, 'Станция медсестры', '/nurse/appointments'),
+        n30: node('3.0', 520, 128, 168, 52, 'Кабинет врача', '/doctor/patients'),
+        n40: node('4.0', 520, 200, 168, 52, 'Персонал (admin)', '/register'),
+        // Public
+        n01: node('0.1', 40, 248, 132, 52, 'Экран палаты', '/room'),
+        n02: node('0.2', 220, 248, 172, 52, 'Палата по монитору', '/room/:monitorId'),
+        // Admin
+        n41: node('4.1', 40, 348, 148, 52, 'Верхняя панель', 'admin only', 'multi'),
+        n411: node('4.1.1', 240, 348, 112, 44, 'Медсёстры', '→ 2.0'),
+        n412: node('4.1.2', 380, 348, 96, 44, 'Врачи', '→ 3.0'),
+        n413: node('4.1.3', 504, 348, 96, 44, 'Палаты', '→ 0.1'),
+        n414: node('4.1.4', 628, 348, 108, 44, 'Персонал', '→ 4.0'),
+        // Nurse tabs
+        n21: node('2.1', 40, 520, 92, 40, 'Пациенты'),
+        n22: node('2.2', 148, 520, 104, 40, 'Наблюдения'),
+        n23: node('2.3', 268, 520, 72, 40, '530н'),
+        n24: node('2.4', 356, 520, 108, 40, 'Назначения'),
+        n25: node('2.5', 480, 520, 92, 40, 'Браслеты'),
+        n26: node('2.6', 588, 520, 76, 40, 'Архив'),
+        n27: node('2.7', 680, 520, 76, 40, 'Палаты'),
+        n211: node('2.1.1', 40, 592, 128, 44, 'Карта пациента', 'modal', 'page', true),
+        n212: node('2.1.2', 184, 592, 128, 44, '6 вкладок карты', '', 'multi', true),
+        n251: node('2.5.1', 480, 592, 128, 44, 'Пороги виталов', 'modal', 'page', true),
+        n271: node('2.7.1', 40, 700, 116, 44, 'Выбор палаты'),
+        n272: node('2.7.2', 192, 700, 116, 44, 'Сетка коек'),
+        d273: node('2.7.3', 348, 690, 100, 100, 'Занята?', '', 'decision'),
+        n274: node('2.7.4', 492, 684, 148, 52, 'Панель назначений', 'panel'),
+        n275: node('2.7.5', 492, 752, 148, 44, 'Койка свободна'),
+        // Doctor tabs
+        n31: node('3.1', 760, 520, 76, 40, 'Обзор'),
+        n32: node('3.2', 852, 520, 96, 40, 'Пациенты'),
+        n33: node('3.3', 964, 520, 108, 40, 'Назначения'),
+        n34: node('3.4', 1088, 520, 76, 40, 'Отчёты'),
+        n35: node('3.5', 1180, 520, 76, 40, 'Архив'),
+        n321: node('3.2.1', 852, 592, 132, 44, '→ Назначения', 'patientId', 'page', true),
+        n331: node('3.3.1', 964, 592, 132, 44, 'Форма', 'проц.|изм.', 'multi', true),
+        n341: node('3.4.1', 1088, 592, 132, 44, '4 отчёта', '', 'multi', true),
+        // Shared
+        n50: node('5.0', 40, 860, 148, 52, 'Архив (маршрут)', '/archived'),
+        m0: node('M.0', 228, 860, 108, 52, 'Модалки', 'overlay', 'multi'),
+        m1: node('M.1', 380, 868, 120, 40, 'PatientCard', '', 'page', true),
+        m2: node('M.2', 516, 868, 140, 40, 'PrescriptionPkg', '', 'page', true),
+        m3: node('M.3', 672, 868, 124, 40, 'VitalThresholds', '', 'page', true),
+        m4: node('M.4', 812, 868, 132, 40, 'NotificationToast', '', 'page', true),
+      };
+
+      /** @type {Array<{from:string,to:string,fromSide?:string,toSide?:string,dashed?:boolean,via?:number[]}>} */
+      const EDGES = [
+        { from: '0.0', to: '1.0' },
+        { from: '1.0', to: '1.1' },
+        { from: '1.1', to: '2.0', fromSide: 'right', toSide: 'left', via: [480, 140, 480, 82] },
+        { from: '1.1', to: '3.0', fromSide: 'right', toSide: 'left' },
+        { from: '1.1', to: '4.0', fromSide: 'right', toSide: 'left', via: [480, 140, 480, 226] },
+        { from: '0.1', to: '0.2' },
+        { from: '4.1', to: '4.1.1', fromSide: 'right', toSide: 'top', via: [220, 370, 296, 370] },
+        { from: '4.1', to: '4.1.2', fromSide: 'right', toSide: 'top', via: [220, 370, 428, 370] },
+        { from: '4.1', to: '4.1.3', fromSide: 'right', toSide: 'top', via: [220, 370, 552, 370] },
+        { from: '4.1', to: '4.1.4', fromSide: 'right', toSide: 'top', via: [220, 370, 682, 370] },
+        { from: '4.1.1', to: '2.0', dashed: true, via: [296, 300, 604, 300] },
+        { from: '4.1.2', to: '3.0', dashed: true, via: [428, 300, 604, 300] },
+        { from: '4.1.3', to: '0.1', dashed: true, via: [552, 300, 106, 300] },
+        { from: '4.1.4', to: '4.0', dashed: true, via: [682, 300, 604, 300] },
+        { from: '2.0', to: '2.1', fromSide: 'bottom', toSide: 'top', via: [604, 480, 86, 480] },
+        { from: '2.0', to: '2.2', fromSide: 'bottom', toSide: 'top', via: [604, 480, 200, 480] },
+        { from: '2.0', to: '2.3', fromSide: 'bottom', toSide: 'top', via: [604, 480, 304, 480] },
+        { from: '2.0', to: '2.4', fromSide: 'bottom', toSide: 'top', via: [604, 480, 410, 480] },
+        { from: '2.0', to: '2.5', fromSide: 'bottom', toSide: 'top', via: [604, 480, 526, 480] },
+        { from: '2.0', to: '2.6', fromSide: 'bottom', toSide: 'top', via: [604, 480, 626, 480] },
+        { from: '2.0', to: '2.7', fromSide: 'bottom', toSide: 'top', via: [604, 480, 718, 480] },
+        { from: '2.1', to: '2.1.1', dashed: true },
+        { from: '2.1.1', to: '2.1.2', dashed: true },
+        { from: '2.5', to: '2.5.1', dashed: true },
+        { from: '2.7', to: '2.7.1', fromSide: 'bottom', toSide: 'top', via: [718, 640, 98, 640] },
+        { from: '2.7.1', to: '2.7.2' },
+        { from: '2.7.2', to: '2.7.3' },
+        { from: '2.7.3', to: '2.7.4', fromSide: 'right', toSide: 'left' },
+        { from: '2.7.3', to: '2.7.5', fromSide: 'bottom', toSide: 'top' },
+        // doctor trunk from 3.0
+        { from: '3.0', to: '3.1', fromSide: 'bottom', toSide: 'top', via: [604, 460, 798, 460, 798, 480, 798, 480] },
+        { from: '3.0', to: '3.2', fromSide: 'bottom', toSide: 'top', via: [604, 460, 798, 460, 798, 480, 900, 480] },
+        { from: '3.0', to: '3.3', fromSide: 'bottom', toSide: 'top', via: [604, 460, 798, 460, 798, 480, 1018, 480] },
+        { from: '3.0', to: '3.4', fromSide: 'bottom', toSide: 'top', via: [604, 460, 798, 460, 798, 480, 1126, 480] },
+        { from: '3.0', to: '3.5', fromSide: 'bottom', toSide: 'top', via: [604, 460, 798, 460, 798, 480, 1218, 480] },
+        { from: '3.2', to: '3.2.1', dashed: true },
+        { from: '3.3', to: '3.3.1', dashed: true },
+        { from: '3.4', to: '3.4.1', dashed: true },
+        { from: '3.2.1', to: '3.3', dashed: true, via: [918, 640, 1018, 640] },
+        { from: 'M.0', to: 'M.1', fromSide: 'bottom', toSide: 'top', dashed: true, via: [282, 840, 440, 840] },
+        { from: 'M.0', to: 'M.2', fromSide: 'bottom', toSide: 'top', dashed: true, via: [282, 840, 586, 840] },
+        { from: 'M.0', to: 'M.3', fromSide: 'bottom', toSide: 'top', dashed: true, via: [282, 840, 734, 840] },
+        { from: 'M.0', to: 'M.4', fromSide: 'bottom', toSide: 'top', dashed: true, via: [282, 840, 878, 840] },
+        { from: '2.6', to: '5.0', dashed: true, via: [626, 820, 114, 820] },
+        { from: '3.5', to: '5.0', dashed: true, via: [1218, 820, 114, 820] },
+      ];
+
+      const byId = Object.fromEntries(Object.values(N).map((n) => [n.id, n]));
+
+      function anchor(n, side) {
+        const cx = n.x + n.w / 2;
+        const cy = n.y + n.h / 2;
+        if (n.type === 'decision') {
+          const dx = n.w / 2;
+          const dy = n.h / 2;
+          switch (side) {
+            case 'left': return { x: n.x, y: cy };
+            case 'right': return { x: n.x + n.w, y: cy };
+            case 'top': return { x: cx, y: n.y };
+            case 'bottom': return { x: cx, y: n.y + n.h };
+            default: return { x: cx, y: cy };
+          }
+        }
+        switch (side) {
+          case 'left': return { x: n.x, y: cy };
+          case 'right': return { x: n.x + n.w, y: cy };
+          case 'top': return { x: cx, y: n.y };
+          case 'bottom': return { x: cx, y: n.y + n.h };
+          default: return { x: cx, y: cy };
+        }
+      }
+
+      function pickSides(a, b) {
+        const acx = a.x + a.w / 2;
+        const bcx = b.x + b.w / 2;
+        const acy = a.y + a.h / 2;
+        const bcy = b.y + b.h / 2;
+        const dx = bcx - acx;
+        const dy = bcy - acy;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          return dx >= 0
+            ? { fromSide: 'right', toSide: 'left' }
+            : { fromSide: 'left', toSide: 'right' };
+        }
+        return dy >= 0
+          ? { fromSide: 'bottom', toSide: 'top' }
+          : { fromSide: 'top', toSide: 'bottom' };
+      }
+
+      function routePoints(from, to, fromSide, toSide, via) {
+        const p0 = anchor(from, fromSide);
+        const p1 = anchor(to, toSide);
+        if (via && via.length >= 2) {
+          const pts = [p0];
+          for (let i = 0; i < via.length; i += 2) {
+            const px = via[i];
+            const py = via[i + 1];
+            const prev = pts[pts.length - 1];
+            if (prev.x !== px) pts.push({ x: px, y: prev.y });
+            if (prev.y !== py) pts.push({ x: px, y: py });
+          }
+          const last = pts[pts.length - 1];
+          if (last.x !== p1.x) pts.push({ x: p1.x, y: last.y });
+          if (last.y !== p1.y) pts.push({ x: p1.x, y: p1.y });
+          return pts;
+        }
+        if (fromSide === 'right' && toSide === 'left') {
+          const mid = (p0.x + p1.x) / 2;
+          return [p0, { x: mid, y: p0.y }, { x: mid, y: p1.y }, p1];
+        }
+        if (fromSide === 'left' && toSide === 'right') {
+          const mid = (p0.x + p1.x) / 2;
+          return [p0, { x: mid, y: p0.y }, { x: mid, y: p1.y }, p1];
+        }
+        if (fromSide === 'bottom' && toSide === 'top') {
+          const mid = (p0.y + p1.y) / 2;
+          return [p0, { x: p0.x, y: mid }, { x: p1.x, y: mid }, p1];
+        }
+        if (fromSide === 'top' && toSide === 'bottom') {
+          const mid = (p0.y + p1.y) / 2;
+          return [p0, { x: p0.x, y: mid }, { x: p1.x, y: mid }, p1];
+        }
+        return [p0, p1];
+      }
+
+      function pathD(points) {
+        return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+      }
+
+      const svg = document.getElementById('diagram');
+      const W = 1320;
+      const H = 960;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+      const ns = 'http://www.w3.org/2000/svg';
+      const mk = (tag, attrs, text) => {
+        const el = document.createElementNS(ns, tag);
+        Object.entries(attrs || {}).forEach(([k, v]) => el.setAttribute(k, String(v)));
+        if (text != null) el.textContent = text;
+        return el;
+      };
+
+      const defs = mk('defs');
+      const marker = mk('marker', {
+        id: 'arr',
+        markerWidth: 8,
+        markerHeight: 8,
+        refX: 7,
+        refY: 4,
+        orient: 'auto',
+      });
+      marker.appendChild(mk('path', { d: 'M0,0 L8,4 L0,8 Z', fill: BLACK }));
+      defs.appendChild(marker);
+      const markerG = mk('marker', {
+        id: 'arr-g',
+        markerWidth: 8,
+        markerHeight: 8,
+        refX: 7,
+        refY: 4,
+        orient: 'auto',
+      });
+      markerG.appendChild(mk('path', { d: 'M0,0 L8,4 L0,8 Z', fill: GRAY }));
+      defs.appendChild(markerG);
+      svg.appendChild(defs);
+
+      // Legend
+      const lg = mk('g', { transform: 'translate(1040, 24)' });
+      lg.appendChild(mk('rect', { x: 0, y: 0, width: 220, height: 150, fill: '#fff', stroke: BLACK }));
+      lg.appendChild(mk('text', { x: 12, y: 20, 'font-size': 13, 'font-weight': 700 }, 'LEGEND'));
+      lg.appendChild(mk('rect', { x: 12, y: 30, width: 32, height: 20, fill: '#fff', stroke: BLACK, 'stroke-width': 2 }));
+      lg.appendChild(mk('text', { x: 52, y: 44, 'font-size': 12 }, 'Single page'));
+      lg.appendChild(mk('rect', { x: 12, y: 56, width: 32, height: 20, fill: '#fff', stroke: BLACK, 'stroke-width': 2 }));
+      lg.appendChild(mk('rect', { x: 16, y: 60, width: 32, height: 20, fill: '#fff', stroke: BLACK, 'stroke-width': 2 }));
+      lg.appendChild(mk('text', { x: 52, y: 70, 'font-size': 12 }, 'Multiple pages'));
+      lg.appendChild(mk('polygon', {
+        points: '22,98 34,86 46,98 34,110',
+        fill: '#fff',
+        stroke: BLACK,
+        'stroke-width': 2,
+      }));
+      lg.appendChild(mk('text', { x: 52, y: 102, 'font-size': 12 }, 'Decision'));
+      lg.appendChild(mk('line', {
+        x1: 12,
+        y1: 118,
+        x2: 44,
+        y2: 118,
+        stroke: BLACK,
+        'stroke-width': 2,
+        'marker-end': 'url(#arr)',
+      }));
+      lg.appendChild(mk('text', { x: 52, y: 122, 'font-size': 12 }, 'Connector'));
+      lg.appendChild(mk('line', {
+        x1: 12,
+        y1: 136,
+        x2: 44,
+        y2: 136,
+        stroke: GRAY,
+        'stroke-width': 2,
+        'stroke-dasharray': '6 4',
+        'marker-end': 'url(#arr-g)',
+      }));
+      lg.appendChild(mk('text', { x: 52, y: 140, 'font-size': 12 }, 'Conditional'));
+      svg.appendChild(lg);
+
+      // Section labels
+      const labels = [
+        ['ENTRY & AUTH', 40, 82],
+        ['PUBLIC (NO AUTH)', 40, 230],
+        ['ADMIN HEADER', 40, 330],
+        ['NURSE · вкладки (2.0)', 40, 502],
+        ['2.7 ПАЛАТЫ', 40, 682],
+        ['DOCTOR · вкладки (3.0)', 760, 502],
+        ['SHARED', 40, 842],
+      ];
+      labels.forEach(([t, x, y]) => {
+        svg.appendChild(mk('text', {
+          x,
+          y,
+          'font-size': 11,
+          'font-weight': 700,
+          fill: GRAY,
+          'letter-spacing': '0.06em',
+        }, t));
+      });
+
+      svg.appendChild(mk('text', {
+        x: 420,
+        y: 280,
+        'font-size': 11,
+        fill: GRAY,
+      }, 'Fullscreen · BedSchematic · BLE · без назначений'));
+
+      // Nurse / doctor area guides (subtle)
+      svg.appendChild(mk('rect', {
+        x: 28,
+        y: 488,
+        width: 720,
+        height: 340,
+        fill: 'none',
+        stroke: '#e8e8e8',
+        'stroke-width': 1,
+      }));
+      svg.appendChild(mk('rect', {
+        x: 748,
+        y: 488,
+        width: 520,
+        height: 180,
+        fill: 'none',
+        stroke: '#e8e8e8',
+        'stroke-width': 1,
+      }));
+
+      // Edges first (under nodes)
+      EDGES.forEach((e) => {
+        const a = byId[e.from];
+        const b = byId[e.to];
+        if (!a || !b) return;
+        const sides = e.fromSide && e.toSide
+          ? { fromSide: e.fromSide, toSide: e.toSide }
+          : pickSides(a, b);
+        const pts = routePoints(a, b, sides.fromSide, sides.toSide, e.via);
+        svg.appendChild(mk('path', {
+          d: pathD(pts),
+          fill: 'none',
+          stroke: e.dashed ? GRAY : BLACK,
+          'stroke-width': e.dashed ? 1.5 : 2,
+          'stroke-dasharray': e.dashed ? '6 4' : 'none',
+          'marker-end': e.dashed ? 'url(#arr-g)' : 'url(#arr)',
+        }));
+      });
+
+      // Nodes
+      Object.values(N).forEach((n) => {
+        const g = mk('g');
+        if (n.type === 'decision') {
+          const cx = n.x + n.w / 2;
+          const cy = n.y + n.h / 2;
+          g.appendChild(mk('polygon', {
+            points: `${cx},${n.y} ${n.x + n.w},${cy} ${cx},${n.y + n.h} ${n.x},${cy}`,
+            fill: '#fff',
+            stroke: n.dashed ? GRAY : BLACK,
+            'stroke-width': 2,
+            'stroke-dasharray': n.dashed ? '6 4' : 'none',
+          }));
+        } else {
+          if (n.type === 'multi') {
+            g.appendChild(mk('rect', {
+              x: n.x + 5,
+              y: n.y + 5,
+              width: n.w,
+              height: n.h,
+              fill: '#fff',
+              stroke: n.dashed ? GRAY : BLACK,
+              'stroke-width': 2,
+              'stroke-dasharray': n.dashed ? '6 4' : 'none',
+            }));
+          }
+          g.appendChild(mk('rect', {
+            x: n.x,
+            y: n.y,
+            width: n.w,
+            height: n.h,
+            fill: '#fff',
+            stroke: n.dashed ? GRAY : BLACK,
+            'stroke-width': 2,
+            'stroke-dasharray': n.dashed ? '6 4' : 'none',
+          }));
+        }
+        g.appendChild(mk('text', {
+          x: n.x + n.w - 8,
+          y: n.y + 16,
+          'text-anchor': 'end',
+          'font-size': 11,
+          'font-weight': 700,
+          fill: RED,
+        }, n.id));
+        const titleY = n.type === 'decision' ? n.y + n.h / 2 + 4 : n.y + 26;
+        const titleAnchor = n.type === 'decision' ? 'middle' : 'start';
+        const titleX = n.type === 'decision' ? n.x + n.w / 2 : n.x + 10;
+        g.appendChild(mk('text', {
+          x: titleX,
+          y: titleY,
+          'text-anchor': titleAnchor,
+          'font-size': n.type === 'decision' ? 11 : 13,
+          'font-weight': 700,
+        }, n.title));
+        if (n.url && n.type !== 'decision') {
+          g.appendChild(mk('text', {
+            x: n.x + 10,
+            y: n.y + 42,
+            'font-size': 10,
+            fill: GRAY,
+          }, n.url));
+        }
+        svg.appendChild(g);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePatients } from '../hooks/usePatients';
 import { apiService } from '../services/api';
 import { Patient, Prescription, Room } from '../types';
@@ -6,6 +6,11 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import PatientCard from '../components/nurse-station/PatientCard';
 import PrescriptionsForm from '../components/doctor-station/PrescriptionsForm';
 import PrescriptionsList from '../components/doctor-station/PrescriptionsList';
+import DoctorReportsView from '../components/doctor-station/DoctorReportsView';
+import ArchivedPatientsPanel from '../components/shared/ArchivedPatientsPanel';
+import { useUrlNumberParam, useUrlTab } from '../hooks/useUrlSearchState';
+import { DOCTOR_TABS, DoctorTab, PATIENT_CARD_TABS, PatientCardTab, URL_PARAMS } from '../utils/urlTabs';
+import '../components/nurse-station/PatientList.css';
 import './DoctorDashboardPage.css';
 
 interface DoctorDashboardPageProps {
@@ -13,10 +18,26 @@ interface DoctorDashboardPageProps {
 }
 
 const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpdate }) => {
-  const [activeView, setActiveView] = useState<'overview' | 'patients' | 'prescriptions' | 'reports'>('overview');
+  const [activeView, setActiveView] = useUrlTab(URL_PARAMS.tab, DOCTOR_TABS, 'overview');
   const { patients, loading: patientsLoading, refetch: refetchPatients, error: patientsError } = usePatients();
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [modalPatientId, setModalPatientId] = useUrlNumberParam(URL_PARAMS.card);
+  const [prescriptionPatientId, setPrescriptionPatientId] = useUrlNumberParam(URL_PARAMS.patient);
+  const [cardTab, setCardTab] = useUrlTab(URL_PARAMS.cardTab, PATIENT_CARD_TABS, 'observations');
   const [rooms, setRooms] = useState<Room[]>([]);
+
+  const switchView = useCallback(
+    (view: DoctorTab) => {
+      if (view === 'patients' || view === 'archive') {
+        setActiveView(view);
+        return;
+      }
+      setActiveView(view, {
+        [URL_PARAMS.card]: null,
+        [URL_PARAMS.cardTab]: null,
+      });
+    },
+    [setActiveView],
+  );
   
   // Статистика для вкладки "Обзор"
   const [stats, setStats] = useState({
@@ -137,15 +158,34 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
     return { room: undefined, bed: undefined };
   };
 
-  const closePatientCard = () => { 
-    setSelectedPatientId(null);
+  const closePatientCard = () => {
+    setModalPatientId(null, { [URL_PARAMS.cardTab]: null });
   };
 
   const handlePatientArchived = () => {
+    setModalPatientId(null, {
+      [URL_PARAMS.cardTab]: null,
+      [URL_PARAMS.patient]: null,
+    });
     if (onPatientsUpdate) {
       onPatientsUpdate();
     }
     refetchPatients();
+  };
+
+  const openPatientPrescriptions = (patientId: number) => {
+    setActiveView('prescriptions', {
+      [URL_PARAMS.patient]: patientId,
+      [URL_PARAMS.card]: null,
+      [URL_PARAMS.cardTab]: null,
+    });
+  };
+
+  const openPatientCardModal = (patientId: number, tab: PatientCardTab = 'observations') => {
+    setActiveView('patients', {
+      [URL_PARAMS.card]: patientId,
+      [URL_PARAMS.cardTab]: tab === 'observations' ? null : tab,
+    });
   };
 
   if (patientsLoading && patients.length === 0) {
@@ -195,27 +235,33 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
       <nav className="doctor-nav">
         <button 
           className={`nav-button ${activeView === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveView('overview')}
+          onClick={() => switchView('overview')}
         >
           📊 Обзор
         </button>
         <button 
           className={`nav-button ${activeView === 'patients' ? 'active' : ''}`}
-          onClick={() => setActiveView('patients')}
+          onClick={() => switchView('patients')}
         >
           👥 Пациенты ({stats.activePatients})
         </button>
         <button 
           className={`nav-button ${activeView === 'prescriptions' ? 'active' : ''}`}
-          onClick={() => setActiveView('prescriptions')}
+          onClick={() => switchView('prescriptions')}
         >
           💊 Назначения ({stats.prescriptionsToday})
         </button>
         <button 
           className={`nav-button ${activeView === 'reports' ? 'active' : ''}`}
-          onClick={() => setActiveView('reports')}
+          onClick={() => switchView('reports')}
         >
           📄 Отчёты
+        </button>
+        <button
+          className={`nav-button ${activeView === 'archive' ? 'active' : ''}`}
+          onClick={() => switchView('archive')}
+        >
+          📁 Архив
         </button>
       </nav>
 
@@ -271,7 +317,7 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
                         <div 
                           key={patient.id} 
                           className="patient-mini-item"
-                          onClick={() => setSelectedPatientId(patient.id)}
+                          onClick={() => openPatientCardModal(patient.id)}
                         >
                           <div className="patient-name">{patient.full_name}</div>
                           <div className="patient-meta">
@@ -288,7 +334,7 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
                   </div>
                   <button 
                     className="view-all-btn" 
-                    onClick={() => setActiveView('patients')}
+                    onClick={() => switchView('patients')}
                   >
                     Показать всех пациентов →
                   </button>
@@ -316,48 +362,67 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
                 <p className="empty-hint">Пациенты появятся после поступления в стационар</p>
               </div>
             ) : (
-              <div className="patients-grid">
-                {patients.map(patient => {
-                  const { room, bed } = getPatientRoomAndBed(patient);
-                  return (
-                    <div 
-                      key={patient.id} 
-                      className={`patient-card ${selectedPatientId === patient.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedPatientId(patient.id)}
-                    >
-                      <div className="patient-header">
-                        <div className="patient-name">{patient.full_name}</div>
-                        <div className={`patient-status status-${patient.status}`}>
-                          {patient.status === 'active' ? 'Активный' : 'Выписан'}
-                        </div>
-                      </div>
-                      
-                      <div className="patient-details">
-                        <div className="detail-row">
-                          <span className="detail-label">Койка:</span>
-                          <span className="detail-value">
-                            #{bed ? bed.number : patient.bed_id || '—'} 
-                            {room && ` (палата №${room.number})`}
+              <div className="patient-list doctor-patient-list">
+                <div className="patients-grid">
+                  {patients.map((patient) => {
+                    const { room, bed } = getPatientRoomAndBed(patient);
+                    const isHighlighted =
+                      modalPatientId === patient.id || prescriptionPatientId === patient.id;
+                    return (
+                      <div
+                        key={patient.id}
+                        className={`patient-card${isHighlighted ? ' selected' : ''}`}
+                      >
+                        <div className="patient-header">
+                          <h3>{patient.full_name}</h3>
+                          <span className={`patient-status ${patient.status}`}>
+                            {patient.status === 'active' ? 'Активный' : 'Выписан'}
                           </span>
                         </div>
-                        <div className="detail-row">
-                          <span className="detail-label">Поступил:</span>
-                          <span className="detail-value">
-                            {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
-                          </span>
+
+                        <div className="patient-info">
+                          <div className="info-row">
+                            <span className="info-label">Палата:</span>
+                            <span className="info-value">{room ? room.number : '—'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Койка:</span>
+                            <span className="info-value">{bed ? bed.number : patient.bed_id || '—'}</span>
+                          </div>
+                          <div className="info-row">
+                            <span className="info-label">Поступил:</span>
+                            <span className="info-value">
+                              {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                            </span>
+                          </div>
+                          {patient.department_name && (
+                            <div className="info-row">
+                              <span className="info-label">Подразделение:</span>
+                              <span className="info-value">{patient.department_name}</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="detail-row">
-                          <span className="detail-label">Подразделение:</span>
-                          <span className="detail-value">{patient.department_name || '—'}</span>
+
+                        <div className="patient-actions">
+                          <button
+                            type="button"
+                            className="action-button prescriptions-button"
+                            onClick={() => openPatientPrescriptions(patient.id)}
+                          >
+                            💊 Назначения
+                          </button>
+                          <button
+                            type="button"
+                            className="action-button view-button"
+                            onClick={() => openPatientCardModal(patient.id)}
+                          >
+                            Карта
+                          </button>
                         </div>
                       </div>
-                      
-                      <button className="open-card-btn">
-                        Открыть карту пациента →
-                      </button>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -376,13 +441,17 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
             
             <div className="prescriptions-container">
               <div className="prescriptions-form-section">
-                <PrescriptionsForm onPrescriptionCreated={refetchPatients} />
+                <PrescriptionsForm
+                  onPrescriptionCreated={refetchPatients}
+                  initialPatientId={prescriptionPatientId}
+                  onPatientChange={setPrescriptionPatientId}
+                />
               </div>
               
-              {selectedPatientId && (
+              {prescriptionPatientId && (
                 <div className="prescriptions-list-section">
                   <PrescriptionsList 
-                    patientId={selectedPatientId} 
+                    patientId={prescriptionPatientId} 
                     onPrescriptionCompleted={refetchPatients} 
                   />
                 </div>
@@ -396,44 +465,29 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
             <div className="view-header">
               <h2>Медицинские отчёты</h2>
             </div>
-            
-            <div className="reports-grid">
-              <div className="report-card">
-                <h3>📊 Статистика по пациентам</h3>
-                <p>Ежедневная и еженедельная статистика по поступившим, выписанным и находящимся на лечении пациентам</p>
-                <button className="report-btn">Сформировать отчёт</button>
-              </div>
-              
-              <div className="report-card">
-                <h3>💊 Статистика по назначениям</h3>
-                <p>Анализ выполнения назначений по отделениям, врачам и типам процедур</p>
-                <button className="report-btn">Сформировать отчёт</button>
-              </div>
-              
-              <div className="report-card">
-                <h3>📋 Форма 530н</h3>
-                <p>Генерация и экспорт формы 530н для выбранного пациента</p>
-                <button className="report-btn">Создать форму</button>
-              </div>
-              
-              <div className="report-card">
-                <h3>🏥 Отчёт по отделению</h3>
-                <p>Сводный отчёт по загруженности коечного фонда и эффективности лечения</p>
-                <button className="report-btn">Сформировать отчёт</button>
-              </div>
+            <DoctorReportsView />
+          </div>
+        )}
+
+        {activeView === 'archive' && (
+          <div className="patients-view">
+            <div className="view-header">
+              <h2>Архив пациентов</h2>
             </div>
-            
+            <ArchivedPatientsPanel allowRestore onRestored={() => void refetchPatients()} />
           </div>
         )}
       </main>
 
-      {selectedPatientId && (
+      {modalPatientId && activeView !== 'archive' && (
         <div className="modal-overlay" onClick={closePatientCard}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <PatientCard 
-              patientId={selectedPatientId} 
+            <PatientCard
+              patientId={modalPatientId}
               onClose={closePatientCard}
-              onPatientArchived={handlePatientArchived} 
+              onPatientArchived={handlePatientArchived}
+              cardTab={cardTab}
+              onCardTabChange={setCardTab}
             />
           </div>
         </div>

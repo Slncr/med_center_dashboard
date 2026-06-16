@@ -3,6 +3,7 @@ import { useBraceletOverview } from '../../hooks/useBraceletOverview';
 import LoadingSpinner from '../common/LoadingSpinner';
 import BraceletAlertsToolbar from './BraceletAlertsToolbar';
 import PatientBraceletCard from './PatientBraceletCard';
+import UnassignedBraceletsBar from './UnassignedBraceletsBar';
 import './BraceletAlertsPanel.css';
 
 type FilterMode = 'all' | 'alerts' | 'no_mac';
@@ -65,6 +66,8 @@ const BraceletAlertsPanel: React.FC = () => {
         onTestMax={handleTestMax}
       />
 
+      <UnassignedBraceletsBar overview={overview} onDistributed={refetch} />
+
       {error && <div className="bracelet-panel__error">{error}</div>}
       {overview?.error && (
         <div className="bracelet-panel__error">Сервер мониторинга: {overview.error}</div>
@@ -99,7 +102,7 @@ const BraceletAlertsPanel: React.FC = () => {
           <PatientBraceletCard
             key={patient.patient_id}
             patient={patient}
-            onThresholdsSaved={refetch}
+            onChanged={refetch}
           />
         ))}
       </div>

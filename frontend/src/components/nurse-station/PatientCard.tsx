@@ -15,28 +15,38 @@ import {
 import TruncateText from '../common/TruncateText';
 import PrescriptionPackageModal from './PrescriptionPackageModal';
 import { PatientVitalThresholdsForm } from '../bracelet-monitoring';
+import type { PatientCardTab } from '../../utils/urlTabs';
 import './PatientCard.css';
 
 interface PatientCardProps {
   patientId: number;
   onClose: () => void;
   onPatientArchived?: () => void;
+  /** Только просмотр (архив / выписанные) */
+  readOnly?: boolean;
+  cardTab?: PatientCardTab;
+  onCardTabChange?: (tab: PatientCardTab) => void;
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatientArchived }) => {
+const PatientCard: React.FC<PatientCardProps> = ({
+  patientId,
+  onClose,
+  onPatientArchived,
+  readOnly = false,
+  cardTab,
+  onCardTabChange,
+}) => {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    | 'info'
-    | 'observations'
-    | 'procedures'
-    | 'measurements'
-    | 'prescriptions'
-    | 'statuses'
-    | 'bracelet'
-  >('info');
+  const [internalTab, setInternalTab] = useState<PatientCardTab>('observations');
+  const resolvedCardTab = cardTab ?? internalTab;
+  const activeTab =
+    readOnly && (resolvedCardTab === 'statuses' || resolvedCardTab === 'bracelet')
+      ? 'observations'
+      : resolvedCardTab;
+  const setActiveTab = onCardTabChange ?? setInternalTab;
   const [selectedPackage, setSelectedPackage] = useState<PrescriptionPackage | null>(null);
   const [featureFlags, setFeatureFlags] = useState<PatientFeatureFlags>(DEFAULT_FEATURE_FLAGS);
 
@@ -157,11 +167,16 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
     </div>
   );
 
+  const isReadOnly = readOnly || patient.status === 'discharged';
+
   return (
     <div className="pc-modal-overlay" onClick={onClose}>
       <div className="pc-patient-card" onClick={e => e.stopPropagation()}>
         <div className="pc-card-header">
-          <h2>Карточка пациента: {patient.full_name}</h2>
+          <h2>
+            Карточка пациента: {patient.full_name}
+            {isReadOnly && <span className="pc-readonly-badge">Архив</span>}
+          </h2>
           <button className="pc-close-btn" onClick={onClose}>✕</button>
         </div>
 
@@ -209,14 +224,16 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
               )}
             </div>
 
-            <div className="pc-actions">
-              <button className="pc-btn pc-btn-primary" onClick={() => setEditing(!editing)}>
-                {editing ? 'Отменить' : 'Редактировать'}
-              </button>
-              <button className="pc-btn pc-btn-danger" onClick={handleArchive}>Выписать</button>
-            </div>
+            {!isReadOnly && (
+              <div className="pc-actions">
+                <button className="pc-btn pc-btn-primary" onClick={() => setEditing(!editing)}>
+                  {editing ? 'Отменить' : 'Редактировать'}
+                </button>
+                <button className="pc-btn pc-btn-danger" onClick={handleArchive}>Выписать</button>
+              </div>
+            )}
 
-            {editing && (
+            {!isReadOnly && editing && (
               <div className="pc-edit-form">
                 <div className="pc-form-group">
                   <label>ФИО</label>
@@ -265,18 +282,22 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
               >
                 📋 Назначения ({packages.length})
               </button>
-              <button
-                className={`pc-tab-btn ${activeTab === 'statuses' ? 'active' : ''}`}
-                onClick={() => setActiveTab('statuses')}
-              >
-                🚩 Статусы
-              </button>
-              <button
-                className={`pc-tab-btn ${activeTab === 'bracelet' ? 'active' : ''}`}
-                onClick={() => setActiveTab('bracelet')}
-              >
-                ⌚ Браслет
-              </button>
+              {!isReadOnly && (
+                <button
+                  className={`pc-tab-btn ${activeTab === 'statuses' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('statuses')}
+                >
+                  🚩 Статусы
+                </button>
+              )}
+              {!isReadOnly && (
+                <button
+                  className={`pc-tab-btn ${activeTab === 'bracelet' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('bracelet')}
+                >
+                  ⌚ Браслет
+                </button>
+              )}
             </div>
 
             <div className="pc-tab-content">
@@ -394,7 +415,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
                 </div>
               )}
 
-              {activeTab === 'statuses' && (
+              {!isReadOnly && activeTab === 'statuses' && (
                 <div className="pc-statuses-tab">
                   <ul className="pc-status-flags-list">
                     <label className="pc-status-checkbox white">
@@ -441,7 +462,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onClose, onPatient
                 </div>
               )}
 
-              {activeTab === 'bracelet' && (
+              {!isReadOnly && activeTab === 'bracelet' && (
                 <div className="pc-bracelet-tab">
                   <PatientVitalThresholdsForm
                     patientId={patientId}

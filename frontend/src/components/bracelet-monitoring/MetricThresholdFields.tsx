@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MetricOverrideForm } from '../../utils/braceletThresholdDefaults';
+import { formatThresholdSummary } from '../../utils/braceletThresholdDefaults';
 import type { MetricThresholdValues } from '../../types/braceletAlerts';
 import './MetricThresholdFields.css';
 
@@ -7,6 +8,8 @@ interface MetricThresholdFieldsProps {
   title: string;
   fieldIdPrefix?: string;
   defaults: MetricThresholdValues;
+  effective?: MetricThresholdValues;
+  isCustom?: boolean;
   values: MetricOverrideForm;
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
@@ -17,12 +20,22 @@ const MetricThresholdFields: React.FC<MetricThresholdFieldsProps> = ({
   title,
   fieldIdPrefix = 'global',
   defaults,
+  effective,
+  isCustom = false,
   values,
   enabled,
   onEnabledChange,
   onChange,
 }) => {
   const inputId = `threshold-${fieldIdPrefix}-${title.replace(/\s+/g, '-').toLowerCase()}`;
+  const activeCustom = enabled || isCustom;
+  const hint = activeCustom
+    ? isCustom && effective
+      ? `сейчас свои: ${formatThresholdSummary(effective)}`
+      : 'заполните нужные поля; пустые — из стандарта'
+    : `сейчас стандарт: ${defaults.normal_min ?? '—'}${
+        defaults.normal_max != null ? `–${defaults.normal_max}` : ''
+      } ${defaults.unit}`;
 
   return (
   <section className={`metric-threshold-fields ${enabled ? 'is-active' : ''}`}>
@@ -36,13 +49,7 @@ const MetricThresholdFields: React.FC<MetricThresholdFieldsProps> = ({
       />
       <label htmlFor={inputId} className="metric-threshold-fields__toggle-label">
         <strong>Свои пороги: {title}</strong>
-        <span className="metric-threshold-fields__hint">
-          {enabled
-            ? 'заполните нужные поля; пустые — из стандарта'
-            : `сейчас стандарт: ${defaults.normal_min ?? '—'}${
-                defaults.normal_max != null ? `–${defaults.normal_max}` : ''
-              } ${defaults.unit}`}
-        </span>
+        <span className="metric-threshold-fields__hint">{hint}</span>
       </label>
     </div>
 

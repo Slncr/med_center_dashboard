@@ -4,15 +4,24 @@ import { useAuth } from '../../hooks/useAuth';
 import { Patient, Prescription, PrescriptionPackage } from '../../types';
 import { formatPackageTitle, packageStatusLabel } from '../../utils/prescriptionPackages';
 import PrescriptionPackageModal from '../nurse-station/PrescriptionPackageModal';
+import { useUrlTab } from '../../hooks/useUrlSearchState';
+import { PRESCRIPTION_FORM_TABS, URL_PARAMS } from '../../utils/urlTabs';
 import './PrescriptionsForm.css';
 
 interface PrescriptionsFormProps {
   onPrescriptionCreated?: () => void;
+  /** Предвыбор пациента (например, с карточки на вкладке «Пациенты») */
+  initialPatientId?: number | null;
+  onPatientChange?: (patientId: number | null) => void;
 }
 
-const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCreated }) => {
+const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({
+  onPrescriptionCreated,
+  initialPatientId = null,
+  onPatientChange,
+}) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'procedures' | 'measurements'>('procedures');
+  const [activeTab, setActiveTab] = useUrlTab(URL_PARAMS.subtab, PRESCRIPTION_FORM_TABS, 'procedures');
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
@@ -65,6 +74,12 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   useEffect(() => {
     loadPatients();
   }, []);
+
+  useEffect(() => {
+    if (initialPatientId != null) {
+      setSelectedPatientId(initialPatientId);
+    }
+  }, [initialPatientId]);
 
   useEffect(() => {
     if (selectedPatientId) {
@@ -289,7 +304,11 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
               <h3>1. Выберите пациента</h3>
               <select
                 value={selectedPatientId || ''}
-                onChange={(e) => setSelectedPatientId(Number(e.target.value))}
+                onChange={(e) => {
+                  const nextId = e.target.value ? Number(e.target.value) : null;
+                  setSelectedPatientId(nextId);
+                  onPatientChange?.(nextId);
+                }}
                 required
               >
                 <option value="">— Выберите пациента —</option>

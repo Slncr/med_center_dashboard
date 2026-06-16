@@ -2,7 +2,6 @@
   max-width: 1400px; /* Увеличим для двухколоночного макета */
   margin: 0 auto;
   padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .prescriptions-form h2 {
@@ -76,9 +75,22 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
+/* Форма — предотвращаем вылезание инпутов за границы колонок/сетки */
+.prescriptions-form-column,
+.prescription-form {
+  min-width: 0;
+}
+
+.prescription-form,
+.prescription-form * {
+  box-sizing: border-box;
+}
+
 /* Форма */
 .form-section {
   margin-bottom: 25px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .form-section h3 {
@@ -95,6 +107,8 @@
 .form-section input[type="number"],
 .form-section textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 12px 15px;
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -114,19 +128,23 @@
 .form-section textarea {
   min-height: 100px;
   resize: vertical;
+  display: block;
 }
 
 /* Чекбоксы и сетка */
 .checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 15px;
   margin-top: 15px;
+  min-width: 0;
 }
 
 .checkbox-item {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
   padding: 14px;
   background: #f9fbfd;
   border: 1px solid #e0e6ed;
@@ -159,10 +177,12 @@
 .frequency-input {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px dashed #d1dbe5;
+  min-width: 0;
 }
 
 .frequency-input label {
@@ -174,6 +194,8 @@
 
 .item-notes-input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 8px;
   padding: 8px 10px;
   border: 1px solid #cbd5e1;
@@ -192,6 +214,8 @@
 
 .custom-name-input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   margin-top: 10px;
   border: 1px solid #cbd5e0;

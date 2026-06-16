@@ -4,17 +4,28 @@ import {
   alertLevelForMetric,
   displayMetrics,
 } from '../../utils/braceletVitals';
+import { apiService } from '../../services/api';
 import VitalMetricBadge from './VitalMetricBadge';
-import PatientVitalThresholdsForm from './PatientVitalThresholdsForm';
+import PatientVitalThresholdsModal from './PatientVitalThresholdsModal';
 import './PatientBraceletCard.css';
 
 interface PatientBraceletCardProps {
   patient: PatientBraceletStatus;
   onThresholdsSaved?: () => void;
+  onChanged?: () => void;
 }
 
-const PatientBraceletCard: React.FC<PatientBraceletCardProps> = ({ patient, onThresholdsSaved }) => {
-  const [showThresholds, setShowThresholds] = useState(false);
+const PatientBraceletCard: React.FC<PatientBraceletCardProps> = ({
+  patient,
+  onThresholdsSaved,
+  onChanged,
+}) => {
+  const [thresholdsModalOpen, setThresholdsModalOpen] = useState(false);
+  const [unassigning, setUnassigning] = useState(false);
+  const refresh = () => {
+    onChanged?.();
+    onThresholdsSaved?.();
+  };
   const metricRows = displayMetrics(patient.metrics);
   const hasAlerts = patient.alerts.length > 0;
   const worstLevel = patient.alerts.some((a) => a.level === 'critical')
@@ -61,8 +72,14 @@ const PatientBraceletCard: React.FC<PatientBraceletCardProps> = ({ patient, onTh
         </span>
       </header>
 
-      {!patient.ble_mac && (
-        <p className="patient-bracelet-card__hint">Укажите MAC браслета в карточке пациента</p>
+      {patient.ble_mac ? (
+        <p className="patient-bracelet-card__mac">
+          Браслет: <code>{patient.ble_mac}</code>
+        </p>
+      ) : (
+        <p className="patient-bracelet-card__hint">
+          Браслет не привязан — выберите в блоке «Свободные браслеты» выше
+        </p>
       )}
 
       <div className="patient-bracelet-card__metrics">
@@ -90,25 +107,52 @@ const PatientBraceletCard: React.FC<PatientBraceletCardProps> = ({ patient, onTh
         </ul>
       )}
 
-      <div className="patient-bracelet-card__thresholds">
+      <div className="patient-bracelet-card__actions">
         <button
           type="button"
           className="patient-bracelet-card__thresholds-btn"
-          onClick={() => setShowThresholds((v) => !v)}
+          onClick={() => setThresholdsModalOpen(true)}
         >
-          {showThresholds ? 'Скрыть пороги' : '⚙ Настроить пороги'}
+          ⚙ Настроить пороги
         </button>
-        {showThresholds && (
-          <PatientVitalThresholdsForm
-            patientId={patient.patient_id}
-            patientName={patient.patient_name}
-            compact
-            onSaved={() => {
-              onThresholdsSaved?.();
+        {patient.ble_mac && (
+          <button
+            type="button"
+            className="patient-bracelet-card__unassign-btn"
+            disabled={unassigning}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  `Отвязать браслет ${patient.ble_mac} от ${patient.patient_name}?`,
+                )
+              ) {
+                return;
+              }
+              setUnassigning(true);
+              apiService
+                .unassignBracelet(patient.patient_id)
+                .then(() => refresh())
+                .catch((err) => {
+                  window.alert(
+                    err instanceof Error ? err.message : 'Не удалось отвязать браслет',
+                  );
+                })
+                .finally(() => setUnassigning(false));
             }}
-          />
+          >
+            {unassigning ? 'Отвязка…' : 'Отвязать браслет'}
+          </button>
         )}
       </div>
+
+      {thresholdsModalOpen && (
+        <PatientVitalThresholdsModal
+          patientId={patient.patient_id}
+          patientName={patient.patient_name}
+          onClose={() => setThresholdsModalOpen(false)}
+          onSaved={refresh}
+        />
+      )}
     </article>
   );
 };

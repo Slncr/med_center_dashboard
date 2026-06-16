@@ -21,6 +21,9 @@ import {
 import type {
   BraceletCheckResult,
   BraceletOverview,
+  AssignBraceletResult,
+  DistributeBraceletsResult,
+  UnassignBraceletResult,
   PatientVitalThresholds,
 } from '../types/braceletAlerts';
 
@@ -391,6 +394,28 @@ class ApiService {
   async resetPatientVitalThresholds(patientId: number): Promise<PatientVitalThresholds> {
     const response = await this.api.delete<PatientVitalThresholds>(
       `/bracelet-alerts/patients/${patientId}/thresholds`,
+    );
+    return response.data;
+  }
+
+  async unassignBracelet(patientId: number): Promise<UnassignBraceletResult> {
+    const response = await this.api.delete<UnassignBraceletResult>(
+      `/bracelet-alerts/patients/${patientId}/bracelet`,
+    );
+    return response.data;
+  }
+
+  async assignBracelet(patientId: number, bleMac: string): Promise<AssignBraceletResult> {
+    const response = await this.api.post<AssignBraceletResult>(
+      '/bracelet-alerts/assign-bracelet',
+      { patient_id: patientId, ble_mac: bleMac },
+    );
+    return response.data;
+  }
+
+  async distributeBracelets(): Promise<DistributeBraceletsResult> {
+    const response = await this.api.post<DistributeBraceletsResult>(
+      '/bracelet-alerts/distribute-bracelets',
     );
     return response.data;
   }

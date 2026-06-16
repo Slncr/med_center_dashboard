@@ -110,25 +110,59 @@
   color: #991b1b;
 }
 
-.patient-bracelet-card__thresholds {
+.patient-bracelet-card__mac {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.patient-bracelet-card__mac code {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.patient-bracelet-card__actions {
   margin-top: 4px;
   padding-top: 12px;
   border-top: 1px dashed #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.patient-bracelet-card__thresholds-btn {
-  width: 100%;
+.patient-bracelet-card__thresholds-btn,
+.patient-bracelet-card__unassign-btn {
+  flex: 1;
+  min-width: 140px;
   padding: 8px 12px;
-  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  background: #f8fafc;
-  color: #334155;
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
 }
 
+.patient-bracelet-card__thresholds-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
 .patient-bracelet-card__thresholds-btn:hover {
   background: #f1f5f9;
   border-color: #94a3b8;
+}
+
+.patient-bracelet-card__unassign-btn {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.patient-bracelet-card__unassign-btn:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.patient-bracelet-card__unassign-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

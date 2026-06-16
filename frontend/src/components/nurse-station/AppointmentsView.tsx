@@ -4,17 +4,20 @@ import { Patient, Prescription } from '../../types';
 import { prescriptionProgress } from '../../utils/prescriptionPackages';
 import { getPrescriptionStatusLabel } from '../../utils/formatters';
 import './AppointmentsView.css';
+import './RoomAppointmentsPanel.css';
 
 interface AppointmentsViewProps {
   patientId: number | null;
-  onPatientSelect: (patientId: number) => void;
-  // ✅ Добавляем обязательные пропсы для управления извне
-  prescriptions: Prescription[];
-  loading: boolean;
-  onPrescriptionsUpdate: () => void;
+  onPatientSelect?: (patientId: number) => void;
+  /** Полная вкладка «Назначения» или панель на экране «Палаты» */
+  variant?: 'full' | 'roomPanel';
 }
 
-const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatientSelect }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({
+  patientId,
+  onPatientSelect,
+  variant = 'full',
+}) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(patientId);
@@ -26,10 +29,18 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
   const [expandedPrescriptionId, setExpandedPrescriptionId] = useState<number | null>(null);
 
   useEffect(() => {
-    loadPatients();
+    if (variant === 'full') {
+      void loadPatients();
+    }
+  }, [variant]);
+
+  useEffect(() => {
     if (patientId) {
       setSelectedPatientId(patientId);
-      loadPrescriptions(patientId);
+      void loadPrescriptions(patientId);
+    } else {
+      setSelectedPatientId(null);
+      setPrescriptions([]);
     }
   }, [patientId]);
 
@@ -65,6 +76,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
     setSelectedPrescriptionIds([]);
     setExpandedPrescriptionId(null);
     loadPrescriptions(id);
+    onPatientSelect?.(id);
   };
 
   const handleCheckboxChange = (prescriptionId: number) => {
@@ -159,11 +171,12 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
     }
   };
 
-  const getPrescriptionStatusClass = (status: string) => {
+  const getPrescriptionStatusClass = (status: string, scope: 'av' | 'rap' = 'av') => {
+    const prefix = scope === 'rap' ? 'rap-status' : 'av-status';
     switch (status) {
-      case 'ACTIVE': return 'av-status-active';
-      case 'COMPLETED': return 'av-status-completed';
-      case 'CANCELLED': return 'av-status-cancelled';
+      case 'ACTIVE': return `${prefix}-active`;
+      case 'COMPLETED': return `${prefix}-completed`;
+      case 'CANCELLED': return `${prefix}-cancelled`;
       default: return '';
     }
   };
@@ -175,11 +188,166 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
     return status === filterStatus;
   });
 
+  if (variant === 'roomPanel') {
+    return (
+      <div className="rap-root">
+        <div className="rap-toolbar">
+          <div className="rap-filters">
+            <button
+              type="button"
+              className={`rap-filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('all')}
+            >
+              Все ({prescriptions.length})
+            </button>
+            <button
+              type="button"
+              className={`rap-filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('active')}
+            >
+              Активные ({prescriptions.filter((p) => p.status === 'ACTIVE').length})
+            </button>
+            <button
+              type="button"
+              className={`rap-filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('completed')}
+            >
+              Выполненные ({prescriptions.filter((p) => p.status === 'COMPLETED').length})
+            </button>
+            <button
+              type="button"
+              className={`rap-filter-btn ${filterStatus === 'cancelled' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('cancelled')}
+            >
+              Отменённые ({prescriptions.filter((p) => p.status === 'CANCELLED').length})
+            </button>
+          </div>
+          <button
+            type="button"
+            className={`rap-execute-btn ${selectedPrescriptionIds.length > 0 ? 'active' : ''}`}
+            onClick={handleExecuteSelected}
+            disabled={selectedPrescriptionIds.length === 0 || loading}
+          >
+            Подтвердить ({selectedPrescriptionIds.length})
+          </button>
+        </div>
+
+        {error && <div className="rap-flash rap-flash--error">{error}</div>}
+        {successMessage && <div className="rap-flash rap-flash--success">{successMessage}</div>}
+
+        <div className="rap-body">
+          {loading ? (
+            <div className="rap-loading">Загрузка…</div>
+          ) : selectedPatientId ? (
+            filteredPrescriptions.length > 0 ? (
+              <div className="rap-list">
+                {filteredPrescriptions.map((p) => (
+                  <React.Fragment key={p.id}>
+                    <div
+                      className={`rap-item ${getPrescriptionStatusClass(p.status, 'rap')} ${expandedPrescriptionId === p.id ? 'expanded' : ''}`}
+                      onClick={() => handleToggleExpand(p.id)}
+                    >
+                      <div className="rap-item-top">
+                        <input
+                          type="checkbox"
+                          checked={selectedPrescriptionIds.includes(p.id)}
+                          onChange={() => handleCheckboxChange(p.id)}
+                          disabled={p.status !== 'ACTIVE'}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <span className="rap-item-icon" aria-hidden>
+                          {getPrescriptionTypeLabel(p.prescription_type)}
+                        </span>
+                        <div className="rap-item-main">
+                          <div className="rap-item-name" title={p.name}>
+                            {p.name}
+                          </div>
+                          <div className="rap-item-freq">
+                            {p.frequency || '—'} · {prescriptionProgress(p)}
+                          </div>
+                          {p.notes && (
+                            <div className="rap-item-notes" title={p.notes}>
+                              {p.notes}
+                            </div>
+                          )}
+                        </div>
+                        <div className="rap-item-aside">
+                          <span
+                            className={`rap-item-status ${getPrescriptionStatusClass(p.status, 'rap')}`}
+                          >
+                            {getPrescriptionStatusLabel(p.status)}
+                          </span>
+                          {p.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="rap-cancel-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelPrescription(p.id, p.name);
+                              }}
+                              title="Отменить"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {expandedPrescriptionId === p.id && (
+                      <div className="rap-detail">
+                        <div className="rap-detail-row">
+                          <span className="rap-detail-label">Название</span>
+                          <span className="rap-detail-value">{p.name}</span>
+                        </div>
+                        {p.notes && (
+                          <div className="rap-detail-row">
+                            <span className="rap-detail-label">Примечания</span>
+                            <span className="rap-detail-value">{p.notes}</span>
+                          </div>
+                        )}
+                        <div className="rap-detail-row">
+                          <span className="rap-detail-label">Частота</span>
+                          <span className="rap-detail-value">{p.frequency || '—'}</span>
+                        </div>
+                        <div className="rap-detail-row">
+                          <span className="rap-detail-label">Статус</span>
+                          <span
+                            className={`rap-detail-value ${getPrescriptionStatusClass(p.status, 'rap')}`}
+                          >
+                            {getPrescriptionStatusLabel(p.status)}
+                          </span>
+                        </div>
+                        <div className="rap-detail-row">
+                          <span className="rap-detail-label">Создано</span>
+                          <span className="rap-detail-value">
+                            {new Date(p.created_at).toLocaleString('ru-RU')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            ) : (
+              <div className="rap-empty">
+                {filterStatus === 'all'
+                  ? 'У пациента нет назначений'
+                  : `Нет назначений со статусом «${filterStatus === 'active' ? 'Активно' : filterStatus === 'completed' ? 'Выполнено' : 'Отменено'}»`}
+              </div>
+            )
+          ) : (
+            <div className="rap-empty">Выберите занятую койку</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="av-container">
       <div className="av-header">
         <h2>📋 Назначения пациентов</h2>
-        
+
         <div className="av-controls">
           <div className="av-filters">
             <button 
@@ -222,31 +390,32 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ patientId, onPatien
       {successMessage && <div className="av-success-message">{successMessage}</div>}
 
       <div className="av-layout">
-        {/* Левая колонка: список пациентов */}
-        <div className="av-patients-column">
-          <h3>👥 Пациенты</h3>
-          <div className="av-patients-list">
-            {patients.map(patient => (
-              <div 
-                key={patient.id} 
-                className={`av-patient-item ${selectedPatientId === patient.id ? 'selected' : ''}`}
-                onClick={() => handlePatientClick(patient.id)}
-              >
-                <div className="av-patient-info">
-                  <div className="av-patient-name">{patient.full_name}</div>
-                  <div className="av-patient-meta">
-                    {patient.bed_id && <span>Койка #{patient.bed_id}</span>}
-                    <span>Поступил: {new Date(patient.admission_date).toLocaleDateString('ru-RU')}</span>
+          <div className="av-patients-column">
+            <h3>👥 Пациенты</h3>
+            <div className="av-patients-list">
+              {patients.map((patient) => (
+                <div
+                  key={patient.id}
+                  className={`av-patient-item ${selectedPatientId === patient.id ? 'selected' : ''}`}
+                  onClick={() => handlePatientClick(patient.id)}
+                >
+                  <div className="av-patient-info">
+                    <div className="av-patient-name">{patient.full_name}</div>
+                    <div className="av-patient-meta">
+                      {patient.bed_id && <span>Койка #{patient.bed_id}</span>}
+                      <span>
+                        Поступил:{' '}
+                        {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Правая колонка: назначения */}
         <div className="av-prescriptions-column">
-          <h3>📋 Назначения {selectedPatientId ? `пациента` : '(выберите пациента)'}</h3>
+          <h3>📋 Назначения {selectedPatientId ? 'пациента' : '(выберите пациента)'}</h3>
           
           {loading ? (
             <div className="av-loading">Загрузка...</div>
