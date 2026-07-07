@@ -12,7 +12,6 @@ export const NURSE_TABS = [
 export type NurseTab = (typeof NURSE_TABS)[number];
 
 export const DOCTOR_TABS = [
-  'overview',
   'patients',
   'prescriptions',
   'reports',

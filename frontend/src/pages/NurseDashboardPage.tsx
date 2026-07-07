@@ -27,6 +27,7 @@ const NurseDashboardPage: React.FC = () => {
   const [cardPatientId, setCardPatientId] = useUrlNumberParam(URL_PARAMS.card);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { patients, rooms, loading, error, refetch } = usePatients();
   const navigate = useNavigate();
 
@@ -200,6 +201,20 @@ const NurseDashboardPage: React.FC = () => {
     openPatientAppointments(patientId);
   };
 
+  const handleSync = async () => {
+    if (syncing) return;
+
+    setSyncing(true);
+    try {
+      await apiService.syncWith1C();
+      await refetch();
+    } catch (err) {
+      console.error('Ошибка синхронизации', err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -281,12 +296,20 @@ const NurseDashboardPage: React.FC = () => {
           >
             📁 Архив
           </button>
+          <button
+            type="button"
+            className="nurse-dashboard__refresh"
+            onClick={() => void handleSync()}
+            disabled={syncing}
+          >
+            {syncing ? 'Обновление…' : 'Обновить'}
+          </button>
         </div>
       </nav>
 
-      <main className="dashboard-content">
+      <main className={`dashboard-content ${activeTab === 'patients' ? 'dashboard-content--patients' : ''}`}>
         {activeTab === 'patients' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--patients">
             <PatientList
               patients={patients}
               rooms={rooms}
