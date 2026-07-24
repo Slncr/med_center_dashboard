@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Prescription } from '../../types';
+import { appAlert, appConfirm } from '../../context/AppDialogContext';
 import './PrescriptionsList.css';
 
 interface PrescriptionsListProps {
@@ -34,7 +35,7 @@ const PrescriptionsList: React.FC<PrescriptionsListProps> = ({ patientId, onPres
   };
 
   const handleComplete = async (id: number) => {
-    if (!window.confirm('Отметить назначение как выполненное?')) return;
+    if (!(await appConfirm('Отметить назначение как выполненное?'))) return;
 
     try {
       await apiService.executePrescription(id);
@@ -43,7 +44,7 @@ const PrescriptionsList: React.FC<PrescriptionsListProps> = ({ patientId, onPres
         onPrescriptionCompleted();
       }
     } catch (err) {
-      alert('Ошибка выполнения назначения');
+      await appAlert('Ошибка выполнения назначения');
       console.error(err);
     }
   };

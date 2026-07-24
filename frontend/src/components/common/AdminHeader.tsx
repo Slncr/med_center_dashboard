@@ -42,6 +42,7 @@ const AdminHeader: React.FC = () => {
             {navItems.map((item) => (
               <li key={item.path} className="ah-nav-item">
                 <button
+                  type="button"
                   className="ah-nav-link"
                   onClick={() => navigate(item.path)}
                   aria-label={item.label}

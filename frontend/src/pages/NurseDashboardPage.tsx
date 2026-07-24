@@ -3,13 +3,16 @@ import { usePatients } from '../hooks/usePatients';
 import { apiService } from '../services/api';
 import { Prescription } from '../types';
 import PatientList from '../components/nurse-station/PatientList';
-import ObservationsTable from '../components/nurse-station/ObservationsTable';
 import MedicalForm530n from '../components/nurse-station/MedicalForm530n';
 import AppointmentsView from '../components/nurse-station/AppointmentsView';
 import { BraceletAlertsPanel } from '../components/bracelet-monitoring';
+import ArchivedPatientsPanel from '../components/shared/ArchivedPatientsPanel';
+import NurseRoomMonitor from '../components/nurse-station/NurseRoomMonitor';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useWebSocket, WebSocketMessage } from '../hooks/useWebSocket';
 import { useNavigate } from 'react-router-dom';
+import { useUrlNumberParam, useUrlTab } from '../hooks/useUrlSearchState';
+import { NURSE_TABS, NurseTab, PatientCardTab, URL_PARAMS } from '../utils/urlTabs';
 import {
   PrescriptionNotificationPayload,
   queuePrescriptionNotification,
@@ -19,19 +22,60 @@ import type { NotificationInput } from '../components/common/NotificationToast';
 import './NurseDashboardPage.css';
 
 const NurseDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<
-    'patients' | 'observations' | 'form530n' | 'appointments' | 'bracelets'
-  >('patients');
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useUrlTab(URL_PARAMS.tab, NURSE_TABS, 'patients');
+  const [selectedPatientId, setSelectedPatientId] = useUrlNumberParam(URL_PARAMS.patient);
+  const [cardPatientId, setCardPatientId] = useUrlNumberParam(URL_PARAMS.card);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { patients, rooms, loading, error, refetch } = usePatients();
   const navigate = useNavigate();
 
-  const openPatientAppointments = useCallback((patientId: number) => {
-    setSelectedPatientId(patientId);
-    setActiveTab('appointments');
-  }, []);
+  const switchTab = useCallback(
+    (tab: NurseTab) => {
+      if (tab === 'patients' || tab === 'archive') {
+        setActiveTab(tab);
+        return;
+      }
+      setActiveTab(tab, {
+        [URL_PARAMS.card]: null,
+        [URL_PARAMS.cardTab]: null,
+      });
+    },
+    [setActiveTab],
+  );
+
+  const openPatientAppointments = useCallback(
+    (patientId: number) => {
+      setActiveTab('appointments', {
+        [URL_PARAMS.patient]: patientId,
+        [URL_PARAMS.card]: null,
+        [URL_PARAMS.cardTab]: null,
+      });
+    },
+    [setActiveTab],
+  );
+
+  const openPatientCard = useCallback(
+    (patientId: number, tab: PatientCardTab = 'observations') => {
+      setActiveTab('patients', {
+        [URL_PARAMS.card]: patientId,
+        [URL_PARAMS.cardTab]: tab === 'observations' ? null : tab,
+      });
+    },
+    [setActiveTab],
+  );
+
+  const closePatientCard = useCallback(() => {
+    setCardPatientId(null, { [URL_PARAMS.cardTab]: null });
+  }, [setCardPatientId]);
+
+  // Deep-link ?card= без tab=patients|archive — открыть карточку на вкладке «Пациенты»
+  useEffect(() => {
+    if (!cardPatientId) return;
+    if (activeTab === 'patients' || activeTab === 'archive') return;
+    setActiveTab('patients');
+  }, [cardPatientId, activeTab, setActiveTab]);
 
   const showPrescriptionAlert = useCallback(
     (payload: PrescriptionNotificationPayload) => {
@@ -157,6 +201,20 @@ const NurseDashboardPage: React.FC = () => {
     openPatientAppointments(patientId);
   };
 
+  const handleSync = async () => {
+    if (syncing) return;
+
+    setSyncing(true);
+    try {
+      await apiService.syncWith1C();
+      await refetch();
+    } catch (err) {
+      console.error('Ошибка синхронизации', err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -192,64 +250,80 @@ const NurseDashboardPage: React.FC = () => {
         </div>
       </header>
 
-      <nav className="dashboard-tabs">
-        <button
-          className={`tab-button ${activeTab === 'patients' ? 'active' : ''}`}
-          onClick={() => setActiveTab('patients')}
-        >
-          👥 Пациенты
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'observations' ? 'active' : ''}`}
-          onClick={() => setActiveTab('observations')}
-        >
-          📊 Наблюдения
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'form530n' ? 'active' : ''}`}
-          onClick={() => setActiveTab('form530n')}
-        >
-          📋 Форма 530н
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'appointments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('appointments')}
-        >
-          ⏰ Назначения ({prescriptions.filter((p) => p.status === 'ACTIVE').length})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'bracelets' ? 'active' : ''}`}
-          onClick={() => setActiveTab('bracelets')}
-        >
-          ⌚ Браслеты
-        </button>
+      <nav className="nurse-dashboard__nav" aria-label="Разделы станции медсестры">
+        <div className="nurse-dashboard__nav-main">
+          <button
+            type="button"
+            className={`nurse-dashboard__tab ${activeTab === 'patients' ? 'active' : ''}`}
+            onClick={() => switchTab('patients')}
+          >
+            👥 Пациенты
+          </button>
+          <button
+            type="button"
+            className={`nurse-dashboard__tab ${activeTab === 'form530n' ? 'active' : ''}`}
+            onClick={() => switchTab('form530n')}
+          >
+            📋 Форма 530н
+          </button>
+          <button
+            type="button"
+            className={`nurse-dashboard__tab ${activeTab === 'appointments' ? 'active' : ''}`}
+            onClick={() => switchTab('appointments')}
+          >
+            ⏰ Назначения ({prescriptions.filter((p) => p.status === 'ACTIVE').length})
+          </button>
+          <button
+            type="button"
+            className={`nurse-dashboard__tab ${activeTab === 'bracelets' ? 'active' : ''}`}
+            onClick={() => switchTab('bracelets')}
+          >
+            ⌚ Браслеты
+          </button>
+          <button
+            type="button"
+            className={`nurse-dashboard__tab ${activeTab === 'rooms' ? 'active' : ''}`}
+            onClick={() => switchTab('rooms')}
+          >
+            🏥 Палаты
+          </button>
+        </div>
+        <div className="nurse-dashboard__nav-end">
+          <button
+            type="button"
+            className={`nurse-dashboard__tab nurse-dashboard__tab--archive ${activeTab === 'archive' ? 'active' : ''}`}
+            onClick={() => switchTab('archive')}
+          >
+            📁 Архив
+          </button>
+          <button
+            type="button"
+            className="nurse-dashboard__refresh"
+            onClick={() => void handleSync()}
+            disabled={syncing}
+          >
+            {syncing ? 'Обновление…' : 'Обновить'}
+          </button>
+        </div>
       </nav>
 
-      <main className="dashboard-content">
+      <main className={`dashboard-content ${activeTab === 'patients' ? 'dashboard-content--patients' : ''}`}>
         {activeTab === 'patients' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--patients">
             <PatientList
               patients={patients}
               rooms={rooms}
               onPatientSelect={handlePatientSelect}
               onPatientsUpdate={refetch}
-            />
-          </div>
-        )}
-
-        {activeTab === 'observations' && (
-          <div className="tab-content">
-            <ObservationsTable
-              patientId={selectedPatientId}
-              onPatientSelect={setSelectedPatientId}
-              patients={patients}
-              rooms={rooms}
+              cardPatientId={cardPatientId}
+              onOpenCard={openPatientCard}
+              onCloseCard={closePatientCard}
             />
           </div>
         )}
 
         {activeTab === 'form530n' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--form530n">
             <MedicalForm530n
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
@@ -258,30 +332,30 @@ const NurseDashboardPage: React.FC = () => {
         )}
 
         {activeTab === 'bracelets' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--bracelets">
             <BraceletAlertsPanel />
           </div>
         )}
 
-        {activeTab === 'appointments' && (
+        {activeTab === 'archive' && (
           <div className="tab-content">
+            <ArchivedPatientsPanel allowRestore onRestored={() => void refetch()} />
+          </div>
+        )}
+
+        {activeTab === 'rooms' && (
+          <div className="tab-content tab-content--rooms">
+            <NurseRoomMonitor rooms={rooms} onPatientSelect={setSelectedPatientId} />
+          </div>
+        )}
+
+        {activeTab === 'appointments' && (
+          <div className="tab-content tab-content--appointments">
             <AppointmentsView
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
-              prescriptions={prescriptions}
-              loading={loadingPrescriptions}
-              onPrescriptionsUpdate={() => {
-                if (selectedPatientId) {
-                  apiService.getPrescriptions(selectedPatientId).then((data) => {
-                    setPrescriptions(
-                      data.sort(
-                        (a, b) =>
-                          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-                      ),
-                    );
-                  });
-                }
-              }}
+              patientOptions={patients}
+              rooms={rooms}
             />
           </div>
         )}

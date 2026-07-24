@@ -1,0 +1,599 @@
+/* Экран палаты — по макету, отступы 20px, компактный масштаб */
+
+.rdv2-page {
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  background: #ffffff;
+  color: #1a1f2e;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 20px;
+}
+
+/* ── Шапка ── */
+
+.rdv2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 16px;
+  flex-shrink: 0;
+}
+
+.rdv2-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rdv2-room-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1;
+  color: #0ea5e9;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.rdv2-badge {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 3px 8px;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.rdv2-badge--test {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.rdv2-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rdv2-time {
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 700;
+  color: #1a1f2e;
+  letter-spacing: -0.02em;
+}
+
+.rdv2-connection-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rdv2-connection-dot.is-online {
+  background: #22c55e;
+}
+
+.rdv2-connection-dot.is-offline {
+  background: #ef4444;
+}
+
+.rdv2-room-picker {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #dbe4ee;
+  border-radius: 12px;
+  padding: 6px 12px;
+}
+
+.rdv2-room-picker label {
+  font-size: 12px;
+  color: #475569;
+}
+
+.rdv2-room-picker select {
+  border: 1px solid #d1d9e5;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* ── Основная зона коек ── */
+
+.rdv2-main {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 12px;
+}
+
+.rdv2-beds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.rdv2-bed-card {
+  width: 100%;
+  max-width: 100%;
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 16px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.rdv2-bed-card.has-alert {
+  border: 1.5px solid #f87171;
+  border-top: 5px solid #ef4444;
+  border-radius: 16px;
+}
+
+.rdv2-bed-card.free {
+  background: #f8f9fb;
+}
+
+.rdv2-bed-card-body {
+  padding: 26px 26px 26px 52px;
+  display: flex;
+  align-items: stretch;
+  gap: 26px;
+  box-sizing: border-box;
+  min-height: 380px;
+}
+
+/* ── Левая колонка: флаги + аватар + сон ── */
+
+.rdv2-patient-side {
+  position: relative;
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rdv2-status-flags {
+  position: absolute;
+  left: -28px;
+  top: 22px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.rdv2-flag {
+  width: 40px;
+  height: 32px;
+  border-radius: 16px;
+  border: 2px solid #cbd5e1;
+  background: rgba(203, 213, 225, 0.18);
+  flex-shrink: 0;
+  opacity: 0.35;
+  box-sizing: border-box;
+}
+
+.rdv2-flag.is-active {
+  opacity: 1;
+}
+
+.rdv2-bed-card.free .rdv2-flag {
+  opacity: 0.28;
+  filter: grayscale(0.4);
+}
+
+.rdv2-flag--white {
+  border-color: #94a3b8;
+  background: rgba(148, 163, 184, 0.25);
+}
+
+.rdv2-flag--yellow {
+  border-color: #eab308;
+  background: rgba(234, 179, 8, 0.28);
+}
+
+.rdv2-flag--orange {
+  border-color: #fb923c;
+  background: rgba(251, 146, 60, 0.28);
+}
+
+.rdv2-flag--red {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.28);
+}
+
+.rdv2-flag--green {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.28);
+}
+
+.rdv2-avatar-box {
+  position: relative;
+  z-index: 2;
+  width: 220px;
+  flex: 1;
+  min-height: 250px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 24px 14px 18px;
+  box-sizing: border-box;
+}
+
+.rdv2-avatar-box.occupied {
+  background: #cfe6f6;
+}
+
+.rdv2-avatar-box.occupied.has-alert {
+  background: #fad4d4;
+}
+
+.rdv2-avatar-box.free {
+  background: #e5e7eb;
+}
+
+.rdv2-avatar-icon {
+  width: 72%;
+  max-height: 72%;
+  object-fit: contain;
+}
+
+.rdv2-avatar-box.has-alert .rdv2-avatar-icon {
+  /* красный силуэт при алерте — исходный chelik.png синий */
+  filter: brightness(0) saturate(100%) invert(27%) sepia(98%) saturate(2878%) hue-rotate(346deg) brightness(95%) contrast(92%);
+}
+
+.rdv2-avatar-box.occupied:not(.has-alert) .rdv2-avatar-icon {
+  filter: none;
+}
+
+.rdv2-avatar-box.free .rdv2-avatar-icon {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.rdv2-bed-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0ea5e9;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.rdv2-avatar-box.has-alert .rdv2-bed-label {
+  color: #ef4444;
+}
+
+.rdv2-avatar-box.free .rdv2-bed-label {
+  color: #9ca3af;
+}
+
+.rdv2-sleep-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 16px;
+  min-height: 76px;
+  background: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.rdv2-bed-card.free .rdv2-sleep-card {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.rdv2-sleep-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #c4b5fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rdv2-bed-card.free .rdv2-sleep-icon-wrap {
+  border-color: #d1d5db;
+}
+
+.rdv2-sleep-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.rdv2-sleep-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rdv2-sleep-label {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.rdv2-sleep-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.rdv2-bed-card.free .rdv2-sleep-value {
+  color: #9ca3af;
+}
+
+/* ── Сетка метрик 2×2 ── */
+
+.rdv2-metrics-grid {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rdv2-metric-card {
+  min-height: 150px;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 22px 20px;
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.rdv2-metric-card.is-alert .rdv2-metric-value {
+  color: #ef4444;
+}
+
+.rdv2-bed-card.free .rdv2-metric-card {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.rdv2-metric-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.rdv2-metric-card--press .rdv2-metric-icon-wrap {
+  border-color: #fca5a5;
+}
+
+.rdv2-metric-card.is-alert .rdv2-metric-icon-wrap {
+  border-color: #f87171;
+}
+
+.rdv2-bed-card.free .rdv2-metric-icon-wrap {
+  border-color: #d1d5db;
+}
+
+.rdv2-metric-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.rdv2-metric-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  align-self: stretch;
+}
+
+.rdv2-metric-label {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rdv2-metric-value {
+  margin-top: auto;
+  align-self: flex-end;
+  text-align: right;
+  font-size: 36px;
+  line-height: 1.05;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.rdv2-bed-card.free .rdv2-metric-value {
+  color: #9ca3af;
+}
+
+.rdv2-metric-unit {
+  align-self: flex-end;
+  text-align: right;
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* ── Футер атмосферы ── */
+
+.rdv2-atmosphere-footer {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  padding-top: 14px;
+  margin-top: auto;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.rdv2-atmosphere-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.rdv2-atmosphere-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.rdv2-atm-card {
+  border: 1px solid #d6e8f8;
+  border-radius: 14px;
+  padding: 22px 20px;
+  height: 186px;
+  min-height: 186px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #eef6ff;
+}
+
+.rdv2-icon-slot--atm {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.rdv2-atm-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.rdv2-atm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rdv2-atm-label {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.rdv2-atm-value {
+  font-size: 32px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0ea5e9;
+}
+
+.rdv2-atm-meta {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.2;
+}
+
+.rdv2-inline-error {
+  color: #b91c1c;
+  font-size: 12px;
+  padding-top: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .rdv2-bed-card-body {
+    flex-direction: column;
+    padding-left: 40px;
+    min-height: 0;
+  }
+
+  .rdv2-patient-side {
+    width: 100%;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .rdv2-avatar-box {
+    width: 170px;
+    min-height: 200px;
+    flex: 0 0 auto;
+  }
+
+  .rdv2-sleep-card {
+    flex: 1;
+  }
+
+  .rdv2-metric-card {
+    min-height: 120px;
+  }
+
+  .rdv2-status-flags {
+    left: -24px;
+  }
+
+  .rdv2-atmosphere-row {
+    grid-template-columns: 1fr;
+  }
+}

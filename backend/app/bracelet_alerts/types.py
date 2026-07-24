@@ -25,6 +25,7 @@ class PatientBraceletSnapshot:
     ble_mac: Optional[str]
     room_number: Optional[str]
     bed_number: Optional[str]
+    admission_date: Optional[str]
     online: Optional[bool]
     metrics: Dict[str, Any] = field(default_factory=dict)
     alerts: List[VitalAlert] = field(default_factory=list)

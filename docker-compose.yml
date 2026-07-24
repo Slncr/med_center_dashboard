@@ -3,12 +3,13 @@
 services:
   postgres:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: med_center
       POSTGRES_USER: med_user
       POSTGRES_PASSWORD: med_pass
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -20,8 +21,9 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -33,6 +35,7 @@ services:
 
   celery:
     build: ./backend
+    restart: unless-stopped
     command: celery -A app.tasks.celery_worker.celery_app worker --loglevel=info --pool=solo
     depends_on:
       redis:
@@ -56,6 +59,7 @@ services:
 
   celery-beat:
     build: ./backend
+    restart: unless-stopped
     command: celery -A app.tasks.celery_worker.celery_app beat --loglevel=info
     depends_on:
       redis:
@@ -73,8 +77,9 @@ services:
 
   backend:
     build: ./backend
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8005:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,6 +93,8 @@ services:
       SECRET_KEY: development-secret-key-change-in-production
       DEBUG: "True"
       ALLOW_PUBLIC_ROOM_DISPLAY: "True"
+      ROOM_DISPLAY_IP_ROOM_MAP: "192.168.0.44=4"
+      ROOM_DISPLAY_DEVICE_ROOM_MAP: ""
       BACKEND_CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
       MONITORING_API_URL: "http://172.191.7.50/api"
       MONITORING_API_TIMEOUT: "5"
@@ -115,19 +122,23 @@ services:
       "
 
   frontend:
-    build: 
+    build:
       context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+      dockerfile: Dockerfile.dev
+    # host: мониторы видны по реальному IP (не docker gateway 172.x)
+    network_mode: host
+    restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
-    # environment:
-    #   REACT_APP_API_URL: http://backend:8000  # Меняем localhost на backend
-    #   REACT_APP_WS_URL: ws://backend:8000/ws  # Меняем localhost на backend
-    #   CHOKIDAR_USEPOLLING: "true"
-    #   WDS_SOCKET_PORT: "0"
+    environment:
+      API_PROXY_TARGET: http://127.0.0.1:8005
+      ROOM_DISPLAY_IP_ROOM_MAP: "192.168.0.44=4"
+      ROOM_DISPLAY_DEVICE_ROOM_MAP: ""
+      CHOKIDAR_USEPOLLING: "true"
+      WDS_SOCKET_PORT: "0"
+      HOST: "0.0.0.0"
+      PORT: "3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules

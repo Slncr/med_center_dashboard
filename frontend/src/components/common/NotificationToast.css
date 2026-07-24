@@ -1,13 +1,13 @@
 /* Префикс nt- = notification toast */
 .nt-container {
   position: fixed;
-  top: 90px;
-  right: 724px;
-  z-index: 9999;
+  top: 24px;
+  right: 24px;
+  z-index: 10060;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 400px;
+  max-width: min(400px, calc(100vw - 48px));
   pointer-events: none;
 }
 

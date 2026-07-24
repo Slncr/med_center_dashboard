@@ -42,6 +42,19 @@
   margin: 0;
   font-size: 22px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pc-readonly-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
 }
 
 .pc-close-btn {
@@ -210,7 +223,6 @@
   padding: 0 8px;
   border-bottom: 2px solid #e2e8f0;
   overflow-x: auto;
-  scrollbar-width: thin;
 }
 
 .pc-tab-btn {

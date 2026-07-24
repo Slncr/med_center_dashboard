@@ -1,0 +1,80 @@
+.bed-patient-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bed-patient-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.bed-patient-flag-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+}
+
+.bed-patient-flag--white .bed-patient-flag-swatch {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.bed-patient-flag--yellow .bed-patient-flag-swatch {
+  background: #fde047;
+  border-color: #ca8a04;
+}
+
+.bed-patient-flag--yellow {
+  background: #fefce8;
+  border-color: #fde047;
+}
+
+.bed-patient-flag--orange .bed-patient-flag-swatch {
+  background: #fdba74;
+  border-color: #ea580c;
+}
+
+.bed-patient-flag--orange {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.bed-patient-flag--red .bed-patient-flag-swatch {
+  background: #f87171;
+  border-color: #dc2626;
+}
+
+.bed-patient-flag--red {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.bed-patient-flag--green .bed-patient-flag-swatch {
+  background: #4ade80;
+  border-color: #16a34a;
+}
+
+.bed-patient-flag--green {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.bed-patient-flags--compact .bed-patient-flag {
+  padding: 4px 8px;
+  font-size: 11px;
+}

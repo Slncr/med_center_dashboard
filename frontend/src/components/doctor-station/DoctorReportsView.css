@@ -1,0 +1,214 @@
+/* Префикс dr- = doctor reports */
+.dr-page {
+  width: 100%;
+  min-height: 560px;
+}
+
+.dr-page__title {
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.dr-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 16px;
+  border: 1px solid #e5eaf0;
+  border-radius: 16px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  box-shadow: none;
+}
+
+.dr-card:hover {
+  border-color: #b8e4fe;
+  background: #fafcff;
+}
+
+.dr-card.is-active {
+  border-color: #009aff;
+  background: #ffffff;
+}
+
+.dr-card__icon {
+  width: 100%;
+  height: 88px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  margin-bottom: 14px;
+}
+
+.dr-card__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.dr-card__desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.dr-error {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.dr-panel {
+  padding: 20px 22px;
+  border: 1px solid #e5eaf0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.dr-panel--loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  color: #64748b;
+}
+
+.dr-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dr-panel__head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dr-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dr-btn-outline {
+  border: 1px solid #009aff;
+  background: #ffffff;
+  color: #009aff;
+}
+
+.dr-btn-outline:hover {
+  background: #e5f5fe;
+}
+
+.dr-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.dr-stat {
+  padding: 14px 16px;
+  border: 1px solid #e5eaf0;
+  border-radius: 12px;
+  background: #fafbfc;
+}
+
+.dr-stat__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.dr-stat__value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.dr-empty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 15px;
+}
+
+.dr-table-wrap {
+  overflow: auto;
+  border: 1px solid #e5eaf0;
+  border-radius: 12px;
+}
+
+.dr-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.dr-table th,
+.dr-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.dr-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.dr-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dr-form530 .f530-page {
+  margin: 0;
+}
+
+.dr-form530 .f530-title-row {
+  margin-bottom: 16px;
+}
+
+.dr-form530 .f530-title {
+  font-size: 22px;
+}
+
+@media (max-width: 1200px) {
+  .dr-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dr-cards {
+    grid-template-columns: 1fr;
+  }
+}

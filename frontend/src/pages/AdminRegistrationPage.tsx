@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { User } from '../types';
+import { appAlert } from '../context/AppDialogContext';
 import './AdminRegistrationPage.css';
 
 interface NewUser {
@@ -34,8 +35,9 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Проверяем роль (в нижнем регистре, т.к. с бэка приходит 'admin')
     if (user.role.toLowerCase() !== 'admin') {
-      alert('Доступ запрещён. Только администратор может регистрировать пользователей.');
-      navigate('/dashboard');
+      void appAlert('Доступ запрещён. Только администратор может регистрировать пользователей.').then(
+        () => navigate('/dashboard'),
+      );
       return;
     }
 

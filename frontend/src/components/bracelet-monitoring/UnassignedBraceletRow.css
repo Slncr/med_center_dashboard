@@ -1,0 +1,87 @@
+.unassigned-bracelet-row {
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #fde68a;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unassigned-bracelet-row__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 0.85rem;
+}
+
+.unassigned-bracelet-row__info code {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.unassigned-bracelet-row__online {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.unassigned-bracelet-row__online.on {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.unassigned-bracelet-row__online.off {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.unassigned-bracelet-row__metrics {
+  color: #64748b;
+}
+
+.unassigned-bracelet-row__assign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.unassigned-bracelet-row__assign select {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.unassigned-bracelet-row__assign button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #4caf50;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.unassigned-bracelet-row__assign button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.unassigned-bracelet-row__hint {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.unassigned-bracelet-row__error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b91c1c;
+}

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../../services/api';
 import { Appointment, Procedure, ProcedureStatus } from '../../types';
+import { useUrlTab } from '../../hooks/useUrlSearchState';
+import { APPOINTMENTS_DISPLAY_TABS, URL_PARAMS } from '../../utils/urlTabs';
+import { appAlert } from '../../context/AppDialogContext';
 import './AppointmentsDisplay.css';
 
 interface AppointmentsDisplayProps {
@@ -18,7 +21,11 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
   const [procedures, setProcedures] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'appointments' | 'procedures'>('appointments');
+  const [activeTab, setActiveTab] = useUrlTab(
+    URL_PARAMS.subtab,
+    APPOINTMENTS_DISPLAY_TABS,
+    'appointments',
+  );
   const [expandedProcedureId, setExpandedProcedureId] = useState<number | null>(null);
 
   const fetchData = async () => {
@@ -55,7 +62,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
       }
     } catch (err) {
       console.error('Error updating procedure:', err);
-      alert('Ошибка обновления статуса процедуры');
+      await appAlert('Ошибка обновления статуса процедуры');
     }
   };
 

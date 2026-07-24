@@ -33,6 +33,12 @@ def _room_bed_labels(patient: Patient) -> tuple[Optional[str], Optional[str]]:
     return room_number, bed_number
 
 
+def _admission_date_label(patient: Patient) -> Optional[str]:
+    if not patient.admission_date:
+        return None
+    return patient.admission_date.isoformat()
+
+
 def collect_patient_snapshots(db: Session) -> tuple[List[PatientBraceletSnapshot], bool, Optional[str]]:
     patients = (
         db.query(Patient)
@@ -62,6 +68,7 @@ def collect_patient_snapshots(db: Session) -> tuple[List[PatientBraceletSnapshot
     for patient in patients:
         mac = normalize_mac(patient.ble_mac) if patient.ble_mac else None
         room_number, bed_number = _room_bed_labels(patient)
+        admission_date = _admission_date_label(patient)
 
         custom = has_custom_thresholds(patient.vital_threshold_overrides)
         threshold_map = get_patient_threshold_map(patient.vital_threshold_overrides)
@@ -74,6 +81,7 @@ def collect_patient_snapshots(db: Session) -> tuple[List[PatientBraceletSnapshot
                     ble_mac=None,
                     room_number=room_number,
                     bed_number=bed_number,
+                    admission_date=admission_date,
                     online=None,
                     metrics={},
                     alerts=[],
@@ -91,6 +99,7 @@ def collect_patient_snapshots(db: Session) -> tuple[List[PatientBraceletSnapshot
                     ble_mac=mac,
                     room_number=room_number,
                     bed_number=bed_number,
+                    admission_date=admission_date,
                     online=False,
                     metrics={},
                     alerts=[],
@@ -109,6 +118,7 @@ def collect_patient_snapshots(db: Session) -> tuple[List[PatientBraceletSnapshot
                 ble_mac=mac,
                 room_number=room_number,
                 bed_number=bed_number,
+                admission_date=admission_date,
                 online=parse_online_flag(device),
                 metrics=metrics,
                 alerts=alerts,

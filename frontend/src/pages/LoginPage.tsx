@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import MainLayout from '../MainLayout';
 import './LoginPage.css';
 
@@ -8,8 +7,6 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading, error } = useAuth();
-  const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
@@ -21,19 +18,20 @@ const LoginPage: React.FC = () => {
       const user = await login({ username, password });
       
       if (user) {
-        // ✅ Перенаправление по роли
+        // Полная загрузка страницы — тот же эффект, что F5 (избегаем залипания SPA-навигации)
         switch (user.role.toLowerCase()) {
           case 'nurse':
-            navigate('/nurse/appointments');
-            break;
+            window.location.assign('/nurse/appointments');
+            return;
           case 'doctor':
-            navigate('/doctor/patients');
-            break;
+            window.location.assign('/doctor/patients');
+            return;
           case 'admin':
-            navigate('/register');
-            break;
+            window.location.assign('/register');
+            return;
           default:
-            navigate('/dashboard');
+            window.location.assign('/login');
+            return;
         }
       }
     } catch (err) {

@@ -63,10 +63,54 @@ class PatientBraceletView(BaseModel):
     ble_mac: Optional[str] = None
     room_number: Optional[str] = None
     bed_number: Optional[str] = None
+    admission_date: Optional[str] = None
     online: Optional[bool] = None
     metrics: Dict[str, Any] = Field(default_factory=dict)
     alerts: List[VitalAlertView] = Field(default_factory=list)
     has_custom_thresholds: bool = False
+
+
+class UnassignedBleDeviceView(BaseModel):
+    mac: str
+    online: Optional[bool] = None
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+
+
+class BraceletAssignmentPair(BaseModel):
+    patient_id: int
+    patient_name: str
+    ble_mac: str
+    room_number: Optional[str] = None
+    bed_number: Optional[str] = None
+
+
+class AssignBraceletRequest(BaseModel):
+    patient_id: int
+    ble_mac: str
+
+
+class AssignBraceletResponse(BaseModel):
+    pair: BraceletAssignmentPair
+    monitoring_connected: bool
+    message: str
+    error: Optional[str] = None
+
+
+class UnassignBraceletResponse(BaseModel):
+    patient_id: int
+    patient_name: str
+    ble_mac: str
+    message: str
+
+
+class DistributeBraceletsResponse(BaseModel):
+    assigned_count: int
+    pairs: List[BraceletAssignmentPair] = Field(default_factory=list)
+    patients_without_mac_remaining: int
+    unassigned_devices_remaining: List[str] = Field(default_factory=list)
+    monitoring_connected: bool
+    message: str
+    error: Optional[str] = None
 
 
 class BraceletOverviewResponse(BaseModel):
@@ -74,12 +118,14 @@ class BraceletOverviewResponse(BaseModel):
     patients_total: int
     patients_with_ble: int
     patients_online: int
+    patients_without_mac: int = 0
     alerts_found: int
     monitoring_connected: bool
     max_bot_configured: bool
     alerts_enabled: bool
     error: Optional[str] = None
     patients: List[PatientBraceletView] = Field(default_factory=list)
+    unassigned_devices: List[UnassignedBleDeviceView] = Field(default_factory=list)
 
 
 class BraceletCheckResponse(BaseModel):

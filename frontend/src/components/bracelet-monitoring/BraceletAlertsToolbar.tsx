@@ -23,46 +23,70 @@ const BraceletAlertsToolbar: React.FC<BraceletAlertsToolbarProps> = ({
     ? new Date(overview.checked_at).toLocaleString('ru-RU')
     : '—';
 
+  const monitorLabel = overview?.monitoring_connected ? 'подключён' : 'недоступен';
+
   return (
-    <div className="bracelet-toolbar">
-      <div className="bracelet-toolbar__status">
-        <span
-          className={`bracelet-toolbar__dot ${
-            overview?.monitoring_connected ? 'online' : 'offline'
-          }`}
-        />
-        <span>
-          Мониторинг: {overview?.monitoring_connected ? 'подключён' : 'недоступен'}
-        </span>
-        <span className="bracelet-toolbar__meta">Обновлено: {checkedAt}</span>
-        {overview && !overview.max_bot_configured && (
-          <span className="bracelet-toolbar__warn">
-            MAX не настроен (MAX_BOT_TOKEN, MAX_ALERT_CHAT_ID)
-          </span>
-        )}
-      </div>
+    <section className="bracelet-summary">
+      <div className="bracelet-toolbar">
+        <div className="bracelet-toolbar__stats">
+          <div className="bracelet-stat-card">
+            <span className="bracelet-stat-card__label">Пациентов:</span>
+            <span className="bracelet-stat-card__value">{overview?.patients_total ?? 0}</span>
+          </div>
+          <div className="bracelet-stat-card">
+            <span className="bracelet-stat-card__label">С браслетом:</span>
+            <span className="bracelet-stat-card__value">{overview?.patients_with_ble ?? 0}</span>
+          </div>
+          <div className="bracelet-stat-card">
+            <span className="bracelet-stat-card__label">Онлайн:</span>
+            <span className="bracelet-stat-card__value">{overview?.patients_online ?? 0}</span>
+          </div>
+          <div className="bracelet-stat-card">
+            <span className="bracelet-stat-card__label">Отклонений:</span>
+            <span className="bracelet-stat-card__value">{overview?.alerts_found ?? 0}</span>
+          </div>
+        </div>
 
-      <div className="bracelet-toolbar__stats">
-        <span>Пациентов: {overview?.patients_total ?? 0}</span>
-        <span>С браслетом: {overview?.patients_with_ble ?? 0}</span>
-        <span>Онлайн: {overview?.patients_online ?? 0}</span>
-        <span className={overview?.alerts_found ? 'has-alerts' : ''}>
-          Отклонений: {overview?.alerts_found ?? 0}
-        </span>
-      </div>
+        <div className="bracelet-toolbar__side">
+          <p className="bracelet-toolbar__meta">Обновлено: {checkedAt}</p>
+          <p className="bracelet-toolbar__monitor-line">
+            Мониторинг: {monitorLabel}
+            <span
+              className={`bracelet-toolbar__dot ${
+                overview?.monitoring_connected ? 'online' : 'offline'
+              }`}
+            />
+          </p>
+          {overview && !overview.max_bot_configured && (
+            <p className="bracelet-toolbar__warn">
+              MAX не настроен (MAX_BOT_TOKEN, MAX_ALERT_CHAT_ID)
+            </p>
+          )}
 
-      <div className="bracelet-toolbar__actions">
-        <button type="button" onClick={onRefresh} disabled={loading}>
-          {loading ? 'Загрузка…' : 'Обновить'}
-        </button>
-        <button type="button" onClick={onCheckNow} disabled={checking}>
-          {checking ? 'Проверка…' : 'Проверить и отправить в MAX'}
-        </button>
-        <button type="button" className="secondary" onClick={onTestMax}>
-          Тест MAX
-        </button>
+          <div className="bracelet-toolbar__actions">
+            <button
+              type="button"
+              className="bracelet-btn bracelet-btn-outline"
+              onClick={onRefresh}
+              disabled={loading}
+            >
+              {loading ? 'Загрузка…' : 'Обновить'}
+            </button>
+            <button
+              type="button"
+              className="bracelet-btn bracelet-btn-outline"
+              onClick={onCheckNow}
+              disabled={checking}
+            >
+              {checking ? 'Проверка…' : 'Проверить и отправить в MAX'}
+            </button>
+            <button type="button" className="bracelet-btn bracelet-btn-outline" onClick={onTestMax}>
+              Тест MAX
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 

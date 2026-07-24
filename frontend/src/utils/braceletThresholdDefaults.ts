@@ -11,6 +11,22 @@ export const EMPTY_METRIC_OVERRIDE = {
 
 export type MetricOverrideForm = typeof EMPTY_METRIC_OVERRIDE;
 
+const THRESHOLD_FIELDS = [
+  'normal_min',
+  'normal_max',
+  'warning_low',
+  'warning_high',
+  'critical_low',
+  'critical_high',
+] as const satisfies ReadonlyArray<keyof MetricOverrideForm>;
+
+export function metricHasCustomEffective(
+  defaults: MetricThresholdValues,
+  effective: MetricThresholdValues,
+): boolean {
+  return THRESHOLD_FIELDS.some((field) => (defaults[field] ?? null) !== (effective[field] ?? null));
+}
+
 export function overridesToForms(
   defaults: Record<string, MetricThresholdValues>,
   overrides?: PatientVitalThresholds['overrides'],
@@ -34,10 +50,15 @@ export function overridesToForms(
 export function enabledFlagsFromOverrides(
   defaults: Record<string, MetricThresholdValues>,
   overrides?: PatientVitalThresholds['overrides'],
+  effective?: Record<string, MetricThresholdValues>,
 ): Record<string, boolean> {
   const flags: Record<string, boolean> = {};
   Object.keys(defaults).forEach((key) => {
-    flags[key] = Boolean(overrides?.[key] && Object.keys(overrides[key]).length > 0);
+    const hasOverride = Boolean(overrides?.[key] && Object.keys(overrides[key]).length > 0);
+    const hasEffectiveDiff = effective?.[key]
+      ? metricHasCustomEffective(defaults[key], effective[key])
+      : false;
+    flags[key] = hasOverride || hasEffectiveDiff;
   });
   return flags;
 }

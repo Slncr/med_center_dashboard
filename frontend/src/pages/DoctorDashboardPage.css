@@ -1,21 +1,29 @@
 /* Префикс dd- = doctor dashboard */
 .doctor-dashboard {
   min-height: 100vh;
-  background: #f8fafc;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  background: #fdfdfd;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  --doctor-content-max: 1718px;
+  --doctor-content-pad: 32px;
 }
 
 /* Хедер */
 .doctor-header {
-  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
-  color: white;
-  padding: 20px 32px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #e5f5fe;
+  color: #1e293b;
+  padding: 20px max(var(--doctor-content-pad), calc((100% - var(--doctor-content-max)) / 2)) 0;
+  box-shadow: none;
 }
 
 .header-content {
-  max-width: 1600px;
+  max-width: var(--doctor-content-max);
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -28,27 +36,34 @@
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.5px;
+  color: #009aff;
 }
 
-.header-info {
+.doctor-header .header-info {
   display: flex;
   gap: 24px;
   margin-top: 8px;
+  color: #475569;
 }
 
-.info-item {
+.doctor-header .header-info .info-item {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
 
-.info-label {
+.doctor-header .header-info .info-label,
+.doctor-header .header-info .info-value {
+  color: #475569;
+}
+
+.doctor-header .header-info .info-label {
   font-size: 14px;
-  opacity: 0.9;
+  opacity: 0.92;
   margin-bottom: 4px;
 }
 
-.info-value {
+.doctor-header .header-info .info-value {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -56,52 +71,65 @@
 
 /* Навигация */
 .doctor-nav {
-  background: white;
-  padding: 0 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #e5f5fe;
+  padding: 0 max(var(--doctor-content-pad), calc((100% - var(--doctor-content-max)) / 2));
+  box-shadow: none;
   position: sticky;
-  top: 72px;
+  top: 0;
   z-index: 900;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 100%;
 }
 
 .nav-button {
-  background: none;
+  background: transparent;
   border: none;
-  padding: 16px 24px;
+  padding: 14px 24px 12px;
   font-size: 17px;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   position: relative;
-  transition: all 0.2s;
+  transition: color 0.2s, background 0.2s;
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
 }
 
 .nav-button:hover {
-  color: #334155;
+  color: #1e293b;
 }
 
 .nav-button.active {
-  color: #1e40af;
+  color: #1e293b;
+  background: #fdfdfd;
 }
 
 .nav-button.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #1e40af;
-  border-radius: 2px 2px 0 0;
+  display: none;
 }
 
 /* Основной контент */
 .doctor-main {
   flex: 1;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px 32px;
+  min-height: 0;
+  background: #fdfdfd;
   width: 100%;
+  max-width: var(--doctor-content-max);
+  margin: 0 auto;
+  padding: 24px var(--doctor-content-pad);
+  padding-bottom: calc(24px + var(--keyboard-inset, 0px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.doctor-main--patients {
+  max-width: none;
+  padding: 0;
 }
 
 /* Вкладка "Обзор" */
@@ -111,90 +139,206 @@
 
 .overview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, 318px);
+  gap: 16px;
+  align-items: start;
 }
 
 .stat-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s, box-shadow 0.2s;
+  width: 318px;
+  height: 152px;
+  background: #e5f5fe;
+  border-radius: 24px;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(231, 237, 246, 0.85);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+.stat-card-header {
+  padding: 12px 20px 22px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: transparent;
 }
 
-.stat-card h3 {
-  margin: 0 0 12px 0;
-  color: #4a5568;
-  font-size: 18px;
-  font-weight: 600;
+.stat-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.stat-card-body,
+.patients-list-card-body {
+  flex: 1;
+  min-height: 0;
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  margin-top: -16px;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.stat-card-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px 16px;
+}
+
+.stat-card-icon {
+  width: 69px;
+  height: 69px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.stat-card-metrics {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .stat-value {
-  font-size: 42px;
+  font-size: 40px;
   font-weight: 800;
   color: #1e293b;
   line-height: 1;
-  margin: 8px 0;
+  margin: 0;
 }
 
 .stat-desc {
   color: #64748b;
-  font-size: 15px;
-  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.25;
+  margin: 0;
+  flex-shrink: 1;
 }
 
 /* Цветовые варианты карточек */
 .stat-card.primary {
-  border-top: 4px solid #3b82f6;
+  background: #e5f5fe;
+}
+
+.stat-card.primary .stat-card-header h3 {
+  color: #009aff;
+}
+
+.stat-card.primary .stat-card-icon {
+  background: #e5f5fe;
 }
 
 .stat-card.warning {
-  border-top: 4px solid #f59e0b;
+  background: #fff7ed;
+}
+
+.stat-card.warning .stat-card-header h3 {
+  color: #d97706;
+}
+
+.stat-card.warning .stat-card-icon {
+  background: #fff7ed;
 }
 
 .stat-card.info {
-  border-top: 4px solid #0ea5e9;
+  background: #e0f2fe;
+}
+
+.stat-card.info .stat-card-header h3 {
+  color: #0284c7;
+}
+
+.stat-card.info .stat-card-icon {
+  background: #e0f2fe;
 }
 
 .stat-card.success {
-  border-top: 4px solid #10b981;
+  background: #ecfdf5;
+}
+
+.stat-card.success .stat-card-header h3 {
+  color: #059669;
+}
+
+.stat-card.success .stat-card-icon {
+  background: #ecfdf5;
 }
 
 .stat-card.neutral {
-  border-top: 4px solid #64748b;
+  background: #f1f5f9;
 }
 
-/* Карточка списка пациентов */
+.stat-card.neutral .stat-card-header h3 {
+  color: #64748b;
+}
+
+.stat-card.neutral .stat-card-icon {
+  background: #f1f5f9;
+}
+
+/* Карточка списка пациентов — на всю ширину сетки */
 .stat-card.patients-list-card {
-  border-top: 4px solid #8b5cf6;
-  padding: 20px;
-  width: 1560px;
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 320px;
+  padding: 0;
+  overflow: hidden;
+  background: #e5f5fe;
 }
 
-.patients-mini-list {
-  max-height: 280px;
-  overflow-y: auto;
-  margin-bottom: 16px;
+.stat-card.patients-list-card .stat-card-header h3 {
+  color: #009aff;
+}
+
+.patients-list-card-body {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 20px;
+}
+
+.patients-list-card .patients-mini-list {
+  margin-bottom: 12px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.patients-list-card .view-all-btn {
+  margin: 0;
+  width: 100%;
 }
 
 .patient-mini-item {
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: #f8fafc;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 3px solid #e5f5fe;
   margin-bottom: 10px;
+  box-shadow: 0 4px 20px rgba(231, 237, 246, 0.85);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .patient-mini-item:hover {
-  background: #edf5ff;
-  transform: translateX(4px);
+  background: #E5F5FE;
+  box-shadow: 0 6px 24px rgba(231, 237, 246, 0.95);
+}
+
+.patient-mini-item:last-child {
+  margin-bottom: 0;
 }
 
 .patient-name {
@@ -211,20 +355,24 @@
 
 .view-all-btn {
   width: 100%;
-  padding: 10px 16px;
-  background: #dbeafe;
-  color: #1e40af;
+  padding: 12px 16px;
+  background: #e5f5fe;
+  color: #009aff;
   border: none;
-  border-radius: 10px;
+  border-radius: 16px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
 .view-all-btn:hover {
-  background: #bfdbfe;
-  transform: translateY(-1px);
+  background: #d6effe;
+}
+
+/* Общий mini-list (если используется вне patients-list-card) */
+.patients-mini-list {
+  margin-bottom: 16px;
 }
 
 /* Ошибки и загрузка статистики */
@@ -282,6 +430,8 @@
 /* Вкладка "Пациенты" */
 .patients-view {
   padding: 20px 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .view-header {
@@ -325,111 +475,181 @@
   transform: rotate(15deg);
 }
 
+/* Карточки пациентов — базовые стили (ранее в PatientList.css) */
+.patient-list {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
 .patients-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
 }
 
 .patient-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 2px solid transparent;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .patient-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  border-color: #4caf50;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.1);
   transform: translateY(-2px);
-}
-
-.patient-card.selected {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .patient-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 15px;
 }
 
-.patient-name {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.3;
+.patient-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.3rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .patient-status {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 10px;
 }
 
-.patient-status.status-active {
-  background: #dbeafe;
-  color: #1e40af;
+.patient-status.active {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
 }
 
-.patient-status.status-archived,
-.patient-status.status-discharged {
-  background: #e2e8f0;
-  color: #4a5568;
+.patient-info {
+  flex: 1;
+  margin-bottom: 20px;
 }
 
-.patient-details {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-.detail-row {
+.info-row {
   display: flex;
   justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #dee2e6;
 }
 
-.detail-label {
-  color: #64748b;
+.info-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.info-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.info-value {
+  color: #495057;
   font-weight: 500;
-  font-size: 15px;
+  font-size: 0.95rem;
+  min-width: 0;
 }
 
-.detail-value {
-  color: #1e293b;
-  font-weight: 600;
-  font-size: 16px;
+.patient-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
 }
 
-.open-card-btn {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #1e3b70 0%, #1a2e5a 100%);
+.action-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-button.view-button {
+  flex: 1;
+  background: #2196f3;
+  color: white;
+  padding: 10px;
+}
+
+.action-button.view-button:hover {
+  background: #1976d2;
+}
+
+/* Карточки пациентов — те же стили, что у медсестры (PatientList.css) */
+.doctor-patient-list.patient-list {
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.doctor-patient-list .patient-card {
+  min-width: 0;
+}
+
+.doctor-patient-list .patient-card.selected {
+  border-color: #4caf50;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.15);
+}
+
+.doctor-patient-list .patient-header h3 {
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.doctor-patient-list .info-row {
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.doctor-patient-list .info-label {
+  flex-shrink: 0;
+}
+
+.doctor-patient-list .info-value {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.doctor-patient-list .action-button.prescriptions-button {
+  flex: 1;
+  background: #7b1fa2;
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 17px;
-  font-weight: 600;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  transition: background 0.3s;
 }
 
-.open-card-btn:hover {
-  background: linear-gradient(135deg, #1a325a 0%, #162647 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+.doctor-patient-list .action-button.prescriptions-button:hover {
+  background: #6a1b9a;
 }
 
 /* Пустые состояния */
@@ -459,7 +679,77 @@
   margin: 0 auto;
 }
 
-/* Вкладка "Назначения" */
+/* Вкладка «Отчёты» врача */
+.doctor-reports-view {
+  width: 100%;
+  min-height: 560px;
+}
+
+/* Вкладка «Архив» врача */
+.doctor-archive-view {
+  width: 100%;
+  min-height: 560px;
+}
+
+/* Вкладка «Назначения» — legacy */
+.doctor-prescriptions-view {
+  width: 100%;
+  min-height: 560px;
+}
+
+.dp-rx-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dp-rx-header__text h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.dp-rx-header__stats {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dp-rx-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: #009aff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.dp-rx-refresh:hover {
+  color: #0077cc;
+}
+
+.dp-rx-refresh__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e5f5fe;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Вкладка "Назначения" — legacy */
 .prescriptions-view {
   padding: 20px 0;
 }
@@ -639,17 +929,21 @@
     grid-template-columns: 1fr;
   }
   
-  .header-info {
+  .doctor-header .header-info {
     gap: 16px;
   }
   
-  .info-value {
+  .doctor-header .header-info .info-value {
     font-size: 18px;
   }
 }
 
 @media (max-width: 900px) {
-  .doctor-header,
+  .doctor-header {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
   .doctor-nav,
   .doctor-main,
   .doctor-footer {
@@ -671,7 +965,12 @@
   }
   
   .overview-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .stat-card:not(.patients-list-card) {
+    width: 100%;
+    max-width: 318px;
   }
 }
 
@@ -686,18 +985,18 @@
     gap: 16px;
   }
   
-  .header-info {
+  .doctor-header .header-info {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
     width: 100%;
   }
   
-  .info-item {
+  .doctor-header .header-info .info-item {
     align-items: flex-start;
   }
   
-  .info-label {
+  .doctor-header .header-info .info-label {
     margin-bottom: 2px;
   }
   
@@ -709,17 +1008,18 @@
   .overview-grid {
     grid-template-columns: 1fr;
   }
+
+  .stat-card:not(.patients-list-card) {
+    width: 100%;
+    max-width: none;
+  }
   
   .stat-value {
     font-size: 32px;
   }
   
-  .patient-card {
-    padding: 20px;
-  }
-  
-  .patient-name {
-    font-size: 20px;
+  .doctor-patient-list .patient-actions {
+    flex-direction: column;
   }
   
   .modal-content {

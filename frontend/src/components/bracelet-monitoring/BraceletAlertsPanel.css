@@ -1,5 +1,6 @@
 .bracelet-panel {
-  padding: 0 4px 24px;
+  width: 100%;
+  min-height: 560px;
 }
 
 .bracelet-panel.loading {
@@ -8,65 +9,86 @@
   padding: 48px;
 }
 
-.bracelet-panel__intro {
+.bracelet-panel__hero {
   margin-bottom: 20px;
 }
 
-.bracelet-panel__intro h2 {
-  margin: 0 0 8px;
+.bracelet-panel__title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
   color: #1e293b;
 }
 
-.bracelet-panel__intro p {
-  margin: 0 0 12px;
-  color: #64748b;
-  max-width: 720px;
+.bracelet-panel__subtitle {
+  margin: 0;
+  max-width: 100%;
+  font-size: 14px;
   line-height: 1.5;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.bracelet-panel__norms-hint {
-  margin: 0;
-  font-size: 0.88rem;
-  color: #64748b;
-  max-width: 720px;
-  line-height: 1.45;
+.bracelet-panel__chevron {
+  margin-left: 6px;
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 .bracelet-panel__error {
-  padding: 12px 14px;
+  padding: 12px 16px;
   background: #fef2f2;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #991b1b;
   margin-bottom: 16px;
+  font-size: 14px;
 }
 
 .bracelet-panel__filters {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 18px;
+  padding-bottom: 0;
+  border-bottom: 1px solid #e5eaf0;
 }
 
-.bracelet-panel__filters button {
-  padding: 8px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #475569;
-}
-
-.bracelet-panel__filters button.active {
-  background: #4caf50;
-  border-color: #4caf50;
-  color: #fff;
+.bracelet-filter-tab {
+  border: none;
+  background: transparent;
+  padding: 0 0 12px;
+  font-size: 15px;
   font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+}
+
+.bracelet-filter-tab:hover {
+  color: #1e293b;
+}
+
+.bracelet-filter-tab.active {
+  color: #009aff;
+}
+
+.bracelet-filter-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 999px;
+  background: #009aff;
 }
 
 .bracelet-panel__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -74,4 +96,18 @@
   text-align: center;
   color: #94a3b8;
   padding: 32px;
+  font-size: 15px;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1200px) {
+  .bracelet-panel__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .bracelet-panel__grid {
+    grid-template-columns: 1fr;
+  }
 }

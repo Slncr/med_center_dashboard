@@ -1,0 +1,51 @@
+.app-fs-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #ffffff;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-fs-gate-title {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app-fs-gate-hint {
+  display: block;
+  font-size: 16px;
+  opacity: 0.9;
+  max-width: 420px;
+  line-height: 1.35;
+}
+
+.app-fs-gate-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 22px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.app-fs-gate-btn--primary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #009aff;
+  min-width: 280px;
+  padding: 22px 28px;
+}

@@ -18,6 +18,31 @@ export const flagsFromPatient = (patient?: Patient | null): PatientFeatureFlags 
 
 export type BedFlagColor = 'white' | 'yellow' | 'orange' | 'red' | 'green';
 
+export type PatientFlagKey = keyof PatientFeatureFlags;
+
+export const PATIENT_FLAG_META: ReadonlyArray<{
+  key: PatientFlagKey;
+  color: BedFlagColor;
+  label: string;
+}> = [
+  { key: 'flag_white', color: 'white', label: 'Всё в порядке' },
+  { key: 'flag_yellow', color: 'yellow', label: 'Риск падения' },
+  { key: 'flag_orange', color: 'orange', label: 'Инфекция' },
+  { key: 'flag_red', color: 'red', label: 'Аллергия' },
+  { key: 'flag_green', color: 'green', label: 'Диета' },
+];
+
+/** Активные статусы пациента для отображения в UI (без картинки койки). */
+export const activePatientFlagStatuses = (patient?: Patient | null) => {
+  const flags = flagsFromPatient(patient);
+  if (flags.flag_white) {
+    return PATIENT_FLAG_META.filter((item) => item.key === 'flag_white');
+  }
+  return PATIENT_FLAG_META.filter(
+    (item) => item.key !== 'flag_white' && flags[item.key],
+  );
+};
+
 export const bedFlagsFromPatient = (patient?: Patient | null) => {
   const flags = flagsFromPatient(patient);
   return {

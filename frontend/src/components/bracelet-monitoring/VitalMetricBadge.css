@@ -9,6 +9,16 @@
   min-width: 100px;
 }
 
+.vital-metric-badge--compact {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  min-width: 0;
+  text-align: left;
+  gap: 4px;
+}
+
 .vital-metric-badge__label {
   font-size: 0.75rem;
   color: #64748b;
@@ -16,9 +26,25 @@
   letter-spacing: 0.03em;
 }
 
+.vital-metric-badge--compact .vital-metric-badge__label {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
 .vital-metric-badge__value {
   font-size: 1.25rem;
   font-weight: 700;
+  color: #1e293b;
+}
+
+.vital-metric-badge--compact .vital-metric-badge__value {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
   color: #1e293b;
 }
 
@@ -28,21 +54,26 @@
 }
 
 .vital-level--warning {
-  border-color: #fbbf24;
-  background: #fffbeb;
+  border-color: #ef4444;
+  background: #ffffff;
 }
 
 .vital-level--warning .vital-metric-badge__value,
 .vital-level--warning .vital-metric-badge__status {
-  color: #b45309;
+  color: #ef4444;
 }
 
 .vital-level--critical {
-  border-color: #f87171;
-  background: #fef2f2;
+  border-color: #ef4444;
+  background: #ffffff;
 }
 
 .vital-level--critical .vital-metric-badge__value,
 .vital-level--critical .vital-metric-badge__status {
-  color: #b91c1c;
+  color: #ef4444;
+}
+
+.vital-metric-badge--compact.vital-level--warning,
+.vital-metric-badge--compact.vital-level--critical {
+  border-color: #ef4444;
 }

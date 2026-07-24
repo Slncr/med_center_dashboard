@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiService } from '../../services/api';
 import { Observation, Patient, Room } from '../../types';
+import { appConfirm } from '../../context/AppDialogContext';
 import './ObservationsTable.css';
 
 interface ObservationsTableProps {
@@ -179,7 +180,7 @@ const ObservationsTable: React.FC<ObservationsTableProps> = ({
   };
 
   const deleteObservation = async (id: number) => {
-    if (!window.confirm('Вы уверены, что хотите удалить это наблюдение?')) return;
+    if (!(await appConfirm('Вы уверены, что хотите удалить это наблюдение?', { danger: true }))) return;
 
     try {
       await apiService.deleteObservation(id);

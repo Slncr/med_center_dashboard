@@ -1,61 +1,59 @@
 .patient-bracelet-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 20px rgba(231, 237, 246, 0.85);
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.patient-bracelet-card--warning {
-  border-color: #fbbf24;
-  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25);
-}
-
-.patient-bracelet-card--critical {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+  min-width: 0;
 }
 
 .patient-bracelet-card__header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.patient-bracelet-card__header h3 {
-  margin: 0 0 4px;
-  font-size: 1.05rem;
-  color: #1e293b;
+.patient-bracelet-card__title-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.patient-bracelet-card__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .patient-bracelet-card__custom-badge {
-  font-size: 0.7rem;
+  font-size: 10px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.patient-bracelet-card__location {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #64748b;
+  background: #e5f5fe;
+  color: #009aff;
+  flex-shrink: 0;
 }
 
 .patient-bracelet-card__online {
-  font-size: 0.75rem;
+  font-size: 11px;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 999px;
   white-space: nowrap;
+  text-transform: lowercase;
+  flex-shrink: 0;
 }
 
 .patient-bracelet-card__online.is-online {
@@ -73,62 +71,108 @@
   color: #475569;
 }
 
-.patient-bracelet-card__hint {
-  margin: 0;
-  font-size: 0.85rem;
+.patient-bracelet-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.patient-bracelet-card__device-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.patient-bracelet-card__mac {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-bracelet-card__mac span {
+  color: #475569;
+}
+
+.patient-bracelet-card__meta-muted {
   color: #94a3b8;
 }
 
-.patient-bracelet-card__metrics {
+.patient-bracelet-card__battery {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.patient-bracelet-card__battery svg {
+  width: 16px;
+  height: 16px;
+}
+
+.patient-bracelet-card__metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.patient-bracelet-card__hrv {
+  grid-column: 1 / -1;
+}
+
+.patient-bracelet-card__hrv .vital-metric-badge {
+  max-width: none;
+}
+
+.patient-bracelet-card__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.patient-bracelet-card__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
-.patient-bracelet-card__alerts {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.patient-bracelet-card__alerts li {
-  font-size: 0.85rem;
-  padding: 8px 10px;
-  border-radius: 6px;
-}
-
-.alert-item--warning {
-  background: #fffbeb;
-  color: #92400e;
-}
-
-.alert-item--critical {
-  background: #fef2f2;
-  color: #991b1b;
-}
-
-.patient-bracelet-card__thresholds {
-  margin-top: 4px;
-  padding-top: 12px;
-  border-top: 1px dashed #e2e8f0;
-}
-
-.patient-bracelet-card__thresholds-btn {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
+.patient-bracelet-card__action-btn {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
   border-radius: 8px;
-  background: #f8fafc;
-  color: #334155;
+  border: 1px solid #009aff;
+  background: #ffffff;
+  color: #009aff;
+  font-size: 12px;
   font-weight: 600;
-  font-size: 0.9rem;
   cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
 }
 
-.patient-bracelet-card__thresholds-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+.patient-bracelet-card__action-btn:hover:not(:disabled) {
+  background: #e5f5fe;
+}
+
+.patient-bracelet-card__action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .patient-bracelet-card__metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

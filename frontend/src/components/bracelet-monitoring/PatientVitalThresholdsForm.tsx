@@ -6,16 +6,20 @@ import {
   enabledFlagsFromOverrides,
   formToOverridesPayload,
   formatThresholdSummary,
+  metricHasCustomEffective,
   overridesToForms,
   type MetricOverrideForm,
 } from '../../utils/braceletThresholdDefaults';
 import MetricThresholdFields from './MetricThresholdFields';
+import { appAlert, appConfirm } from '../../context/AppDialogContext';
 import './PatientVitalThresholdsForm.css';
 
 interface PatientVitalThresholdsFormProps {
   patientId: number;
   patientName?: string;
   compact?: boolean;
+  /** Форма внутри модалки — без дублирующего заголовка */
+  inModal?: boolean;
   onSaved?: () => void;
 }
 
@@ -23,6 +27,7 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
   patientId,
   patientName,
   compact = false,
+  inModal = false,
   onSaved,
 }) => {
   const [data, setData] = useState<PatientVitalThresholds | null>(null);
@@ -35,7 +40,13 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
   const applyThresholdsData = (thresholds: PatientVitalThresholds) => {
     setData(thresholds);
     setForms(overridesToForms(thresholds.defaults, thresholds.overrides ?? undefined));
-    setEnabled(enabledFlagsFromOverrides(thresholds.defaults, thresholds.overrides ?? undefined));
+    setEnabled(
+      enabledFlagsFromOverrides(
+        thresholds.defaults,
+        thresholds.overrides ?? undefined,
+        thresholds.effective,
+      ),
+    );
   };
 
   const load = useCallback(async () => {
@@ -61,14 +72,16 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
     setError(null);
     try {
       const overrides = formToOverridesPayload(data.defaults, forms, enabled);
-      const updated = await apiService.updatePatientVitalThresholds(
-        patientId,
-        overrides ?? {},
-      );
+      if (!overrides) {
+        setError('Включите «Свои пороги» и заполните хотя бы одно поле');
+        setSaving(false);
+        return;
+      }
+      const updated = await apiService.updatePatientVitalThresholds(patientId, overrides);
       applyThresholdsData(updated);
       onSaved?.();
-      if (!compact) {
-        alert('Пороги сохранены');
+      if (!compact && !inModal) {
+        await appAlert('Пороги сохранены');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
@@ -78,7 +91,7 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
   };
 
   const handleReset = async () => {
-    if (!window.confirm('Сбросить персональные пороги и использовать стандартные?')) return;
+    if (!(await appConfirm('Сбросить персональные пороги и использовать стандартные?'))) return;
     setSaving(true);
     setError(null);
     try {
@@ -103,8 +116,8 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
   const metricKeys = Object.keys(data.defaults);
 
   return (
-    <div className={`patient-thresholds-form ${compact ? 'compact' : ''}`}>
-      {!compact && (
+    <div className={`patient-thresholds-form ${compact ? 'compact' : ''} ${inModal ? 'in-modal' : ''}`}>
+      {!compact && !inModal && (
         <div className="patient-thresholds-form__header">
           <h3>Пороги браслета</h3>
           {patientName && <p className="patient-thresholds-form__patient">{patientName}</p>}
@@ -113,6 +126,13 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
             берутся из стандарта. Технические метрики (сигнал, шаги) не настраиваются.
           </p>
         </div>
+      )}
+
+      {inModal && (
+        <p className="patient-thresholds-form__desc patient-thresholds-form__desc--modal">
+          Для каждого показателя включите «Свои пороги» и заполните нужные поля. Пустые поля
+          берутся из стандарта.
+        </p>
       )}
 
       {error && <div className="patient-thresholds-form__error">{error}</div>}
@@ -143,17 +163,22 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
               title={defaults.label}
               fieldIdPrefix={`${patientId}-${key}`}
               defaults={defaults}
+              effective={data.effective[key]}
+              isCustom={metricHasCustomEffective(defaults, data.effective[key])}
               values={forms[key] ?? { ...EMPTY_METRIC_OVERRIDE }}
               enabled={Boolean(enabled[key])}
               onEnabledChange={(value) =>
                 setEnabled((prev) => ({ ...prev, [key]: value }))
               }
-              onChange={(field, value) =>
+              onChange={(field, value) => {
                 setForms((prev) => ({
                   ...prev,
                   [key]: { ...(prev[key] ?? EMPTY_METRIC_OVERRIDE), [field]: value },
-                }))
-              }
+                }));
+                if (value.trim()) {
+                  setEnabled((prev) => ({ ...prev, [key]: true }));
+                }
+              }}
             />
           );
         })}

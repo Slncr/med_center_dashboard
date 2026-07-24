@@ -1,18 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiService } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Patient, Prescription, PrescriptionPackage } from '../../types';
 import { formatPackageTitle, packageStatusLabel } from '../../utils/prescriptionPackages';
 import PrescriptionPackageModal from '../nurse-station/PrescriptionPackageModal';
+import { useUrlTab } from '../../hooks/useUrlSearchState';
+import { PRESCRIPTION_FORM_TABS, URL_PARAMS } from '../../utils/urlTabs';
+import { useKeyboardAwareScroll } from '../../hooks/useKeyboardAwareScroll';
+import { appConfirm } from '../../context/AppDialogContext';
 import './PrescriptionsForm.css';
 
 interface PrescriptionsFormProps {
   onPrescriptionCreated?: () => void;
+  /** Предвыбор пациента (например, с карточки на вкладке «Пациенты») */
+  initialPatientId?: number | null;
+  onPatientChange?: (patientId: number | null) => void;
 }
 
-const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCreated }) => {
+const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({
+  onPrescriptionCreated,
+  initialPatientId = null,
+  onPatientChange,
+}) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'procedures' | 'measurements'>('procedures');
+  const [activeTab, setActiveTab] = useUrlTab(URL_PARAMS.subtab, PRESCRIPTION_FORM_TABS, 'procedures');
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
@@ -22,15 +33,18 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   const [packages, setPackages] = useState<PrescriptionPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PrescriptionPackage | null>(null);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+  useKeyboardAwareScroll(pageRef, true);
 
   // Состояние для процедур
   const [procedures, setProcedures] = useState([
-    { id: 1, name: 'Санитарная обработка и смена белья', selected: false, frequency: 1, notes: '' },
-    { id: 2, name: 'Ванна', selected: false, frequency: 1, notes: '' },
-    { id: 3, name: 'Перевязка', selected: false, frequency: 1, notes: '' },
-    { id: 4, name: 'Проверка на педикулёз/чесотку', selected: false, frequency: 1, notes: '' },
-    { id: 5, name: 'Установка/контроль ПВК', selected: false, frequency: 1, notes: '' },
-    { id: 6, name: 'Другая процедура', selected: false, frequency: 1, customName: '', notes: '' },
+    { id: 1, name: 'Санитарная обработка', selected: false, frequency: 1, notes: '' },
+    { id: 2, name: 'Перевязка', selected: false, frequency: 1, notes: '' },
+    { id: 3, name: 'Установка/контроль ПВК', selected: false, frequency: 1, notes: '' },
+    { id: 4, name: 'УЗИ', selected: false, frequency: 1, notes: '' },
+    { id: 5, name: 'Анализы', selected: false, frequency: 1, notes: '' },
+    { id: 6, name: 'Физиотерапия', selected: false, frequency: 1, notes: '' },
+    { id: 7, name: 'Другая процедура', selected: false, frequency: 1, customName: '', notes: '' },
   ]);
 
   const MEASUREMENT_LABELS: Record<string, string> = {
@@ -65,6 +79,12 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   useEffect(() => {
     loadPatients();
   }, []);
+
+  useEffect(() => {
+    if (initialPatientId != null) {
+      setSelectedPatientId(initialPatientId);
+    }
+  }, [initialPatientId]);
 
   useEffect(() => {
     if (selectedPatientId) {
@@ -119,7 +139,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   };
 
   const handleProcedureFrequency = (id: number, freq: number) => {
-    setProcedures(prev => prev.map(proc => 
+    setProcedures(prev => prev.map(proc =>
       proc.id === id ? { ...proc, frequency: Math.max(1, Math.min(24, freq)) } : proc
     ));
   };
@@ -228,7 +248,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
 
   const handleCancelPrescription = async (p: Prescription) => {
     if (!canCancelPrescription(p)) return;
-    if (!window.confirm(`Отменить назначение «${p.name}»?`)) return;
+    if (!(await appConfirm(`Отменить назначение «${p.name}»?`, { danger: true }))) return;
 
     setCancellingId(p.id);
     setError(null);
@@ -254,83 +274,100 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
   };
 
   if (loading && patients.length === 0) {
-    return <div className="prescriptions-form">Загрузка...</div>;
+    return <div className="pf-page pf-page--loading" ref={pageRef}>Загрузка…</div>;
   }
 
   return (
-    <div className="prescriptions-form">
-      <h2>📋 Создание назначений</h2>
+    <div className="pf-page" ref={pageRef}>
+      {error && <div className="pf-flash pf-flash--error">{error}</div>}
+      {successMessage && <div className="pf-flash pf-flash--success">{successMessage}</div>}
 
-      {error && <div className="error-message">{error}</div>}
-      {successMessage && <div className="success-message">{successMessage}</div>}
-
-      <div className="prescriptions-layout">
-        {/* Левая колонка: форма */}
-        <div className="prescriptions-form-column">
-          {/* Вкладки */}
-          <div className="tabs">
-            <button 
-              className={`tab-btn ${activeTab === 'procedures' ? 'active' : ''}`}
+      <div className="pf-layout">
+        <div className="pf-panel pf-panel--form">
+          <div className="pf-tabs">
+            <button
+              type="button"
+              className={`pf-tab ${activeTab === 'procedures' ? 'active' : ''}`}
               onClick={() => setActiveTab('procedures')}
             >
-              💉 Процедуры
+              Процедуры
             </button>
-            <button 
-              className={`tab-btn ${activeTab === 'measurements' ? 'active' : ''}`}
+            <button
+              type="button"
+              className={`pf-tab ${activeTab === 'measurements' ? 'active' : ''}`}
               onClick={() => setActiveTab('measurements')}
             >
-              📊 Измерения
+              Измерения
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="prescription-form">
-            {/* Выбор пациента */}
-            <div className="form-section">
-              <h3>1. Выберите пациента</h3>
-              <select
-                value={selectedPatientId || ''}
-                onChange={(e) => setSelectedPatientId(Number(e.target.value))}
-                required
-              >
-                <option value="">— Выберите пациента —</option>
-                {patients.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name} {p.bed_id ? `(койка #${p.bed_id})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <form onSubmit={handleSubmit} className="pf-form">
+            <select
+              className="pf-select"
+              value={selectedPatientId || ''}
+              onChange={(e) => {
+                const nextId = e.target.value ? Number(e.target.value) : null;
+                setSelectedPatientId(nextId);
+                onPatientChange?.(nextId);
+              }}
+              required
+            >
+              <option value="">Выберите пациента</option>
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name}
+                  {p.bed_id ? ` · койка #${p.bed_id}` : ''}
+                </option>
+              ))}
+            </select>
 
-            {/* Процедуры */}
             {activeTab === 'procedures' && (
-              <div className="form-section">
-                <h3>2. Выберите процедуры</h3>
-                <div className="checkbox-grid">
-                  {procedures.map(proc => (
-                    <div key={proc.id} className="checkbox-item">
-                      <label>
+              <div className="pf-section">
+                <h3 className="pf-section-title">Выберите процедуры</h3>
+                <div className="pf-checkbox-grid pf-checkbox-grid--procedures">
+                  {procedures.map((proc) => (
+                    <div key={proc.id} className="pf-procedure-item">
+                      <label className={`pf-check ${proc.selected ? 'is-checked' : ''}`}>
                         <input
                           type="checkbox"
                           checked={proc.selected}
                           onChange={() => handleProcedureToggle(proc.id)}
                         />
-                        <span>{proc.name}</span>
+                        <span className="pf-check__box" aria-hidden="true" />
+                        <span className="pf-check__label">{proc.name}</span>
                       </label>
                       {proc.selected && (
-                        <>
-                          <div className="frequency-input">
-                            <label>Раз в день:</label>
+                        <div className="pf-item-options">
+                          <div className="pf-frequency">
+                            <span>Раз в день:</span>
                             <input
                               type="number"
                               min="1"
                               max="24"
                               value={proc.frequency}
-                              onChange={(e) => handleProcedureFrequency(proc.id, Number(e.target.value))}
+                              onChange={(e) =>
+                                handleProcedureFrequency(proc.id, Number(e.target.value))
+                              }
                             />
                           </div>
+                          {proc.id === 7 && (
+                            <input
+                              type="text"
+                              className="pf-item-notes"
+                              placeholder="Название процедуры"
+                              value={proc.customName ?? ''}
+                              onChange={(e) =>
+                                setProcedures((prev) =>
+                                  prev.map((p) =>
+                                    p.id === 7 ? { ...p, customName: e.target.value } : p,
+                                  ),
+                                )
+                              }
+                            />
+                          )}
                           <input
                             type="text"
-                            className="item-notes-input"
+                            className="pf-item-notes"
                             placeholder="Примечание к процедуре"
                             value={proc.notes}
                             onChange={(e) =>
@@ -341,18 +378,7 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
                               )
                             }
                           />
-                        </>
-                      )}
-                      {proc.id === 6 && proc.selected && (
-                        <input
-                          type="text"
-                          placeholder="Название процедуры"
-                          value={proc.customName}
-                          onChange={(e) => setProcedures(prev => 
-                            prev.map(p => p.id === 6 ? { ...p, customName: e.target.value } : p)
-                          )}
-                          className="custom-name-input"
-                        />
+                        </div>
                       )}
                     </div>
                   ))}
@@ -360,36 +386,25 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
               </div>
             )}
 
-            {/* Измерения */}
             {activeTab === 'measurements' && (
-              <div className="form-section">
-                <h3>2. Выберите измерения</h3>
-                <div className="checkbox-grid">
+              <div className="pf-section">
+                <h3 className="pf-section-title">Выберите измерения</h3>
+                <div className="pf-checkbox-grid">
                   {Object.entries(measurements).map(([key, value]) => (
-                    <div key={key} className="checkbox-item">
-                      <label>
+                    <div key={key} className="pf-measure-item">
+                      <label className={`pf-check ${value.selected ? 'is-checked' : ''}`}>
                         <input
                           type="checkbox"
                           checked={value.selected}
                           onChange={() => handleMeasurementToggle(key as keyof typeof measurements)}
                         />
-                        <span>
-                          {key === 'temperature' && '🌡️ Температура'}
-                          {key === 'pulse' && '❤️ Пульс'}
-                          {key === 'blood_pressure' && '🩸 АД'}
-                          {key === 'respiration_rate' && '🌬️ Частота дыхания'}
-                          {key === 'spO2' && '🩺 SpO₂'}
-                          {key === 'weight' && '⚖️ Вес'}
-                          {key === 'fluid_intake_oral' && '💧 Выпито жидкости'}
-                          {key === 'fluid_intake_iv' && '💉 Введено жидкости (парентерально)'}
-                          {key === 'urine_output' && '🚽 Суточное количество мочи'}
-                          {key === 'bowel_movement' && '💩 Стул'}
-                        </span>
+                        <span className="pf-check__box" aria-hidden="true" />
+                        <span className="pf-check__label">{MEASUREMENT_LABELS[key] || key}</span>
                       </label>
                       {value.selected && (
-                        <>
-                          <div className="frequency-input">
-                            <label>Раз в день:</label>
+                        <div className="pf-item-options">
+                          <div className="pf-frequency">
+                            <span>Раз в день:</span>
                             <input
                               type="number"
                               min="1"
@@ -405,17 +420,20 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
                           </div>
                           <input
                             type="text"
-                            className="item-notes-input"
+                            className="pf-item-notes"
                             placeholder="Примечание к измерению"
                             value={value.notes}
                             onChange={(e) =>
                               setMeasurements((prev) => ({
                                 ...prev,
-                                [key]: { ...prev[key as keyof typeof measurements], notes: e.target.value },
+                                [key]: {
+                                  ...prev[key as keyof typeof measurements],
+                                  notes: e.target.value,
+                                },
                               }))
                             }
                           />
-                        </>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -423,55 +441,43 @@ const PrescriptionsForm: React.FC<PrescriptionsFormProps> = ({ onPrescriptionCre
               </div>
             )}
 
-            {/* Примечания */}
-            <div className="form-section">
-              <h3>3. Общие примечания</h3>
-              <textarea
-                placeholder="Общие инструкции ко всему назначению (не к отдельной процедуре)..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
+            <textarea
+              className="pf-comment"
+              placeholder="Комментарий..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+            />
 
-            <button type="submit" disabled={loading || !selectedPatientId}>
-              {loading ? 'Создание...' : '✅ Создать назначения'}
+            <button type="submit" className="pf-submit" disabled={loading || !selectedPatientId}>
+              {loading ? 'Создание…' : 'Создать назначения'}
             </button>
           </form>
         </div>
 
-        {/* Правая колонка: компактный список назначений */}
-        <div className="prescriptions-list-column">
-          <h3>📋 Назначения пациента</h3>
-          
+        <div className="pf-panel pf-panel--list">
+          <h3 className="pf-list-title">Назначения</h3>
+
           {!selectedPatientId ? (
-            <div className="pf-no-patient-selected">
+            <div className="pf-empty">
               <p>Выберите пациента, чтобы увидеть его назначения</p>
             </div>
           ) : packages.length === 0 ? (
-            <div className="empty-list">
+            <div className="pf-empty">
               <p>У пациента пока нет назначений</p>
             </div>
           ) : (
-            <div className="prescriptions-compact-list">
+            <div className="pf-packages">
               {packages.map((pkg) => (
-                <div
+                <button
                   key={pkg.id}
-                  className={`prescription-item status-${pkg.status.toLowerCase()}`}
+                  type="button"
+                  className={`pf-package status-${pkg.status.toLowerCase()}`}
                   onClick={() => setSelectedPackage(pkg)}
                 >
-                  <div className="prescription-item-body">
-                    <div className="prescription-item-name">{formatPackageTitle(pkg)}</div>
-                    {pkg.general_notes && (
-                      <div className="prescription-item-meta">
-                        <span className="notes-indicator">📝 Общие примечания</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="prescription-item-header">
-                    <span className="status-badge">{packageStatusLabel(pkg)}</span>
-                  </div>
-                </div>
+                  <span className="pf-package__name">{formatPackageTitle(pkg)}</span>
+                  <span className="pf-package__status">{packageStatusLabel(pkg)}</span>
+                </button>
               ))}
             </div>
           )}

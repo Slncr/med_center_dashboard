@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
     ALLOW_PUBLIC_ROOM_DISPLAY: bool = True
+    # IP мониторов палат → room_id в БД (палата №3 = id 4): 192.168.0.44=4
+    # Ненадёжно при DHCP — предпочтительнее ROOM_DISPLAY_DEVICE_ROOM_MAP или localStorage на планшете.
+    ROOM_DISPLAY_IP_ROOM_MAP: str = "192.168.0.44=4"
+    # Стабильный device_id из localStorage планшета → room_id: uuid=4,uuid2=5
+    ROOM_DISPLAY_DEVICE_ROOM_MAP: str = ""
 
     MONITORING_API_URL: str = "http://172.191.7.50/api"
     MONITORING_API_TIMEOUT: int = 5
