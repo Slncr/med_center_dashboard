@@ -63,6 +63,7 @@ class PatientBraceletView(BaseModel):
     ble_mac: Optional[str] = None
     room_number: Optional[str] = None
     bed_number: Optional[str] = None
+    admission_date: Optional[str] = None
     online: Optional[bool] = None
     metrics: Dict[str, Any] = Field(default_factory=dict)
     alerts: List[VitalAlertView] = Field(default_factory=list)

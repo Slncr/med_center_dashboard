@@ -1,9 +1,15 @@
 /* Префикс dd- = doctor dashboard */
 .doctor-dashboard {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   background: #fdfdfd;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   --doctor-content-max: 1718px;
   --doctor-content-pad: 32px;
 }
@@ -107,12 +113,18 @@
 /* Основной контент */
 .doctor-main {
   flex: 1;
+  min-height: 0;
   background: #fdfdfd;
   width: 100%;
   max-width: var(--doctor-content-max);
   margin: 0 auto;
   padding: 24px var(--doctor-content-pad);
+  padding-bottom: calc(24px + var(--keyboard-inset, 0px));
   box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .doctor-main--patients {
@@ -667,7 +679,77 @@
   margin: 0 auto;
 }
 
-/* Вкладка "Назначения" */
+/* Вкладка «Отчёты» врача */
+.doctor-reports-view {
+  width: 100%;
+  min-height: 560px;
+}
+
+/* Вкладка «Архив» врача */
+.doctor-archive-view {
+  width: 100%;
+  min-height: 560px;
+}
+
+/* Вкладка «Назначения» — legacy */
+.doctor-prescriptions-view {
+  width: 100%;
+  min-height: 560px;
+}
+
+.dp-rx-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dp-rx-header__text h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.dp-rx-header__stats {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.dp-rx-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: #009aff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.dp-rx-refresh:hover {
+  color: #0077cc;
+}
+
+.dp-rx-refresh__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e5f5fe;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Вкладка "Назначения" — legacy */
 .prescriptions-view {
   padding: 20px 0;
 }

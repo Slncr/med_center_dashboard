@@ -6,13 +6,41 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import { useUrlNumberParam, useUrlOptionalTab } from '../../hooks/useUrlSearchState';
 import { DOCTOR_REPORTS, DoctorReportKind, URL_PARAMS } from '../../utils/urlTabs';
 import './DoctorReportsView.css';
-import '../nurse-station/MedicalForm530n.css';
 
 interface DepartmentRow {
   name: string;
   active: number;
   archived: number;
 }
+
+interface ReportCardConfig {
+  id: DoctorReportKind;
+  title: string;
+  description: string;
+}
+
+const REPORT_CARDS: ReportCardConfig[] = [
+  {
+    id: 'patients',
+    title: 'Статистика по пациентам',
+    description: 'Поступления, выписки и загрузка коечного фонда',
+  },
+  {
+    id: 'prescriptions',
+    title: 'Статистика по назначениям',
+    description: 'Выполнение назначений у активных пациентов',
+  },
+  {
+    id: 'form530n',
+    title: 'Форма 530н',
+    description: 'Просмотр и печать формы для выбранного пациента',
+  },
+  {
+    id: 'department',
+    title: 'Отчёт по отделению',
+    description: 'Распределение пациентов по подразделениям',
+  },
+];
 
 const DoctorReportsView: React.FC = () => {
   const [activeReport, setActiveReport] = useUrlOptionalTab(URL_PARAMS.report, DOCTOR_REPORTS);
@@ -158,10 +186,6 @@ const DoctorReportsView: React.FC = () => {
   );
 
   const openReport = (kind: DoctorReportKind) => {
-    if (activeReport === kind) {
-      setActiveReport(null);
-      return;
-    }
     setActiveReport(kind);
     if (kind === 'form530n' && !form530PatientId && activePatients[0]) {
       setForm530PatientId(activePatients[0].id);
@@ -217,82 +241,65 @@ const DoctorReportsView: React.FC = () => {
   };
 
   return (
-    <div className="doctor-reports">
-      <div className="reports-grid">
-        <div className="report-card">
-          <h3>📊 Статистика по пациентам</h3>
-          <p>Поступления, выписки и загрузка коечного фонда</p>
-          <button type="button" className="report-btn" onClick={() => openReport('patients')}>
-            {activeReport === 'patients' ? 'Скрыть' : 'Сформировать отчёт'}
-          </button>
-        </div>
+    <div className="dr-page">
+      <h2 className="dr-page__title">Медицинские отчёты</h2>
 
-        <div className="report-card">
-          <h3>💊 Статистика по назначениям</h3>
-          <p>Выполнение назначений у активных пациентов</p>
-          <button type="button" className="report-btn" onClick={() => openReport('prescriptions')}>
-            {activeReport === 'prescriptions' ? 'Скрыть' : 'Сформировать отчёт'}
+      <div className="dr-cards">
+        {REPORT_CARDS.map((card) => (
+          <button
+            key={card.id}
+            type="button"
+            className={`dr-card ${activeReport === card.id ? 'is-active' : ''}`}
+            onClick={() => openReport(card.id)}
+          >
+            <div className="dr-card__icon" aria-hidden="true" />
+            <h3 className="dr-card__title">{card.title}</h3>
+            <p className="dr-card__desc">{card.description}</p>
           </button>
-        </div>
-
-        <div className="report-card">
-          <h3>📋 Форма 530н</h3>
-          <p>Просмотр и печать формы для выбранного пациента</p>
-          <button type="button" className="report-btn" onClick={() => openReport('form530n')}>
-            {activeReport === 'form530n' ? 'Скрыть' : 'Открыть форму'}
-          </button>
-        </div>
-
-        <div className="report-card">
-          <h3>🏥 Отчёт по отделению</h3>
-          <p>Распределение пациентов по подразделениям</p>
-          <button type="button" className="report-btn" onClick={() => openReport('department')}>
-            {activeReport === 'department' ? 'Скрыть' : 'Сформировать отчёт'}
-          </button>
-        </div>
+        ))}
       </div>
 
+      {error && <div className="dr-error">{error}</div>}
+
       {activeReport && activeReport !== 'form530n' && loading && (
-        <div className="report-panel loading">
+        <div className="dr-panel dr-panel--loading">
           <LoadingSpinner size="medium" />
-          <p>Загрузка данных...</p>
+          <p>Загрузка данных…</p>
         </div>
       )}
 
-      {error && <div className="report-panel-error">{error}</div>}
-
       {activeReport === 'patients' && !loading && (
-        <div className="report-panel">
-          <div className="report-panel-head">
+        <div className="dr-panel">
+          <div className="dr-panel__head">
             <h3>Статистика по пациентам</h3>
-            <button type="button" className="report-export-btn" onClick={exportPatientStats}>
-              ⬇ CSV
+            <button type="button" className="dr-btn dr-btn-outline" onClick={exportPatientStats}>
+              CSV
             </button>
           </div>
-          <div className="report-stats-grid">
-            <div className="report-stat">
-              <span className="report-stat-label">На лечении</span>
-              <span className="report-stat-value">{patientStats.active}</span>
+          <div className="dr-stats">
+            <div className="dr-stat">
+              <span className="dr-stat__label">На лечении</span>
+              <span className="dr-stat__value">{patientStats.active}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">В архиве</span>
-              <span className="report-stat-value">{patientStats.archived}</span>
+            <div className="dr-stat">
+              <span className="dr-stat__label">В архиве</span>
+              <span className="dr-stat__value">{patientStats.archived}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Поступило сегодня</span>
-              <span className="report-stat-value">{patientStats.admittedToday}</span>
+            <div className="dr-stat">
+              <span className="dr-stat__label">Поступило сегодня</span>
+              <span className="dr-stat__value">{patientStats.admittedToday}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Выписано сегодня</span>
-              <span className="report-stat-value">{patientStats.dischargedToday}</span>
+            <div className="dr-stat">
+              <span className="dr-stat__label">Выписано сегодня</span>
+              <span className="dr-stat__value">{patientStats.dischargedToday}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Выписано за 7 дней</span>
-              <span className="report-stat-value">{patientStats.dischargedWeek}</span>
+            <div className="dr-stat">
+              <span className="dr-stat__label">Выписано за 7 дней</span>
+              <span className="dr-stat__value">{patientStats.dischargedWeek}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Коек / занято / свободно</span>
-              <span className="report-stat-value">
+            <div className="dr-stat">
+              <span className="dr-stat__label">Коек / занято / свободно</span>
+              <span className="dr-stat__value">
                 {patientStats.totalBeds} / {patientStats.occupiedBeds} / {patientStats.freeBeds}
               </span>
             </div>
@@ -301,122 +308,86 @@ const DoctorReportsView: React.FC = () => {
       )}
 
       {activeReport === 'prescriptions' && !loading && (
-        <div className="report-panel">
-          <div className="report-panel-head">
+        <div className="dr-panel">
+          <div className="dr-panel__head">
             <h3>Статистика по назначениям</h3>
-            <button type="button" className="report-export-btn" onClick={exportPrescriptionStats}>
-              ⬇ CSV
+            <button type="button" className="dr-btn dr-btn-outline" onClick={exportPrescriptionStats}>
+              CSV
             </button>
           </div>
-          <div className="report-stats-grid">
-            <div className="report-stat">
-              <span className="report-stat-label">Всего (активные пациенты)</span>
-              <span className="report-stat-value">{prescriptionStats.total}</span>
+          <div className="dr-stats">
+            <div className="dr-stat">
+              <span className="dr-stat__label">Всего (активные пациенты)</span>
+              <span className="dr-stat__value">{prescriptionStats.total}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Создано сегодня</span>
-              <span className="report-stat-value">{prescriptionStats.today}</span>
+            <div className="dr-stat">
+              <span className="dr-stat__label">Создано сегодня</span>
+              <span className="dr-stat__value">{prescriptionStats.today}</span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Активных / выполнено / отменено</span>
-              <span className="report-stat-value">
+            <div className="dr-stat">
+              <span className="dr-stat__label">Активных / выполнено / отменено</span>
+              <span className="dr-stat__value">
                 {prescriptionStats.byStatus.ACTIVE} / {prescriptionStats.byStatus.COMPLETED} /{' '}
                 {prescriptionStats.byStatus.CANCELLED}
               </span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Процедуры / измерения / заметки</span>
-              <span className="report-stat-value">
+            <div className="dr-stat">
+              <span className="dr-stat__label">Процедуры / измерения / заметки</span>
+              <span className="dr-stat__value">
                 {prescriptionStats.byType.PROCEDURE} / {prescriptionStats.byType.MEASUREMENT} /{' '}
                 {prescriptionStats.byType.NOTE}
               </span>
             </div>
-            <div className="report-stat">
-              <span className="report-stat-label">Доля выполненных</span>
-              <span className="report-stat-value">{prescriptionStats.completionRate}%</span>
+            <div className="dr-stat">
+              <span className="dr-stat__label">Доля выполненных</span>
+              <span className="dr-stat__value">{prescriptionStats.completionRate}%</span>
             </div>
           </div>
         </div>
       )}
 
       {activeReport === 'department' && !loading && (
-        <div className="report-panel">
-          <div className="report-panel-head">
+        <div className="dr-panel">
+          <div className="dr-panel__head">
             <h3>Отчёт по подразделениям</h3>
-            <button type="button" className="report-export-btn" onClick={exportDepartmentStats}>
-              ⬇ CSV
+            <button type="button" className="dr-btn dr-btn-outline" onClick={exportDepartmentStats}>
+              CSV
             </button>
           </div>
           {departmentRows.length === 0 ? (
-            <p className="report-empty">Нет данных по подразделениям</p>
+            <p className="dr-empty">Нет данных по подразделениям</p>
           ) : (
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>Подразделение</th>
-                  <th>На лечении</th>
-                  <th>В архиве</th>
-                </tr>
-              </thead>
-              <tbody>
-                {departmentRows.map((row) => (
-                  <tr key={row.name}>
-                    <td>{row.name}</td>
-                    <td>{row.active}</td>
-                    <td>{row.archived}</td>
+            <div className="dr-table-wrap">
+              <table className="dr-table">
+                <thead>
+                  <tr>
+                    <th>Подразделение</th>
+                    <th>На лечении</th>
+                    <th>В архиве</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {departmentRows.map((row) => (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{row.active}</td>
+                      <td>{row.archived}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
 
       {activeReport === 'form530n' && (
-        <div className="report-panel report-panel-form530">
-          <div className="report-form530-toolbar">
-            <label>
-              Пациент:
-              <select
-                value={form530PatientId ?? ''}
-                onChange={(e) => setForm530PatientId(Number(e.target.value) || null)}
-              >
-                <option value="">— Выберите —</option>
-                <optgroup label="На лечении">
-                  {activePatients.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.full_name}
-                    </option>
-                  ))}
-                </optgroup>
-                {archivedPatients.length > 0 && (
-                  <optgroup label="Архив">
-                    {archivedPatients.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.full_name} (архив)
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-            </label>
-            <button
-              type="button"
-              className="report-export-btn"
-              onClick={() => void loadReportData()}
-            >
-              🔄 Обновить список
-            </button>
-          </div>
-          {form530PatientId ? (
-            <MedicalForm530n
-              patientId={form530PatientId}
-              onPatientSelect={setForm530PatientId}
-              patientOptions={allPatientsForForm}
-            />
-          ) : (
-            <p className="report-empty">Выберите пациента для формы 530н</p>
-          )}
+        <div className="dr-form530">
+          <MedicalForm530n
+            patientId={form530PatientId}
+            onPatientSelect={setForm530PatientId}
+            patientOptions={allPatientsForForm}
+          />
         </div>
       )}
     </div>

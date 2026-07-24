@@ -323,7 +323,7 @@ const NurseDashboardPage: React.FC = () => {
         )}
 
         {activeTab === 'form530n' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--form530n">
             <MedicalForm530n
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
@@ -332,7 +332,7 @@ const NurseDashboardPage: React.FC = () => {
         )}
 
         {activeTab === 'bracelets' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--bracelets">
             <BraceletAlertsPanel />
           </div>
         )}
@@ -350,10 +350,12 @@ const NurseDashboardPage: React.FC = () => {
         )}
 
         {activeTab === 'appointments' && (
-          <div className="tab-content">
+          <div className="tab-content tab-content--appointments">
             <AppointmentsView
               patientId={selectedPatientId}
               onPatientSelect={setSelectedPatientId}
+              patientOptions={patients}
+              rooms={rooms}
             />
           </div>
         )}

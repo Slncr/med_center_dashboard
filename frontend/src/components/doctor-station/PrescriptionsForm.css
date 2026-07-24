@@ -1,543 +1,365 @@
-.prescriptions-form {
-  max-width: 1400px; /* Увеличим для двухколоночного макета */
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.prescriptions-form h2 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #2c3e50;
-  font-size: 28px;
-}
-
-/* Вкладки */
-.tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 25px;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 5px;
-}
-
-.tab-btn {
-  padding: 12px 24px;
-  background: none;
-  border: none;
-  font-size: 16px;
-  font-weight: bold;
-  color: #7f8c8d;
-  cursor: pointer;
-  position: relative;
-  border-radius: 4px 4px 0 0;
-  transition: all 0.2s;
-}
-
-.tab-btn:hover {
-  color: #3498db;
-  background: #f8f9fa;
-}
-
-.tab-btn.active {
-  color: #3498db;
-  background: #f8f9fa;
-}
-
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #3498db;
-}
-
-/* Двухколоночный макет */
-.prescriptions-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-top: 20px;
-}
-
-.prescriptions-form-column {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-}
-
-.prescriptions-list-column {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-}
-
-/* Форма — предотвращаем вылезание инпутов за границы колонок/сетки */
-.prescriptions-form-column,
-.prescription-form {
-  min-width: 0;
-}
-
-.prescription-form,
-.prescription-form * {
+/* Префикс pf- = prescriptions form (кабинет врача) */
+.pf-page {
+  width: 100%;
+  padding-bottom: calc(32px + var(--keyboard-inset, 0px));
   box-sizing: border-box;
 }
 
-/* Форма */
-.form-section {
-  margin-bottom: 25px;
+.pf-page--loading {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+}
+
+.pf-flash {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pf-flash--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.pf-flash--success {
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.pf-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.pf-panel {
+  min-height: 520px;
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.pf-panel--list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-tabs {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e5eaf0;
+}
+
+.pf-tab {
+  border: none;
+  background: transparent;
+  padding: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+}
+
+.pf-tab:hover {
+  color: #1e293b;
+}
+
+.pf-tab.active {
+  color: #009aff;
+}
+
+.pf-tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 999px;
+  background: #009aff;
+}
+
+.pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   min-width: 0;
-  overflow: hidden;
 }
 
-.form-section h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #2c3e50;
-  font-size: 20px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.form-section select,
-.form-section input[type="text"],
-.form-section input[type="number"],
-.form-section textarea {
+.pf-select {
   width: 100%;
-  max-width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e5f5fe;
+  border-radius: 10px;
+  font-size: 16px;
+  color: #64748b;
+  background: #f8fcff;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23009aff' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.pf-select:focus {
+  outline: none;
+  border-color: #009aff;
+}
+
+.pf-section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.pf-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.pf-checkbox-grid--procedures {
+  gap: 12px 16px;
+  align-items: start;
+}
+
+.pf-procedure-item,
+.pf-measure-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
-  padding: 12px 15px;
-  border: 1px solid #ddd;
+}
+
+.pf-item-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 32px;
+}
+
+.pf-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  min-width: 0;
+  user-select: none;
+}
+
+.pf-check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pf-check__box {
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pf-check.is-checked .pf-check__box {
+  background: #7ee0c9;
+  border-color: #7ee0c9;
+}
+
+.pf-check.is-checked .pf-check__box::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.pf-check__label {
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.35;
+}
+
+.pf-frequency {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.pf-frequency input {
+  width: 72px;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.pf-item-notes {
+  width: 100%;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #334155;
+  box-sizing: border-box;
+}
+
+.pf-item-notes::placeholder {
+  color: #94a3b8;
+}
+
+.pf-comment {
+  width: 100%;
+  min-height: 110px;
+  padding: 12px 14px;
+  border: 1px solid #e5eaf0;
+  border-radius: 10px;
   font-size: 16px;
   font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.form-section select:focus,
-.form-section input:focus,
-.form-section textarea:focus {
-  outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-}
-
-.form-section textarea {
-  min-height: 100px;
+  color: #1e293b;
   resize: vertical;
-  display: block;
+  box-sizing: border-box;
 }
 
-/* Чекбоксы и сетка */
-.checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
-  gap: 15px;
-  margin-top: 15px;
-  min-width: 0;
+.pf-comment::placeholder {
+  color: #94a3b8;
 }
 
-.checkbox-item {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  padding: 14px;
-  background: #f9fbfd;
-  border: 1px solid #e0e6ed;
-  border-radius: 8px;
-  transition: all 0.2s;
+.pf-comment:focus {
+  outline: none;
+  border-color: #009aff;
 }
 
-.checkbox-item:hover {
-  background: #f1f7ff;
-  border-color: #cbdff0;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.checkbox-item label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  gap: 10px;
-  font-size: 15px;
-  color: #34495e;
-}
-
-.checkbox-item input[type="checkbox"] {
-  margin: 0;
-  transform: scale(1.3);
-  cursor: pointer;
-}
-
-.frequency-input {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed #d1dbe5;
-  min-width: 0;
-}
-
-.frequency-input label {
-  font-size: 14px;
-  color: #7f8c8d;
-  min-width: 100px;
-  font-weight: 500;
-}
-
-.item-notes-input {
+.pf-submit {
   width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.frequency-input input[type="number"] {
-  width: 70px;
-  padding: 8px 10px;
-  text-align: center;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 15px;
-}
-
-.custom-name-input {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  padding: 10px 12px;
-  margin-top: 10px;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 15px;
-  background: #fff;
-}
-
-/* Кнопка отправки */
-.prescription-form button[type="submit"] {
-  width: 100%;
-  background: #3498db;
-  color: white;
+  height: 44px;
   border: none;
-  padding: 16px;
-  font-size: 18px;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
-  margin-top: 10px;
-  box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
-}
-
-.prescription-form button[type="submit"]:hover:not(:disabled) {
-  background: #2980b9;
-  transform: translateY(-2px);
-}
-
-.prescription-form button[type="submit"]:disabled {
-  background: #95a5a6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Сообщения */
-.error-message,
-.success-message {
-  padding: 16px 20px;
-  border-radius: 8px;
-  margin-bottom: 25px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-.error-message {
-  background: #ffebee;
-  color: #c62828;
-  border: 1px solid #ffcdd2;
-}
-
-.success-message {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
-}
-
-/* Список назначений */
-.prescriptions-list-column h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #2c3e50;
-  font-size: 22px;
-  text-align: center;
-}
-
-.pf-no-patient-selected,
-.empty-list {
-  text-align: center;
-  color: #7f8c8d;
-  padding: 40px 20px;
-  font-style: italic;
-  font-size: 18px;
-  line-height: 1.6;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.prescriptions-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 18px;
-}
-
-.prescription-card {
-  background: white;
   border-radius: 10px;
-  padding: 20px;
-  border-left: 4px solid #3498db;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.prescription-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
-}
-
-.prescription-card.status-completed {
-  border-left-color: #27ae60;
-  opacity: 0.9;
-}
-
-.prescription-card.status-cancelled {
-  border-left-color: #e74c3c;
-  opacity: 0.8;
-}
-
-.prescription-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f3f7;
-}
-
-.type-badge {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: bold;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.type-badge.type-procedure {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.type-badge.type-measurement {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
-.type-badge.type-note {
-  background: #fff8e1;
-  color: #ff8f00;
-}
-
-.status-badge {
-  padding: 5px 12px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.status-badge.active {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.status-badge.completed {
-  background: #e8f5e8;
-  color: #2e7d32;
-}
-
-.status-badge.cancelled {
-  background: #ffebee;
-  color: #c62828;
-}
-
-.prescription-body h4 {
-  margin: 0 0 14px 0;
-  color: #1a365d;
-  font-size: 19px;
-  line-height: 1.4;
-}
-
-.prescription-detail {
-  margin-bottom: 10px;
-  color: #4a5568;
-  line-height: 1.6;
+  background: #7ee0c9;
+  color: #ffffff;
   font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.prescription-detail strong {
-  color: #2d3748;
-  font-weight: 600;
-  margin-right: 4px;
+.pf-submit:hover:not(:disabled) {
+  background: #5fd4b8;
 }
 
-.prescription-detail.notes {
-  background: #f8fafc;
-  padding: 14px;
-  border-radius: 8px;
-  margin-top: 12px;
-  border-left: 3px solid #4299e1;
+.pf-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.prescription-meta {
-  margin-top: 15px;
-  padding-top: 12px;
-  border-top: 1px solid #edf2f7;
-  color: #718096;
-  font-size: 14px;
+.pf-list-title {
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-/* Адаптивность */
-@media (max-width: 1100px) {
-  .prescriptions-layout {
-    grid-template-columns: 1fr;
-  }
-  
-  .prescriptions-form {
-    padding: 15px;
-  }
-  
-  .prescriptions-form-column,
-  .prescriptions-list-column {
-    padding: 20px;
-  }
+.pf-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: 24px;
+  border: 1px solid #e5eaf0;
+  border-radius: 12px;
+  background: #ffffff;
 }
 
-@media (max-width: 768px) {
-  .tabs {
-    flex-wrap: wrap;
-  }
-  
-  .tab-btn {
-    padding: 10px 16px;
-    font-size: 14px;
-  }
-  
-  .checkbox-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .frequency-input {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .frequency-input label {
-    min-width: auto;
-  }
+.pf-empty p {
+  margin: 0;
+  max-width: 280px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #94a3b8;
 }
 
-.prescriptions-compact-list {
+.pf-packages {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - 300px);
+  max-height: 460px;
   overflow-y: auto;
-  padding-right: 8px;
 }
 
-.prescription-item {
-  background: white;
-  border-radius: 8px;
-  padding: 14px;
-  border-left: 3px solid #3498db;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  cursor: pointer;
-  transition: all 0.2s;
+.pf-package {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e5eaf0;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s, border-color 0.2s;
 }
 
-.prescription-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-  background: #f8fafc;
+.pf-package:hover {
+  background: #f8fcff;
+  border-color: #cfe8ff;
 }
 
-.prescription-item.status-completed {
-  border-left-color: #27ae60;
+.pf-package__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.pf-package__status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.pf-package.status-completed {
   opacity: 0.85;
 }
 
-.prescription-item.status-cancelled {
-  border-left-color: #e74c3c;
+.pf-package.status-cancelled {
   opacity: 0.7;
 }
 
-.prescription-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.prescription-item-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.prescription-item-name {
-  font-weight: 600;
-  color: #1a365d;
-  font-size: 15px;
-  line-height: 1.4;
-}
-
-.prescription-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.prescription-item-meta .frequency {
-  flex: 1;
-}
-
-.prescription-item-meta .notes-indicator {
-  color: #4299e1;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* Модальное окно */
-.modal-overlay {
+/* Модальное окно деталей назначения */
+.pf-page .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -551,7 +373,7 @@
   padding: 20px;
 }
 
-.modal-content {
+.pf-page .modal-content {
   background: white;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
@@ -563,7 +385,7 @@
   overflow: hidden;
 }
 
-.modal-header {
+.pf-page .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -572,13 +394,13 @@
   background: #f8fafc;
 }
 
-.modal-header h3 {
+.pf-page .modal-header h3 {
   margin: 0;
   color: #1a365d;
   font-size: 22px;
 }
 
-.modal-close-btn {
+.pf-page .modal-close-btn {
   background: none;
   border: none;
   font-size: 28px;
@@ -591,67 +413,43 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
 }
 
-.modal-close-btn:hover {
-  background: #edf2f7;
-  color: #2d3748;
-}
-
-.modal-body {
+.pf-page .modal-body {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
 
-.prescription-detail-row {
+.pf-page .prescription-detail-row {
   display: flex;
   gap: 12px;
   padding: 10px 0;
   border-bottom: 1px solid #f1f5f9;
 }
 
-.prescription-detail-row:last-child {
-  border-bottom: none;
-}
-
-.prescription-detail-row.full-width {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.prescription-detail-row .label {
+.pf-page .prescription-detail-row .label {
   min-width: 120px;
   font-weight: 600;
   color: #4a5568;
   font-size: 14px;
 }
 
-.prescription-detail-row .value {
+.pf-page .prescription-detail-row .value {
   flex: 1;
   color: #2d3748;
   font-size: 15px;
-  line-height: 1.6;
 }
 
-.prescription-detail-row .value.bold {
-  font-weight: 600;
-  color: #1a365d;
-}
-
-.notes-box {
+.pf-page .notes-box {
   background: #f8fafc;
-  border-left: 3px solid #4299e1;
+  border-left: 3px solid #009aff;
   padding: 12px 16px;
   border-radius: 6px;
   font-size: 14px;
-  line-height: 1.6;
-  color: #2d3748;
 }
 
-.modal-actions {
+.pf-page .modal-actions {
   padding: 16px 24px;
   border-top: 1px solid #edf2f7;
   display: flex;
@@ -661,7 +459,7 @@
   background: #f8fafc;
 }
 
-.modal-btn-cancel {
+.pf-page .modal-btn-cancel {
   padding: 10px 18px;
   border: 1px solid #dc2626;
   border-radius: 8px;
@@ -670,19 +468,9 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
-.modal-btn-cancel:hover:not(:disabled) {
-  background: #fee2e2;
-}
-
-.modal-btn-cancel:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.modal-btn-close {
+.pf-page .modal-btn-close {
   background: #e2e8f0;
   color: #4a5568;
   border: none;
@@ -691,32 +479,38 @@
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.modal-btn-close:hover {
-  background: #cbd5e0;
-  color: #2d3748;
+.pf-page .status-badge {
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: bold;
 }
 
-.modal-btn-close:active {
-  transform: scale(0.98);
+.pf-page .type-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
 }
 
-/* Адаптивность */
 @media (max-width: 1100px) {
-  .prescriptions-layout {
+  .pf-layout {
     grid-template-columns: 1fr;
   }
+
+  .pf-panel {
+    min-height: auto;
+  }
+
+  .pf-empty {
+    min-height: 240px;
+  }
 }
 
-@media (max-width: 768px) {
-  .modal-content {
-    max-width: 95%;
-    max-height: 85vh;
-  }
-  
-  .prescriptions-compact-list {
-    max-height: calc(100vh - 250px);
+@media (max-width: 640px) {
+  .pf-checkbox-grid {
+    grid-template-columns: 1fr;
   }
 }

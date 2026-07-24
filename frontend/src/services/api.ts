@@ -5,6 +5,7 @@ import {
   Patient,
   PatientFeatureFlags,
   Room,
+  RoomDisplayBinding,
   PatientSelectResponse, 
   Observation, 
   Procedure, 
@@ -161,6 +162,11 @@ class ApiService {
   // Палаты
   async getRooms(): Promise<Room[]> {
     const response = await this.api.get<Room[]>('/rooms/');
+    return response.data;
+  }
+
+  async getRoomDisplayBinding(): Promise<RoomDisplayBinding> {
+    const response = await this.api.get<RoomDisplayBinding>('/rooms/display-binding');
     return response.data;
   }
 

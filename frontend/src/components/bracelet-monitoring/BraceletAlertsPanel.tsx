@@ -4,6 +4,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import BraceletAlertsToolbar from './BraceletAlertsToolbar';
 import PatientBraceletCard from './PatientBraceletCard';
 import UnassignedBraceletsBar from './UnassignedBraceletsBar';
+import { appAlert } from '../../context/AppDialogContext';
 import './BraceletAlertsPanel.css';
 
 type FilterMode = 'all' | 'alerts' | 'no_mac';
@@ -28,7 +29,7 @@ const BraceletAlertsPanel: React.FC = () => {
   const handleTestMax = async () => {
     try {
       await testMaxBot();
-      window.alert('Тестовое сообщение отправлено в MAX');
+      await appAlert('Тестовое сообщение отправлено в MAX');
     } catch {
       /* error in hook state */
     }
@@ -44,18 +45,18 @@ const BraceletAlertsPanel: React.FC = () => {
 
   return (
     <div className="bracelet-panel">
-      <div className="bracelet-panel__intro">
-        <h2>Мониторинг браслетов</h2>
-        <p>
-          Показатели с BLE-браслетов проверяются каждую минуту. При отклонении пульса или SpO₂
-          отправляется оповещение в чат MAX (повтор — не чаще 15 минут на тот же показатель).
-          На карточке пациента нажмите «Настроить пороги» и включите чекбокс «Свои пороги».
-        </p>
-        <p className="bracelet-panel__norms-hint">
-          Стандартные пороги: пульс, SpO₂, температура, дыхание, давление, вариабельность ЧСС,
-          стресс, сон, батарея. Для каждого пациента можно задать свои в «Настроить пороги».
-        </p>
-      </div>
+      <header className="bracelet-panel__hero">
+        <div className="bracelet-panel__hero-text">
+          <h2 className="bracelet-panel__title">Мониторинг браслетов</h2>
+          <p className="bracelet-panel__subtitle">
+            Показатели с BLE-браслетов проверяются каждую минуту. При отклонении пульса или SpO₂
+            отправляется оповещение в чат MAX (повтор — не чаще 15 минут на тот же показатель…
+            <span className="bracelet-panel__chevron" aria-hidden="true">
+              ▾
+            </span>
+          </p>
+        </div>
+      </header>
 
       <BraceletAlertsToolbar
         overview={overview}
@@ -76,24 +77,24 @@ const BraceletAlertsPanel: React.FC = () => {
       <div className="bracelet-panel__filters">
         <button
           type="button"
-          className={filter === 'all' ? 'active' : ''}
+          className={`bracelet-filter-tab ${filter === 'all' ? 'active' : ''}`}
           onClick={() => setFilter('all')}
         >
-          Все ({overview?.patients.length ?? 0})
+          Все
         </button>
         <button
           type="button"
-          className={filter === 'alerts' ? 'active' : ''}
+          className={`bracelet-filter-tab ${filter === 'alerts' ? 'active' : ''}`}
           onClick={() => setFilter('alerts')}
         >
           С отклонениями
         </button>
         <button
           type="button"
-          className={filter === 'no_mac' ? 'active' : ''}
+          className={`bracelet-filter-tab ${filter === 'no_mac' ? 'active' : ''}`}
           onClick={() => setFilter('no_mac')}
         >
-          Без MAC
+          Без MAX
         </button>
       </div>
 

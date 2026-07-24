@@ -47,6 +47,14 @@ export interface Room {
   beds: Bed[];
 }
 
+export interface RoomDisplayBinding {
+  client_ip: string;
+  device_id?: string | null;
+  room_id: number | null;
+  bound: boolean;
+  source?: 'device' | 'ip' | 'none' | string;
+}
+
 export interface PatientSelectResponse {
   message: string;
   success: boolean;

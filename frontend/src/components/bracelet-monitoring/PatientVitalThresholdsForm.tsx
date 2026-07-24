@@ -11,6 +11,7 @@ import {
   type MetricOverrideForm,
 } from '../../utils/braceletThresholdDefaults';
 import MetricThresholdFields from './MetricThresholdFields';
+import { appAlert, appConfirm } from '../../context/AppDialogContext';
 import './PatientVitalThresholdsForm.css';
 
 interface PatientVitalThresholdsFormProps {
@@ -80,7 +81,7 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
       applyThresholdsData(updated);
       onSaved?.();
       if (!compact && !inModal) {
-        alert('Пороги сохранены');
+        await appAlert('Пороги сохранены');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
@@ -90,7 +91,7 @@ const PatientVitalThresholdsForm: React.FC<PatientVitalThresholdsFormProps> = ({
   };
 
   const handleReset = async () => {
-    if (!window.confirm('Сбросить персональные пороги и использовать стандартные?')) return;
+    if (!(await appConfirm('Сбросить персональные пороги и использовать стандартные?'))) return;
     setSaving(true);
     setError(null);
     try {

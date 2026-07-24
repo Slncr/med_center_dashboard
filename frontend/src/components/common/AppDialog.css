@@ -1,0 +1,78 @@
+.app-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.55);
+  box-sizing: border-box;
+}
+
+.app-dialog {
+  width: min(440px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5eaf0;
+  padding: 24px;
+  box-sizing: border-box;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+}
+
+.app-dialog__title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+}
+
+.app-dialog__message {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #475569;
+  white-space: pre-wrap;
+}
+
+.app-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.app-dialog__btn {
+  min-height: 44px;
+  min-width: 96px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app-dialog__btn--ghost {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.app-dialog__btn--primary {
+  background: #009aff;
+  color: #ffffff;
+}
+
+.app-dialog__btn--danger {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.app-dialog__btn:focus-visible {
+  outline: 2px solid #009aff;
+  outline-offset: 2px;
+}

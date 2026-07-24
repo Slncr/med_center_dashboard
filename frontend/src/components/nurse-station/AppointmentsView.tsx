@@ -1,38 +1,138 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../../services/api';
-import { Patient, Prescription } from '../../types';
+import { Patient, Prescription, Room } from '../../types';
 import { prescriptionProgress } from '../../utils/prescriptionPackages';
 import { getPrescriptionStatusLabel } from '../../utils/formatters';
 import './AppointmentsView.css';
 import './RoomAppointmentsPanel.css';
+import { appConfirm } from '../../context/AppDialogContext';
 
 interface AppointmentsViewProps {
   patientId: number | null;
   onPatientSelect?: (patientId: number) => void;
+  patientOptions?: Patient[];
+  rooms?: Room[];
   /** Полная вкладка «Назначения» или панель на экране «Палаты» */
   variant?: 'full' | 'roomPanel';
 }
 
+const getPatientRoomAndBed = (patient: Patient, rooms: Room[]) => {
+  if (!patient.bed_id) {
+    return { room: undefined, bed: undefined };
+  }
+  for (const room of rooms) {
+    const bed = room.beds.find((item) => item.id === patient.bed_id);
+    if (bed) {
+      return { room, bed };
+    }
+  }
+  return { room: undefined, bed: undefined };
+};
+
+const formatRxDate = (prescription: Prescription): string => {
+  const raw = prescription.start_date || prescription.created_at;
+  try {
+    return new Date(raw).toLocaleDateString('ru-RU');
+  } catch {
+    return '—';
+  }
+};
+
+const getProgressMeta = (prescription: Prescription): { label: string; tone: 'partial' | 'complete' | 'cancelled' } => {
+  if (prescription.status === 'CANCELLED') {
+    return { label: 'Отменено', tone: 'cancelled' };
+  }
+  const req = prescription.executions_required ?? 1;
+  const done = prescription.executions_done ?? 0;
+  const isComplete = prescription.status === 'COMPLETED' || done >= req;
+  return {
+    label: `${isComplete ? req : done}/${req} выполнено`,
+    tone: isComplete ? 'complete' : 'partial',
+  };
+};
+
+const patientMatchesFilter = (
+  patientId: number,
+  filterStatus: 'all' | 'active' | 'completed' | 'cancelled',
+  prescriptionsByPatient: Record<number, Prescription[]>,
+): boolean => {
+  if (filterStatus === 'all') {
+    return true;
+  }
+  const list = (prescriptionsByPatient[patientId] ?? []).filter(
+    (item) => item.prescription_type !== 'NOTE',
+  );
+  if (list.length === 0) {
+    return false;
+  }
+  if (filterStatus === 'active') {
+    return list.some((item) => item.status === 'ACTIVE');
+  }
+  if (filterStatus === 'completed') {
+    return list.some((item) => item.status === 'COMPLETED');
+  }
+  return list.some((item) => item.status === 'CANCELLED');
+};
+
 const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   patientId,
   onPatientSelect,
+  patientOptions,
+  rooms = [],
   variant = 'full',
 }) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(patientId);
   const [selectedPrescriptionIds, setSelectedPrescriptionIds] = useState<number[]>([]);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed' | 'cancelled'>('active');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [totalPrescriptionsCount, setTotalPrescriptionsCount] = useState(0);
+  const [prescriptionsByPatient, setPrescriptionsByPatient] = useState<Record<number, Prescription[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [expandedPrescriptionId, setExpandedPrescriptionId] = useState<number | null>(null);
 
+  const syncAllPrescriptionsData = useCallback(async (patientList: Patient[]) => {
+    if (patientList.length === 0) {
+      setTotalPrescriptionsCount(0);
+      setPrescriptionsByPatient({});
+      return;
+    }
+    try {
+      const pairs = await Promise.all(
+        patientList.map(async (patient) => {
+          const data = await apiService.getPrescriptions(patient.id);
+          return [patient.id, data] as const;
+        }),
+      );
+      const byPatient: Record<number, Prescription[]> = {};
+      let total = 0;
+      for (const [id, list] of pairs) {
+        byPatient[id] = list;
+        total += list.filter((item) => item.prescription_type !== 'NOTE').length;
+      }
+      setPrescriptionsByPatient(byPatient);
+      setTotalPrescriptionsCount(total);
+    } catch {
+      setTotalPrescriptionsCount(0);
+      setPrescriptionsByPatient({});
+    }
+  }, []);
+
   useEffect(() => {
+    if (patientOptions) {
+      setPatients(patientOptions);
+      if (patientOptions.length > 0) {
+        void syncAllPrescriptionsData(patientOptions);
+      }
+      return;
+    }
     if (variant === 'full') {
       void loadPatients();
     }
-  }, [variant]);
+  }, [patientOptions, variant, syncAllPrescriptionsData]);
 
   useEffect(() => {
     if (patientId) {
@@ -48,9 +148,31 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
     try {
       const data = await apiService.getPatients();
       setPatients(data);
+      await syncAllPrescriptionsData(data);
     } catch (err) {
       setError('Ошибка загрузки пациентов');
       console.error(err);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      if (patientOptions) {
+        await syncAllPrescriptionsData(patientOptions);
+      } else {
+        await loadPatients();
+      }
+      if (selectedPatientId) {
+        await loadPrescriptions(selectedPatientId);
+      }
+      const source = patientOptions ?? patients;
+      if (source.length > 0) {
+        await syncAllPrescriptionsData(source);
+      }
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -63,6 +185,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setPrescriptions(sorted);
+      setPrescriptionsByPatient((prev) => ({ ...prev, [patientId]: sorted }));
     } catch (err) {
       setError('Ошибка загрузки назначений');
       console.error(err);
@@ -96,7 +219,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   const handleExecuteSelected = async () => {
     if (selectedPrescriptionIds.length === 0) return;
     
-    if (!window.confirm(`Выполнить ${selectedPrescriptionIds.length} назначений?`)) return;
+    if (!(await appConfirm(`Выполнить ${selectedPrescriptionIds.length} назначений?`))) return;
 
     setLoading(true);
     setError(null);
@@ -114,7 +237,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
       setExpandedPrescriptionId(null);
       
       if (selectedPatientId) {
-        loadPrescriptions(selectedPatientId);
+        await loadPrescriptions(selectedPatientId);
+      }
+      const source = patientOptions ?? patients;
+      if (source.length > 0) {
+        await syncAllPrescriptionsData(source);
       }
     } catch (err) {
       setError('Ошибка выполнения назначений');
@@ -125,7 +252,7 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   };
 
   const handleCancelPrescription = async (prescriptionId: number, prescriptionName: string) => {
-    if (!window.confirm(`Отменить назначение "${prescriptionName}"?`)) return;
+    if (!(await appConfirm(`Отменить назначение "${prescriptionName}"?`, { danger: true }))) return;
 
     setLoading(true);
     setError(null);
@@ -137,7 +264,11 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
       setExpandedPrescriptionId(null);
       
       if (selectedPatientId) {
-        loadPrescriptions(selectedPatientId);
+        await loadPrescriptions(selectedPatientId);
+      }
+      const source = patientOptions ?? patients;
+      if (source.length > 0) {
+        await syncAllPrescriptionsData(source);
       }
     } catch (err) {
       setError('Ошибка отмены назначения');
@@ -154,20 +285,14 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   // Переводы типов назначений
   const getPrescriptionTypeLabel = (type: string) => {
     switch (type) {
-      case 'PROCEDURE': return '💉';
-      case 'MEASUREMENT': return '📊';
-      case 'NOTE': return '📝';
-      default: return '❓';
-    }
-  };
-
-  // Переводы статусов
-  const getPrescriptionStatusLabel = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return 'Активно';
-      case 'COMPLETED': return '✅ Выполнено';
-      case 'CANCELLED': return '❌ Отменено';
-      default: return status;
+      case 'PROCEDURE':
+        return '💉';
+      case 'MEASUREMENT':
+        return '📊';
+      case 'NOTE':
+        return '📝';
+      default:
+        return '❓';
     }
   };
 
@@ -344,187 +469,185 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({
   }
 
   return (
-    <div className="av-container">
-      <div className="av-header">
-        <h2>📋 Назначения пациентов</h2>
-
-        <div className="av-controls">
-          <div className="av-filters">
-            <button 
-              className={`av-filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('all')}
-            >
-              Все ({prescriptions.length})
-            </button>
-            <button 
-              className={`av-filter-btn ${filterStatus === 'active' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('active')}
-            >
-              Активные ({prescriptions.filter(p => p.status === 'ACTIVE').length})
-            </button>
-            <button 
-              className={`av-filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('completed')}
-            >
-              Выполненные ({prescriptions.filter(p => p.status === 'COMPLETED').length})
-            </button>
-            <button 
-              className={`av-filter-btn ${filterStatus === 'cancelled' ? 'active' : ''}`}
-              onClick={() => handleFilterChange('cancelled')}
-            >
-              Отменённые ({prescriptions.filter(p => p.status === 'CANCELLED').length})
-            </button>
-          </div>
-          
-          <button 
-            className={`av-execute-btn ${selectedPrescriptionIds.length > 0 ? 'active' : ''}`}
-            onClick={handleExecuteSelected}
-            disabled={selectedPrescriptionIds.length === 0 || loading}
-          >
-            ✅ Подтвердить ({selectedPrescriptionIds.length})
-          </button>
-        </div>
-      </div>
-
-      {error && <div className="av-error-message">{error}</div>}
-      {successMessage && <div className="av-success-message">{successMessage}</div>}
+    <div className="av-page">
+      {error && <div className="av-flash av-flash--error">{error}</div>}
+      {successMessage && <div className="av-flash av-flash--success">{successMessage}</div>}
 
       <div className="av-layout">
-          <div className="av-patients-column">
-            <h3>👥 Пациенты</h3>
-            <div className="av-patients-list">
-              {patients.map((patient) => (
-                <div
+        <aside className="av-sidebar-panel">
+          <div className="av-filters">
+            <button
+              type="button"
+              className={`av-filter-tab ${filterStatus === 'all' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('all')}
+            >
+              Все
+            </button>
+            <button
+              type="button"
+              className={`av-filter-tab ${filterStatus === 'active' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('active')}
+            >
+              Активные
+            </button>
+            <button
+              type="button"
+              className={`av-filter-tab ${filterStatus === 'completed' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('completed')}
+            >
+              Выполненные
+            </button>
+            <button
+              type="button"
+              className={`av-filter-tab ${filterStatus === 'cancelled' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('cancelled')}
+            >
+              Отмененные
+            </button>
+          </div>
+
+          <div className="av-patients-list">
+            {patients
+              .filter((patient) =>
+                patientMatchesFilter(patient.id, filterStatus, prescriptionsByPatient),
+              )
+              .map((patient) => {
+              const { room, bed } = getPatientRoomAndBed(patient, rooms);
+              return (
+                <button
                   key={patient.id}
-                  className={`av-patient-item ${selectedPatientId === patient.id ? 'selected' : ''}`}
+                  type="button"
+                  className={`av-patient-card ${selectedPatientId === patient.id ? 'selected' : ''}`}
                   onClick={() => handlePatientClick(patient.id)}
                 >
-                  <div className="av-patient-info">
-                    <div className="av-patient-name">{patient.full_name}</div>
-                    <div className="av-patient-meta">
-                      {patient.bed_id && <span>Койка #{patient.bed_id}</span>}
-                      <span>
-                        Поступил:{' '}
-                        {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
+                  <div className="av-patient-name">{patient.full_name}</div>
+                  <div className="av-patient-meta">
+                    {room ? `Палата ${room.number}` : 'Палата —'}
+                    {bed ? `, койка ${bed.number}` : ''}
                   </div>
-                </div>
-              ))}
+                  <div className="av-patient-meta">
+                    Поступил: {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
+                  </div>
+                </button>
+              );
+            })}
+            {patients.filter((patient) =>
+              patientMatchesFilter(patient.id, filterStatus, prescriptionsByPatient),
+            ).length === 0 && (
+              <div className="av-empty av-empty--compact">Нет пациентов для выбранного фильтра</div>
+            )}
+          </div>
+        </aside>
+
+        <section className="av-main-panel">
+          <div className="av-main-head">
+            <div>
+              <h2 className="av-main-title">Назначения пациентов</h2>
+              <p className="av-main-subtitle">всего назначений: {totalPrescriptionsCount}</p>
+            </div>
+            <div className="av-main-head-actions">
+              {selectedPrescriptionIds.length > 0 && (
+                <button
+                  type="button"
+                  className="av-btn av-btn-primary"
+                  onClick={handleExecuteSelected}
+                  disabled={loading}
+                >
+                  Подтвердить ({selectedPrescriptionIds.length})
+                </button>
+              )}
+              <button
+                type="button"
+                className="av-btn av-btn-text"
+                onClick={() => void handleRefresh()}
+                disabled={refreshing || loading}
+              >
+                <span className="av-btn-icon-mark" aria-hidden>↻</span>
+                Обновить
+              </button>
             </div>
           </div>
 
-        <div className="av-prescriptions-column">
-          <h3>📋 Назначения {selectedPatientId ? 'пациента' : '(выберите пациента)'}</h3>
-          
-          {loading ? (
-            <div className="av-loading">Загрузка...</div>
-          ) : selectedPatientId ? (
-            filteredPrescriptions.length > 0 ? (
-              <div className="av-prescriptions-list">
-                {filteredPrescriptions.map(p => (
-                  <React.Fragment key={p.id}>
-                    <div 
-                      className={`av-prescription-item ${getPrescriptionStatusClass(p.status)} ${expandedPrescriptionId === p.id ? 'expanded' : ''}`}
-                      onClick={() => handleToggleExpand(p.id)}
+          <div className="av-main-body">
+            {loading ? (
+              <div className="av-empty">Загрузка…</div>
+            ) : selectedPatientId ? (
+              filteredPrescriptions.length > 0 ? (
+                <div className="av-rx-list">
+                  {filteredPrescriptions.map((p) => {
+                    const progress = getProgressMeta(p);
+                    return (
+                    <div
+                      key={p.id}
+                      className={`av-rx-row ${getPrescriptionStatusClass(p.status)}`}
                     >
-                      <div className="av-presc-checkbox">
+                      <label
+                        className="av-rx-check"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
-                          checked={selectedPrescriptionIds.includes(p.id)}
+                          checked={
+                            p.status === 'COMPLETED' || selectedPrescriptionIds.includes(p.id)
+                          }
                           onChange={() => handleCheckboxChange(p.id)}
                           disabled={p.status !== 'ACTIVE'}
-                          onClick={(e) => e.stopPropagation()}
                         />
-                      </div>
-                      
-                      <div className="av-presc-type">
-                        {getPrescriptionTypeLabel(p.prescription_type)}
-                      </div>
-                      
-                      <div className="av-presc-main">
-                        <div className="av-presc-name" title={p.name}>
-                          {p.name.length > 60 ? `${p.name.substring(0, 60)}...` : p.name}
+                        <span className="av-rx-check-ui" aria-hidden />
+                      </label>
+
+                      <div className="av-rx-body">
+                        <div className="av-rx-name" title={p.name}>
+                          {p.name}
                         </div>
-                        {p.notes && (
-                          <div className="av-presc-notes" title={p.notes}>
-                            📝 {p.notes.length > 50 ? `${p.notes.substring(0, 50)}...` : p.notes}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="av-presc-meta">
-                        <div className="av-presc-freq">
-                          {p.frequency || '—'} · {prescriptionProgress(p)}
+                        <div className="av-rx-freq">
+                          {p.frequency || '—'}
                         </div>
-                        <div className={`av-presc-status ${getPrescriptionStatusClass(p.status)}`}>
-                          {getPrescriptionStatusLabel(p.status)}
-                        </div>
+                        <div className="av-rx-date">{formatRxDate(p)}</div>
                       </div>
-                      
-                      <div className="av-presc-actions">
-                        {p.status === 'ACTIVE' && (
-                          <button 
-                            className="av-cancel-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancelPrescription(p.id, p.name);
-                            }}
-                            title="Отменить"
-                          >
-                            ❌
-                          </button>
-                        )}
+
+                      <div className={`av-rx-progress av-rx-progress--${progress.tone}`}>
+                        <span className="av-rx-dot" aria-hidden />
+                        {progress.label}
                       </div>
+
+                      {p.status === 'ACTIVE' ? (
+                        <button
+                          type="button"
+                          className="av-rx-remove"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleCancelPrescription(p.id, p.name);
+                          }}
+                          title="Отменить"
+                        >
+                          ×
+                        </button>
+                      ) : (
+                        <span className="av-rx-remove-spacer" aria-hidden />
+                      )}
                     </div>
-                    
-                    {/* Раскрытая детальная карточка */}
-                    {expandedPrescriptionId === p.id && (
-                      <div className="av-prescription-detail">
-                        <div className="av-detail-row">
-                          <span className="av-detail-label">Полное название:</span>
-                          <span className="av-detail-value">{p.name}</span>
-                        </div>
-                        {p.notes && (
-                          <div className="av-detail-row">
-                            <span className="av-detail-label">Примечания:</span>
-                            <span className="av-detail-value">{p.notes}</span>
-                          </div>
-                        )}
-                        <div className="av-detail-row">
-                          <span className="av-detail-label">Частота:</span>
-                          <span className="av-detail-value">{p.frequency || '—'}</span>
-                        </div>
-                        <div className="av-detail-row">
-                          <span className="av-detail-label">Статус:</span>
-                          <span className={`av-detail-value ${getPrescriptionStatusClass(p.status)}`}>
-                            {getPrescriptionStatusLabel(p.status)}
-                          </span>
-                        </div>
-                        <div className="av-detail-row">
-                          <span className="av-detail-label">Создано:</span>
-                          <span className="av-detail-value">
-                            {new Date(p.created_at).toLocaleString('ru-RU')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="av-empty">
+                  {filterStatus === 'all'
+                    ? 'У пациента нет назначений'
+                    : `Нет назначений со статусом «${
+                        filterStatus === 'active'
+                          ? 'Активные'
+                          : filterStatus === 'completed'
+                            ? 'Выполненные'
+                            : 'Отмененные'
+                      }»`}
+                </div>
+              )
             ) : (
-              <div className="av-empty-list">
-                {filterStatus === 'all' 
-                  ? 'У пациента нет назначений' 
-                  : `Нет назначений со статусом "${filterStatus === 'active' ? 'Активно' : filterStatus === 'completed' ? 'Выполнено' : 'Отменено'}"`}
-              </div>
-            )
-          ) : (
-            <div className="av-select-patient">
-              <p>👈 Выберите пациента слева</p>
-            </div>
-          )}
-        </div>
+              <div className="av-empty">Выберите пациента слева</div>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );

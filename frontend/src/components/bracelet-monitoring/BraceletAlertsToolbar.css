@@ -1,30 +1,94 @@
+.bracelet-summary {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border: 1px solid #e5eaf0;
+  border-radius: 12px;
+}
+
 .bracelet-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px 20px;
-  padding: 14px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-bottom: 20px;
+  gap: 20px 24px;
 }
 
-.bracelet-toolbar__status {
+.bracelet-toolbar__stats {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bracelet-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-width: 108px;
+  flex: 1;
+  max-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 72px;
+}
+
+.bracelet-stat-card__label {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.bracelet-stat-card__value {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.bracelet-toolbar__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 260px;
+  max-width: 440px;
+}
+
+.bracelet-toolbar__meta,
+.bracelet-toolbar__monitor-line,
+.bracelet-toolbar__warn {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.bracelet-toolbar__meta {
+  color: #64748b;
+}
+
+.bracelet-toolbar__monitor-line {
+  display: inline-flex;
   align-items: center;
-  gap: 8px 14px;
-  font-size: 0.9rem;
-  color: #334155;
+  justify-content: flex-end;
+  gap: 6px;
+  color: #475569;
+  font-weight: 500;
 }
 
 .bracelet-toolbar__dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #94a3b8;
+  flex-shrink: 0;
 }
 
 .bracelet-toolbar__dot.online {
@@ -35,57 +99,70 @@
   background: #ef4444;
 }
 
-.bracelet-toolbar__meta {
-  color: #64748b;
-  font-size: 0.85rem;
-}
-
 .bracelet-toolbar__warn {
-  color: #b45309;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.bracelet-toolbar__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 18px;
-  font-size: 0.9rem;
-  color: #475569;
-}
-
-.bracelet-toolbar__stats .has-alerts {
-  color: #b91c1c;
-  font-weight: 700;
+  color: #94a3b8;
+  max-width: 360px;
 }
 
 .bracelet-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+  margin-top: 4px;
 }
 
-.bracelet-toolbar__actions button {
-  padding: 8px 14px;
+.bracelet-btn {
+  height: 34px;
+  padding: 0 14px;
   border-radius: 8px;
-  border: none;
-  background: #4caf50;
-  color: #fff;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.bracelet-toolbar__actions button:disabled {
-  opacity: 0.6;
+.bracelet-btn-outline {
+  border: 1px solid #009aff;
+  background: #ffffff;
+  color: #009aff;
+}
+
+.bracelet-btn-outline:hover:not(:disabled) {
+  background: #e5f5fe;
+}
+
+.bracelet-btn:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-.bracelet-toolbar__actions button.secondary {
-  background: #e2e8f0;
-  color: #334155;
+@media (max-width: 900px) {
+  .bracelet-toolbar__side {
+    align-items: flex-start;
+    max-width: none;
+    width: 100%;
+  }
+
+  .bracelet-toolbar__meta,
+  .bracelet-toolbar__monitor-line,
+  .bracelet-toolbar__warn {
+    text-align: left;
+  }
+
+  .bracelet-toolbar__monitor-line {
+    justify-content: flex-start;
+  }
+
+  .bracelet-toolbar__actions {
+    justify-content: flex-start;
+  }
 }
 
-.bracelet-toolbar__actions button:hover:not(:disabled) {
-  filter: brightness(0.95);
+@media (max-width: 640px) {
+  .bracelet-stat-card {
+    max-width: none;
+    min-width: calc(50% - 5px);
+  }
 }

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { BraceletOverview, DistributeBraceletsResult } from '../../types/braceletAlerts';
 import { apiService } from '../../services/api';
-import UnassignedBraceletRow from './UnassignedBraceletRow';
+import { appConfirm } from '../../context/AppDialogContext';
 import './UnassignedBraceletsBar.css';
 
 interface UnassignedBraceletsBarProps {
@@ -9,10 +9,24 @@ interface UnassignedBraceletsBarProps {
   onDistributed: () => void;
 }
 
+function patientOptionLabel(p: {
+  patient_name: string;
+  room_number?: string | null;
+  bed_number?: string | null;
+}): string {
+  const parts = [p.patient_name];
+  if (p.room_number) parts.push(`пал. ${p.room_number}`);
+  if (p.bed_number) parts.push(`койка ${p.bed_number}`);
+  return parts.join(' · ');
+}
+
 const UnassignedBraceletsBar: React.FC<UnassignedBraceletsBarProps> = ({
   overview,
   onDistributed,
 }) => {
+  const [patientId, setPatientId] = useState('');
+  const [deviceMac, setDeviceMac] = useState('');
+  const [assigning, setAssigning] = useState(false);
   const [distributing, setDistributing] = useState(false);
   const [lastResult, setLastResult] = useState<DistributeBraceletsResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,24 +36,35 @@ const UnassignedBraceletsBar: React.FC<UnassignedBraceletsBarProps> = ({
     [overview?.patients],
   );
 
+  const unassigned = overview?.unassigned_devices ?? [];
+  const canAssign = Boolean(patientId && deviceMac);
+  const canAutoDistribute = unassigned.length > 0 && patientsWithoutMac.length > 0;
+
   if (!overview) return null;
 
-  const unassigned = overview.unassigned_devices ?? [];
-  const withoutMacCount = patientsWithoutMac.length;
-
-  if (unassigned.length === 0 && withoutMacCount === 0 && !lastResult) {
-    return null;
-  }
-
-  const canAutoDistribute = unassigned.length > 0 && withoutMacCount > 0;
+  const handleAssign = async () => {
+    if (!canAssign) return;
+    setAssigning(true);
+    setError(null);
+    try {
+      await apiService.assignBracelet(Number(patientId), deviceMac);
+      setPatientId('');
+      setDeviceMac('');
+      setLastResult(null);
+      onDistributed();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка привязки');
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   const handleDistribute = async () => {
     if (!canAutoDistribute) return;
     if (
-      !window.confirm(
-        `Привязать ${Math.min(unassigned.length, withoutMacCount)} браслет(ов) автоматически? ` +
-          'Порядок: по палате и койке.',
-      )
+      !(await appConfirm(
+        `Привязать ${Math.min(unassigned.length, patientsWithoutMac.length)} браслет(ов) автоматически?`,
+      ))
     ) {
       return;
     }
@@ -56,66 +81,75 @@ const UnassignedBraceletsBar: React.FC<UnassignedBraceletsBarProps> = ({
     }
   };
 
-  const handleAssigned = () => {
-    setLastResult(null);
-    onDistributed();
-  };
-
   return (
-    <section className="unassigned-bracelets-bar">
-      <div className="unassigned-bracelets-bar__header">
-        <div>
-          <h3>Свободные браслеты</h3>
-          <p>
-            Выберите пациента для каждого браслета или привяжите все сразу. Свободных:{' '}
-            <strong>{unassigned.length}</strong> · пациентов без MAC:{' '}
-            <strong>{withoutMacCount}</strong>
-          </p>
-        </div>
+    <section className="bracelet-assign">
+      <div className="bracelet-assign__head">
+        <h3 className="bracelet-assign__title">Привязать браслет</h3>
+        <span className="bracelet-assign__hint-inline">
+          выберите пациента для каждого браслета
+          {canAutoDistribute ? (
+            <>
+              {' '}
+              или{' '}
+              <button
+                type="button"
+                className="bracelet-assign__link"
+                disabled={distributing}
+                onClick={() => void handleDistribute()}
+              >
+                {distributing ? 'привязка…' : 'привяжите все сразу'}
+              </button>
+            </>
+          ) : (
+            ' или привяжите все сразу'
+          )}
+        </span>
+      </div>
+
+      <div className="bracelet-assign__row">
+        <select
+          className="bracelet-assign__select"
+          value={patientId}
+          onChange={(e) => setPatientId(e.target.value)}
+          disabled={patientsWithoutMac.length === 0}
+        >
+          <option value="">Выберите пациента</option>
+          {patientsWithoutMac.map((p) => (
+            <option key={p.patient_id} value={String(p.patient_id)}>
+              {patientOptionLabel(p)}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="bracelet-assign__select"
+          value={deviceMac}
+          onChange={(e) => setDeviceMac(e.target.value)}
+          disabled={unassigned.length === 0}
+        >
+          <option value="">Выберите браслет</option>
+          {unassigned.map((device) => (
+            <option key={device.mac} value={device.mac}>
+              {device.mac}
+              {device.online ? ' · онлайн' : ' · офлайн'}
+            </option>
+          ))}
+        </select>
+
         <button
           type="button"
-          className="unassigned-bracelets-bar__distribute"
-          disabled={!canAutoDistribute || distributing}
-          onClick={() => void handleDistribute()}
+          className="bracelet-btn bracelet-btn-primary"
+          disabled={!canAssign || assigning}
+          onClick={() => void handleAssign()}
         >
-          {distributing
-            ? 'Привязка…'
-            : canAutoDistribute
-              ? `Привязать все (${Math.min(unassigned.length, withoutMacCount)})`
-              : 'Авто: нечего'}
+          {assigning ? 'Привязка…' : 'Привязать'}
         </button>
       </div>
 
-      {error && <div className="unassigned-bracelets-bar__error">{error}</div>}
+      {error && <div className="bracelet-assign__error">{error}</div>}
 
       {lastResult && lastResult.assigned_count > 0 && (
-        <div className="unassigned-bracelets-bar__success">
-          {lastResult.message}
-          <ul>
-            {lastResult.pairs.map((pair) => (
-              <li key={pair.patient_id}>
-                {pair.patient_name}
-                {pair.room_number ? ` (палата ${pair.room_number}` : ''}
-                {pair.bed_number ? `, койка ${pair.bed_number})` : pair.room_number ? ')' : ''}
-                {' → '}
-                <code>{pair.ble_mac}</code>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {unassigned.length > 0 && (
-        <div className="unassigned-bracelets-bar__list">
-          {unassigned.map((device) => (
-            <UnassignedBraceletRow
-              key={device.mac}
-              device={device}
-              patientsWithoutMac={patientsWithoutMac}
-              onAssigned={handleAssigned}
-            />
-          ))}
-        </div>
+        <div className="bracelet-assign__success">{lastResult.message}</div>
       )}
     </section>
   );

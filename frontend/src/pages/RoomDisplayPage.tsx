@@ -39,18 +39,42 @@ const ROOM_FLAG_ORDER: PatientFlagKey[] = [
 
 const metricImage = (name: string) => `${process.env.PUBLIC_URL}/images/${name}`;
 
-const PRIMARY_METRICS: Array<{
+const GRID_METRICS: Array<{
   key: string;
   label: string;
   aliases: string[];
   icon: string;
 }> = [
-  { key: 'temp', label: 'Температура', aliases: ['temp', 'temperature'], icon: 'temp-chel.png' },
-  { key: 'pulse', label: 'Пульс', aliases: ['pulse', 'hr', 'puls', 'pulse_rate', 'bpm'], icon: 'pulse.png' },
   { key: 'press', label: 'Арт. давление', aliases: ['press', 'bp'], icon: 'art-davl.png' },
+  { key: 'temp', label: 'Температура', aliases: ['temp', 'temperature'], icon: 'temp-chel.png' },
   { key: 'spo2', label: 'SpO₂', aliases: ['spo2', 'sp_o2', 'oxygen'], icon: 'spo2.png' },
-  { key: 'sleep', label: 'Сон', aliases: ['sleep'], icon: 'sleep.png' },
+  { key: 'pulse', label: 'Пульс', aliases: ['pulse', 'hr', 'puls', 'pulse_rate', 'bpm'], icon: 'pulse.png' },
 ];
+
+const SLEEP_METRIC = {
+  key: 'sleep',
+  label: 'Сон',
+  aliases: ['sleep'],
+  icon: 'sleep.png',
+} as const;
+
+/** Систолическое давление из «120/80» или числа — для подсветки отклонения. */
+const parseSystolic = (raw: unknown): number | null => {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const text = String(unwrapMetric(raw));
+  if (text.includes('/')) {
+    const n = Number(text.split('/')[0]);
+    return Number.isNaN(n) ? null : n;
+  }
+  const n = Number(text);
+  return Number.isNaN(n) ? null : n;
+};
+
+const isPressAlert = (raw: unknown): boolean => {
+  const sys = parseSystolic(raw);
+  if (sys == null) return false;
+  return sys < 90 || sys > 140;
+};
 
 const ATM_METRIC_IMAGES: Record<'temp' | 'hum' | 'press', string> = {
   temp: 'temperatura.png',
@@ -160,10 +184,11 @@ const RoomDisplayPage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
+  const [isIpBoundMonitor, setIsIpBoundMonitor] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const monitorId = monitorIdFromPath ?? searchParams.get('monitorId') ?? searchParams.get('monitor_id');
-  const isTestMode = !monitorId;
+  const isTestMode = !monitorId && !isIpBoundMonitor;
   const useLegacyLayout = searchParams.get('legacy') === '1';
 
   useEffect(() => {
@@ -181,9 +206,18 @@ const RoomDisplayPage: React.FC = () => {
   useEffect(() => {
     const loadRooms = async () => {
       try {
-        const roomsData = await apiService.getRooms();
+        const [roomsData, displayBinding] = await Promise.all([
+          apiService.getRooms(),
+          apiService.getRoomDisplayBinding().catch(() => ({
+            client_ip: '',
+            room_id: null,
+            bound: false,
+          })),
+        ]);
         setRooms(roomsData);
         setApiConnected(true);
+        setIsIpBoundMonitor(displayBinding.bound && displayBinding.room_id != null);
+
         if (roomsData.length === 0) {
           setError('Нет данных о палатах');
           return;
@@ -211,6 +245,16 @@ const RoomDisplayPage: React.FC = () => {
               return;
             }
           }
+        }
+
+        if (displayBinding.bound && displayBinding.room_id != null) {
+          const matched = roomsData.find((room) => room.id === displayBinding.room_id);
+          if (matched) {
+            setActiveRoomId(matched.id);
+            return;
+          }
+          setError(`Монитор (${displayBinding.client_ip}) привязан к несуществующей палате`);
+          return;
         }
 
         setActiveRoomId(roomsData[0].id);
@@ -380,82 +424,129 @@ const RoomDisplayPage: React.FC = () => {
 
       <main className="rdv2-main">
         <div className="rdv2-beds-list">
-        {activeRoom ? (
-          roomBeds.map((bed) => {
-            const isOccupied = Boolean(bed.patient);
-            const bedData = bedMetricsMap.get(bed.id);
-            const metrics = bedData?.ble?.metrics ?? {};
-            const activeFlags = isOccupied
-              ? activePatientFlagStatuses(bed.patient).sort(
-                  (a, b) => ROOM_FLAG_ORDER.indexOf(a.key) - ROOM_FLAG_ORDER.indexOf(b.key),
-                )
-              : [];
-            const metricCards = PRIMARY_METRICS.map((metric) => {
-              const parts = isOccupied
-                ? pickMetricParts(metrics, metric.key, metric.aliases)
+          {activeRoom ? (
+            roomBeds.map((bed) => {
+              const isOccupied = Boolean(bed.patient);
+              const bedData = bedMetricsMap.get(bed.id);
+              const metrics = bedData?.ble?.metrics ?? {};
+              const activeFlags = isOccupied
+                ? activePatientFlagStatuses(bed.patient).sort(
+                    (a, b) => ROOM_FLAG_ORDER.indexOf(a.key) - ROOM_FLAG_ORDER.indexOf(b.key),
+                  )
+                : [];
+
+              const pressEntry = Object.entries(metrics).find(([k, v]) => {
+                if (v === null || v === undefined || v === '') return false;
+                const key = normalizeMetricKey(k);
+                return key === 'press' || key === 'bp';
+              });
+              const pressRaw = pressEntry?.[1];
+              const hasAlert = isOccupied && isPressAlert(pressRaw);
+
+              const sleepParts = isOccupied
+                ? pickMetricParts(metrics, SLEEP_METRIC.key, [...SLEEP_METRIC.aliases])
                 : { value: '—', unit: '' };
-              return {
-                key: metric.key,
-                label: metric.label,
-                value: parts.value,
-                unit: parts.unit,
-                icon: metric.icon,
-              };
-            });
 
-            return (
-              <article key={bed.id} className={`rdv2-bed-card ${isOccupied ? 'occupied' : 'free'}`}>
-                <div className="rdv2-bed-card-body">
-                  <div className="rdv2-patient-side">
-                    {activeFlags.length > 0 && (
-                      <div className="rdv2-status-flags" aria-label="Статусы пациента">
-                        {activeFlags.map((flag) => (
-                          <span
-                            key={flag.key}
-                            className={`rdv2-flag rdv2-flag--${flag.color} is-active`}
-                            title={flag.label}
-                          >
-                            <span className="rdv2-flag-icon-slot" aria-hidden />
-                          </span>
-                        ))}
+              const metricCards = GRID_METRICS.map((metric) => {
+                const parts = isOccupied
+                  ? pickMetricParts(metrics, metric.key, metric.aliases)
+                  : { value: '—', unit: '' };
+                return {
+                  key: metric.key,
+                  label: metric.label,
+                  value: parts.value,
+                  unit: parts.unit,
+                  icon: metric.icon,
+                  alert: metric.key === 'press' && hasAlert,
+                };
+              });
+
+              return (
+                <article
+                  key={bed.id}
+                  className={`rdv2-bed-card ${isOccupied ? 'occupied' : 'free'}${
+                    hasAlert ? ' has-alert' : ''
+                  }`}
+                >
+                  <div className="rdv2-bed-card-body">
+                    <div className="rdv2-patient-side">
+                      {activeFlags.length > 0 && (
+                        <div className="rdv2-status-flags" aria-label="Статусы пациента">
+                          {activeFlags.map((flag) => (
+                            <span
+                              key={flag.key}
+                              className={`rdv2-flag rdv2-flag--${flag.color} is-active`}
+                              title={flag.label}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      <div
+                        className={`rdv2-avatar-box ${isOccupied ? 'occupied' : 'free'}${
+                          hasAlert ? ' has-alert' : ''
+                        }`}
+                      >
+                        <PatientAvatarIcon />
+                        <span className="rdv2-bed-label">Койка №{bed.number}</span>
                       </div>
-                    )}
-                    <div className={`rdv2-avatar-box ${isOccupied ? 'occupied' : 'free'}`}>
-                      <PatientAvatarIcon />
-                    </div>
-                  </div>
 
-                  <div className="rdv2-metrics-grid">
-                    {metricCards.map((metric) => (
-                      <div key={metric.key} className={`rdv2-metric-card rdv2-metric-card--${metric.key}`}>
-                        <span className="rdv2-metric-icon-wrap" aria-hidden>
+                      <div className="rdv2-sleep-card">
+                        <span className="rdv2-sleep-icon-wrap" aria-hidden>
                           <img
-                            className="rdv2-metric-icon"
-                            src={metricImage(metric.icon)}
+                            className="rdv2-sleep-icon"
+                            src={metricImage(SLEEP_METRIC.icon)}
                             alt=""
                           />
                         </span>
-                        <div className="rdv2-metric-text">
-                          <span className="rdv2-metric-label">{metric.label}</span>
-                          <strong className="rdv2-metric-value">{metric.value}</strong>
-                          {metric.unit ? (
-                            <span className="rdv2-metric-unit">{metric.unit}</span>
-                          ) : null}
+                        <div className="rdv2-sleep-text">
+                          <span className="rdv2-sleep-label">{SLEEP_METRIC.label}</span>
+                          <strong className="rdv2-sleep-value">{sleepParts.value}</strong>
                         </div>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="rdv2-metrics-grid">
+                      {metricCards.map((metric) => (
+                        <div
+                          key={metric.key}
+                          className={`rdv2-metric-card rdv2-metric-card--${metric.key}${
+                            metric.alert ? ' is-alert' : ''
+                          }`}
+                        >
+                          <span className="rdv2-metric-icon-wrap" aria-hidden>
+                            <img
+                              className="rdv2-metric-icon"
+                              src={metricImage(metric.icon)}
+                              alt=""
+                            />
+                          </span>
+                          <div className="rdv2-metric-text">
+                            <span className="rdv2-metric-label">{metric.label}</span>
+                            <strong className="rdv2-metric-value">
+                              {metric.key === 'temp' && metric.unit
+                                ? `${metric.value} ${metric.unit}`
+                                : metric.value}
+                            </strong>
+                            {metric.unit && metric.key !== 'temp' ? (
+                              <span className="rdv2-metric-unit">{metric.unit}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })
-        ) : (
-          <div className="empty-state">Палата не найдена</div>
-        )}
+                </article>
+              );
+            })
+          ) : (
+            <div className="empty-state">Палата не найдена</div>
+          )}
         </div>
       </main>
 
       <footer className="rdv2-atmosphere-footer">
+        <h2 className="rdv2-atmosphere-title">Атмосфера палаты</h2>
         <div className="rdv2-atmosphere-row">
           {(['temp', 'hum', 'press'] as const).map((key) => {
             const parts = formatAtmosphereParts(key, atmosphere?.[key]);

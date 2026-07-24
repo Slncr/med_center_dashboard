@@ -1,17 +1,24 @@
 /* Префикс ml- = main layout */
 .ml-container {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+  overflow: hidden;
 }
 
 .ml-main-content {
   flex: 1;
-  /* padding: 24px; */
+  min-height: 0;
   max-width: 100%;
   margin: 0 auto;
   width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* .ml-footer {

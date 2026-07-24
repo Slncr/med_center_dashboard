@@ -6,7 +6,6 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import PatientCard from '../components/nurse-station/PatientCard';
 import PatientList from '../components/nurse-station/PatientList';
 import PrescriptionsForm from '../components/doctor-station/PrescriptionsForm';
-import PrescriptionsList from '../components/doctor-station/PrescriptionsList';
 import DoctorReportsView from '../components/doctor-station/DoctorReportsView';
 import ArchivedPatientsPanel from '../components/shared/ArchivedPatientsPanel';
 import { useUrlNumberParam, useUrlTab } from '../hooks/useUrlSearchState';
@@ -157,13 +156,13 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
           className={`nav-button ${activeView === 'patients' ? 'active' : ''}`}
           onClick={() => switchView('patients')}
         >
-          Пациенты ({patients.length})
+          Пациенты
         </button>
         <button 
           className={`nav-button ${activeView === 'prescriptions' ? 'active' : ''}`}
           onClick={() => switchView('prescriptions')}
         >
-          Назначения ({activePrescriptionsCount})
+          Назначения
         </button>
         <button 
           className={`nav-button ${activeView === 'reports' ? 'active' : ''}`}
@@ -193,51 +192,36 @@ const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ onPatientsUpd
         )}
 
         {activeView === 'prescriptions' && (
-          <div className="prescriptions-view">
-            <div className="view-header">
-              <h2>Назначения пациентов</h2>
-              <div className="view-controls">
-                <button onClick={refetchPatients} className="refresh-btn">
-                  🔄 Обновить
-                </button>
+          <div className="doctor-prescriptions-view">
+            <header className="dp-rx-header">
+              <div className="dp-rx-header__text">
+                <h2>Назначения пациентов</h2>
+                <p className="dp-rx-header__stats">Всего назначений: {activePrescriptionsCount}</p>
               </div>
-            </div>
-            
-            <div className="prescriptions-container">
-              <div className="prescriptions-form-section">
-                <PrescriptionsForm
-                  onPrescriptionCreated={refetchPatients}
-                  initialPatientId={prescriptionPatientId}
-                  onPatientChange={setPrescriptionPatientId}
-                />
-              </div>
-              
-              {prescriptionPatientId && (
-                <div className="prescriptions-list-section">
-                  <PrescriptionsList 
-                    patientId={prescriptionPatientId} 
-                    onPrescriptionCompleted={refetchPatients} 
-                  />
-                </div>
-              )}
-            </div>
+              <button type="button" className="dp-rx-refresh" onClick={() => void refetchPatients()}>
+                <span className="dp-rx-refresh__icon" aria-hidden="true">
+                  ↻
+                </span>
+                Обновить
+              </button>
+            </header>
+
+            <PrescriptionsForm
+              onPrescriptionCreated={refetchPatients}
+              initialPatientId={prescriptionPatientId}
+              onPatientChange={setPrescriptionPatientId}
+            />
           </div>
         )}
 
         {activeView === 'reports' && (
-          <div className="reports-view">
-            <div className="view-header">
-              <h2>Медицинские отчёты</h2>
-            </div>
+          <div className="doctor-reports-view">
             <DoctorReportsView />
           </div>
         )}
 
         {activeView === 'archive' && (
-          <div className="patients-view">
-            <div className="view-header">
-              <h2>Архив пациентов</h2>
-            </div>
+          <div className="doctor-archive-view">
             <ArchivedPatientsPanel allowRestore onRestored={() => void refetchPatients()} />
           </div>
         )}

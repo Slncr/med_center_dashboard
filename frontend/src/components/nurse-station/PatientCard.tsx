@@ -16,6 +16,7 @@ import TruncateText from '../common/TruncateText';
 import PrescriptionPackageModal from './PrescriptionPackageModal';
 import { PatientVitalThresholdsForm } from '../bracelet-monitoring';
 import type { PatientCardTab } from '../../utils/urlTabs';
+import { appAlert, appConfirm } from '../../context/AppDialogContext';
 import './PatientCard.css';
 
 interface PatientCardProps {
@@ -106,11 +107,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
 
   const handleArchive = async () => {
     if (!patient) return;
-    if (!window.confirm('Вы уверены, что хотите выписать пациента?')) return;
+    if (!(await appConfirm('Вы уверены, что хотите выписать пациента?', { danger: true }))) return;
 
     try {
       await apiService.archivePatient(patient.id);
-      alert('Пациент выписан');
+      await appAlert('Пациент выписан');
       if (onPatientArchived) onPatientArchived();
       onClose();
     } catch (err) {

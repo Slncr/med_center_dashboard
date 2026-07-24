@@ -35,6 +35,7 @@ export interface PatientBraceletStatus {
   ble_mac?: string | null;
   room_number?: string | null;
   bed_number?: string | null;
+  admission_date?: string | null;
   online?: boolean | null;
   metrics: Record<string, number | string | boolean | null>;
   alerts: VitalAlert[];

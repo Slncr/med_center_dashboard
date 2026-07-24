@@ -1,16 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../../services/api';
 import { Patient, Room } from '../../types';
 import PatientCard from '../nurse-station/PatientCard';
 import { useUrlNumberParam, useUrlTab } from '../../hooks/useUrlSearchState';
 import { PATIENT_CARD_TABS, URL_PARAMS } from '../../utils/urlTabs';
-import '../nurse-station/PatientList.css';
+import { appConfirm } from '../../context/AppDialogContext';
 import './ArchivedPatientsPanel.css';
 
 interface ArchivedPatientsPanelProps {
   /** Показать кнопку «Вернуть из архива» */
   allowRestore?: boolean;
   onRestored?: () => void;
+}
+
+type SortKey = 'room' | 'admission' | 'discharge';
+type SortDir = 'asc' | 'desc';
+
+function formatDate(iso?: string | null): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('ru-RU');
+  } catch {
+    return '—';
+  }
+}
+
+function formatBedNumber(value: number | string | undefined): string {
+  if (value === undefined || value === null || value === '') return '—';
+  const n = Number(value);
+  if (!Number.isNaN(n) && Number.isInteger(n)) {
+    return String(n).padStart(2, '0');
+  }
+  return String(value);
 }
 
 const ArchivedPatientsPanel: React.FC<ArchivedPatientsPanelProps> = ({
@@ -24,6 +45,8 @@ const ArchivedPatientsPanel: React.FC<ArchivedPatientsPanelProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<number | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -47,17 +70,61 @@ const ArchivedPatientsPanel: React.FC<ArchivedPatientsPanelProps> = ({
     void loadData();
   }, [loadData]);
 
-  const getPatientRoomAndBed = (patient: Patient) => {
-    if (!patient.bed_id) return { room: undefined, bed: undefined };
-    for (const room of rooms) {
-      const bed = room.beds.find((b) => b.id === patient.bed_id);
-      if (bed) return { room, bed };
+  const getPatientRoomAndBed = useCallback(
+    (patient: Patient) => {
+      if (!patient.bed_id) return { room: undefined, bed: undefined };
+      for (const room of rooms) {
+        const bed = room.beds.find((b) => b.id === patient.bed_id);
+        if (bed) return { room, bed };
+      }
+      return { room: undefined, bed: undefined };
+    },
+    [rooms],
+  );
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
     }
-    return { room: undefined, bed: undefined };
+    setSortKey(key);
+    setSortDir('asc');
   };
 
+  const sortedPatients = useMemo(() => {
+    if (!sortKey) return archivedPatients;
+
+    const list = [...archivedPatients];
+    const dir = sortDir === 'asc' ? 1 : -1;
+
+    list.sort((a, b) => {
+      if (sortKey === 'room') {
+        const roomA = getPatientRoomAndBed(a).room?.number ?? '';
+        const roomB = getPatientRoomAndBed(b).room?.number ?? '';
+        const numA = Number(roomA);
+        const numB = Number(roomB);
+        if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+          return (numA - numB) * dir;
+        }
+        return String(roomA).localeCompare(String(roomB), 'ru') * dir;
+      }
+
+      if (sortKey === 'admission') {
+        return (
+          (new Date(a.admission_date).getTime() - new Date(b.admission_date).getTime()) * dir
+        );
+      }
+
+      const dateA = a.discharge_date ? new Date(a.discharge_date).getTime() : 0;
+      const dateB = b.discharge_date ? new Date(b.discharge_date).getTime() : 0;
+      return (dateA - dateB) * dir;
+    });
+
+    return list;
+  }, [archivedPatients, sortKey, sortDir, getPatientRoomAndBed]);
+
   const handleRestore = async (patientId: number) => {
-    if (!window.confirm('Вернуть пациента из архива в активные?')) return;
+    if (!(await appConfirm('Вернуть пациента из архива в активные?'))) return;
     setRestoringId(patientId);
     setError(null);
     try {
@@ -83,92 +150,93 @@ const ArchivedPatientsPanel: React.FC<ArchivedPatientsPanelProps> = ({
     setModalPatientId(null, { [URL_PARAMS.cardTab]: null });
   };
 
+  const sortIcon = (key: SortKey) => {
+    if (sortKey !== key) return '↕';
+    return sortDir === 'asc' ? '↑' : '↓';
+  };
+
   return (
     <div className="archived-panel">
-      <div className="archived-panel-toolbar">
-        <p className="archived-panel-hint">
-          Выписанные пациенты. Откройте карточку, чтобы посмотреть наблюдения, назначения и прочие данные.
-        </p>
-        <button type="button" className="archived-refresh-btn" onClick={() => void loadData()} disabled={loading}>
-          🔄 Обновить
-        </button>
-      </div>
+      <h2 className="archived-panel__title">Архив пациентов</h2>
 
       {loading && archivedPatients.length === 0 && (
-        <p className="archived-panel-loading">Загрузка архива...</p>
+        <p className="archived-panel__loading">Загрузка архива…</p>
       )}
-      {error && <div className="archived-panel-error">{error}</div>}
+      {error && <div className="archived-panel__error">{error}</div>}
 
       {!loading && archivedPatients.length === 0 ? (
-        <div className="empty-list">
+        <div className="archived-panel__empty">
           <p>В архиве нет пациентов</p>
         </div>
       ) : (
-        <div className="patient-list archived-patient-list">
-          <div className="patients-grid">
-            {archivedPatients.map((patient) => {
-              const { room, bed } = getPatientRoomAndBed(patient);
-              return (
-                <div key={patient.id} className="patient-card archived">
-                  <div className="patient-header">
-                    <h3>{patient.full_name}</h3>
-                    <span className="patient-status discharged">Выписан</span>
-                  </div>
-
-                  <div className="patient-info">
-                    <div className="info-row">
-                      <span className="info-label">Палата:</span>
-                      <span className="info-value">{room ? room.number : '—'}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Койка:</span>
-                      <span className="info-value">{bed ? bed.number : patient.bed_id || '—'}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Поступил:</span>
-                      <span className="info-value">
-                        {new Date(patient.admission_date).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Выписан:</span>
-                      <span className="info-value">
-                        {patient.discharge_date
-                          ? new Date(patient.discharge_date).toLocaleDateString('ru-RU')
-                          : '—'}
-                      </span>
-                    </div>
-                    {patient.department_name && (
-                      <div className="info-row">
-                        <span className="info-label">Подразделение:</span>
-                        <span className="info-value">{patient.department_name}</span>
+        <div className="archived-table-wrap">
+          <table className="archived-table">
+            <thead>
+              <tr>
+                <th className="archived-table__th-name">Список пациентов</th>
+                <th className="archived-table__th-center">
+                  <button type="button" className="archived-table__sort" onClick={() => toggleSort('room')}>
+                    Палата <span aria-hidden="true">{sortIcon('room')}</span>
+                  </button>
+                </th>
+                <th className="archived-table__th-center">Койка</th>
+                <th className="archived-table__th-center">
+                  <button
+                    type="button"
+                    className="archived-table__sort"
+                    onClick={() => toggleSort('admission')}
+                  >
+                    Поступил <span aria-hidden="true">{sortIcon('admission')}</span>
+                  </button>
+                </th>
+                <th className="archived-table__th-center">
+                  <button
+                    type="button"
+                    className="archived-table__sort"
+                    onClick={() => toggleSort('discharge')}
+                  >
+                    Выписан <span aria-hidden="true">{sortIcon('discharge')}</span>
+                  </button>
+                </th>
+                <th className="archived-table__th-actions">Действие</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedPatients.map((patient) => {
+                const { room, bed } = getPatientRoomAndBed(patient);
+                return (
+                  <tr key={patient.id}>
+                    <td className="archived-table__name">{patient.full_name}</td>
+                    <td>{room ? room.number : '—'}</td>
+                    <td>{bed ? formatBedNumber(bed.number) : '—'}</td>
+                    <td>{formatDate(patient.admission_date)}</td>
+                    <td>{formatDate(patient.discharge_date)}</td>
+                    <td>
+                      <div className="archived-table__actions">
+                        <button
+                          type="button"
+                          className="archived-table__btn"
+                          onClick={() => openCard(patient.id)}
+                        >
+                          Карта пациента
+                        </button>
+                        {allowRestore && (
+                          <button
+                            type="button"
+                            className="archived-table__btn"
+                            disabled={restoringId === patient.id}
+                            onClick={() => void handleRestore(patient.id)}
+                          >
+                            {restoringId === patient.id ? '…' : 'Вернуть'}
+                          </button>
+                        )}
                       </div>
-                    )}
-                  </div>
-
-                  <div className="patient-actions">
-                    <button
-                      type="button"
-                      className="action-button view-button"
-                      onClick={() => openCard(patient.id)}
-                    >
-                      Карта
-                    </button>
-                    {allowRestore && (
-                      <button
-                        type="button"
-                        className="action-button restore-button"
-                        disabled={restoringId === patient.id}
-                        onClick={() => void handleRestore(patient.id)}
-                      >
-                        {restoringId === patient.id ? '…' : 'Вернуть'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

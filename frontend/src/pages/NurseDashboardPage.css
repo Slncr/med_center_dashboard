@@ -1,8 +1,14 @@
 .nurse-dashboard {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   background: #fdfdfd;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   --nurse-content-max: 1718px;
   --nurse-content-pad: 32px;
 }
@@ -227,13 +233,18 @@
 
 .dashboard-content {
   flex: 1;
+  min-height: 0;
   background: #fdfdfd;
   width: 100%;
   max-width: var(--nurse-content-max);
   margin: 0 auto;
   padding: 24px var(--nurse-content-pad);
+  padding-bottom: calc(24px + var(--keyboard-inset, 0px));
   box-sizing: border-box;
+  overflow-x: hidden;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .dashboard-content--patients {
@@ -244,6 +255,30 @@
 }
 
 .tab-content--patients {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  min-height: auto;
+}
+
+.tab-content--form530n {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  min-height: auto;
+}
+
+.tab-content--appointments {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  min-height: auto;
+}
+
+.tab-content--bracelets {
   background: transparent;
   border-radius: 0;
   padding: 0;

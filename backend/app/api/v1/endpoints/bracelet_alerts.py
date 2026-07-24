@@ -49,6 +49,7 @@ def _snapshot_to_view(snap: PatientBraceletSnapshot) -> PatientBraceletView:
         ble_mac=snap.ble_mac,
         room_number=snap.room_number,
         bed_number=snap.bed_number,
+        admission_date=snap.admission_date,
         online=snap.online,
         metrics=snap.metrics,
         alerts=[

@@ -3,6 +3,7 @@ import { apiService } from '../../services/api';
 import { Appointment, Procedure, ProcedureStatus } from '../../types';
 import { useUrlTab } from '../../hooks/useUrlSearchState';
 import { APPOINTMENTS_DISPLAY_TABS, URL_PARAMS } from '../../utils/urlTabs';
+import { appAlert } from '../../context/AppDialogContext';
 import './AppointmentsDisplay.css';
 
 interface AppointmentsDisplayProps {
@@ -61,7 +62,7 @@ const AppointmentsDisplay: React.FC<AppointmentsDisplayProps> = ({
       }
     } catch (err) {
       console.error('Error updating procedure:', err);
-      alert('Ошибка обновления статуса процедуры');
+      await appAlert('Ошибка обновления статуса процедуры');
     }
   };
 
