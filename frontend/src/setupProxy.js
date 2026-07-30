@@ -67,13 +67,46 @@ module.exports = function (app) {
     next();
   });
 
+  const apiTarget = process.env.API_PROXY_TARGET || "http://localhost:8000";
+
+  const forwardClientIp = (proxyReq, req) => {
+    const clientIp = getClientIp(req);
+    if (clientIp) {
+      proxyReq.setHeader("X-Real-IP", clientIp);
+      proxyReq.setHeader("X-Forwarded-For", clientIp);
+    }
+  };
+
+  // WS раньше /api: иначе HTTP-прокси съедает Upgrade на /api/v1/ws/*
+  // и HMR (/ws) не трогаем
+  app.use(
+    "/api/v1/ws",
+    createProxyMiddleware({
+      target: apiTarget,
+      changeOrigin: true,
+      ws: true,
+      logLevel: "silent",
+      onError: (err) => {
+        console.warn("[ws-proxy]", err.code || err.message);
+      },
+      onProxyReqWs: (proxyReq, req) => {
+        forwardClientIp(proxyReq, req);
+      },
+    }),
+  );
+
   app.use(
     "/api",
     createProxyMiddleware({
-      target: process.env.API_PROXY_TARGET || "http://localhost:8000",
+      target: apiTarget,
       changeOrigin: true,
-      ws: true,
-      // Без onError необработанный ECONNRESET роняет весь CRA-процесс
+      // не проксировать WS-handshake как обычный HTTP
+      bypass: (req) => {
+        const url = req.url || "";
+        if (req.headers.upgrade === "websocket") return false;
+        if (url.startsWith("/api/v1/ws") || url.startsWith("/v1/ws")) return false;
+        return undefined;
+      },
       onError: (err, _req, res) => {
         console.warn("[api-proxy]", err.code || err.message);
         if (res && typeof res.writeHead === "function" && !res.headersSent) {
@@ -82,11 +115,7 @@ module.exports = function (app) {
         }
       },
       onProxyReq: (proxyReq, req) => {
-        const clientIp = getClientIp(req);
-        if (clientIp) {
-          proxyReq.setHeader("X-Real-IP", clientIp);
-          proxyReq.setHeader("X-Forwarded-For", clientIp);
-        }
+        forwardClientIp(proxyReq, req);
         proxyReq.on("error", (err) => {
           console.warn("[api-proxy-req]", err.code || err.message);
         });

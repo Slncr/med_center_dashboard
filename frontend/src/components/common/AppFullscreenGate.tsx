@@ -8,13 +8,17 @@ import {
 } from '../../utils/fullscreen';
 import './AppFullscreenGate.css';
 
-const isRoomDisplayPath = (pathname: string): boolean =>
-  pathname === '/room' || pathname.startsWith('/room/');
+const isPublicDisplayPath = (pathname: string): boolean =>
+  pathname === '/login' ||
+  // Логин не должен дергать fullscreen.
+  pathname === '/or' ||
+  pathname.startsWith('/or/');
 
-/** Полноэкранный режим для кабинетов (не для монитора палат). */
+/** Полноэкранный режим для всех экранов, кроме исключений выше. */
 const AppFullscreenGate: React.FC = () => {
   const { pathname } = useLocation();
-  const disabled = isRoomDisplayPath(pathname);
+  const disabled = isPublicDisplayPath(pathname);
+  const isRoomDisplay = pathname === '/room' || pathname.startsWith('/room/');
   const isIos = isIosDevice();
   const [needsGate, setNeedsGate] = useState(() => !disabled && !isImmersiveUi());
 
@@ -57,6 +61,12 @@ const AppFullscreenGate: React.FC = () => {
   const dismiss = useCallback(() => setNeedsGate(false), []);
 
   if (disabled || !needsGate) return null;
+
+  // На экранах палат не показываем кнопку подтверждения fullscreen.
+  // В большинстве kiosk-сценариев fullscreen успевает включиться автоматически;
+  // если браузер заблокирует из‑за отсутствия user-gesture, мы продолжим слушать
+  // первый pointerdown, но UI-опрос пользователю показывать не будем.
+  if (isRoomDisplay) return null;
 
   return (
     <div className="app-fs-gate">
