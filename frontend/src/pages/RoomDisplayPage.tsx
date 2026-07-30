@@ -174,7 +174,7 @@ const PatientAvatarIcon: React.FC = () => (
 
 const RoomDisplayPage: React.FC = () => {
   const { monitorId: monitorIdFromPath } = useParams<{ monitorId: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [dashboard, setDashboard] = useState<MonitoringDashboard | null>(null);
@@ -184,11 +184,9 @@ const RoomDisplayPage: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
-  const [isIpBoundMonitor, setIsIpBoundMonitor] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const monitorId = monitorIdFromPath ?? searchParams.get('monitorId') ?? searchParams.get('monitor_id');
-  const isTestMode = !monitorId && !isIpBoundMonitor;
   const useLegacyLayout = searchParams.get('legacy') === '1';
 
   useEffect(() => {
@@ -216,7 +214,6 @@ const RoomDisplayPage: React.FC = () => {
         ]);
         setRooms(roomsData);
         setApiConnected(true);
-        setIsIpBoundMonitor(displayBinding.bound && displayBinding.room_id != null);
 
         if (roomsData.length === 0) {
           setError('Нет данных о палатах');
@@ -257,7 +254,7 @@ const RoomDisplayPage: React.FC = () => {
           return;
         }
 
-        setActiveRoomId(roomsData[0].id);
+        setError('Палата не привязана к этому монитору');
       } catch (err) {
         console.error('Ошибка загрузки палат:', err);
         setApiConnected(false);
@@ -322,21 +319,6 @@ const RoomDisplayPage: React.FC = () => {
     return [...activeRoom.beds].sort((a, b) => Number(a.number) - Number(b.number));
   }, [activeRoom]);
 
-  const handleRoomChange = (roomId: number) => {
-    setActiveRoomId(roomId);
-    setDashboard(null);
-    if (isTestMode) {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.set(URL_PARAMS.room, String(roomId));
-          return next;
-        },
-        { replace: true },
-      );
-    }
-  };
-
   if (roomsLoading) {
     return (
       <div className="room-display-page loading">
@@ -368,18 +350,14 @@ const RoomDisplayPage: React.FC = () => {
     return (
       <LegacyRoomDisplayLayout
         activeRoom={activeRoom}
-        activeRoomId={activeRoomId}
         apiConnected={apiConnected}
         atmosphere={atmosphere}
         currentTime={currentTime}
         dashboard={dashboard}
         error={error}
-        handleRoomChange={handleRoomChange}
-        isTestMode={isTestMode}
         lastUpdatedAt={lastUpdatedAt}
         monitorId={monitorId}
         refreshing={refreshing}
-        rooms={rooms}
         bedMetricsMap={bedMetricsMap}
       />
     );
@@ -391,7 +369,6 @@ const RoomDisplayPage: React.FC = () => {
         <div className="rdv2-title-wrap">
           <h1 className="rdv2-room-title">{activeRoom ? `Палата №${activeRoom.number}` : 'Палата'}</h1>
           {monitorId && <span className="rdv2-badge">Монитор {monitorId}</span>}
-          {isTestMode && <span className="rdv2-badge rdv2-badge--test">Тест</span>}
         </div>
         <div className="rdv2-header-right">
           <span
@@ -404,26 +381,8 @@ const RoomDisplayPage: React.FC = () => {
         </div>
       </header>
 
-      {isTestMode && rooms.length > 0 && (
-        <div className="rdv2-room-picker">
-          <label htmlFor="room-test-select">Палата</label>
-          <select
-            id="room-test-select"
-            value={activeRoomId ?? ''}
-            onChange={(e) => handleRoomChange(Number(e.target.value))}
-          >
-            {rooms.map((room) => (
-              <option key={room.id} value={room.id}>
-                №{room.number}
-                {room.name ? ` — ${room.name}` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <main className="rdv2-main">
-        <div className="rdv2-beds-list">
+        <div className={`rdv2-beds-list ${roomBeds.length >= 3 ? 'is-centered' : ''}`}>
           {activeRoom ? (
             roomBeds.map((bed) => {
               const isOccupied = Boolean(bed.patient);
@@ -586,35 +545,27 @@ const RoomDisplayPage: React.FC = () => {
 
 interface LegacyLayoutProps {
   activeRoom: Room | null;
-  activeRoomId: number | null;
   apiConnected: boolean;
   atmosphere: MonitoringDashboard['atmosphere'];
   currentTime: Date;
   dashboard: MonitoringDashboard | null;
   error: string | null;
-  handleRoomChange: (roomId: number) => void;
-  isTestMode: boolean;
   lastUpdatedAt: Date | null;
   monitorId: string | null;
   refreshing: boolean;
-  rooms: Room[];
   bedMetricsMap: Map<number, BedMonitoringView>;
 }
 
 const LegacyRoomDisplayLayout: React.FC<LegacyLayoutProps> = ({
   activeRoom,
-  activeRoomId,
   apiConnected,
   atmosphere,
   currentTime,
   dashboard,
   error,
-  handleRoomChange,
-  isTestMode,
   lastUpdatedAt,
   monitorId,
   refreshing,
-  rooms,
   bedMetricsMap,
 }) => {
   return (
@@ -626,27 +577,8 @@ const LegacyRoomDisplayLayout: React.FC<LegacyLayoutProps> = ({
           <div className="room-title">
             {activeRoom ? `Палата №${activeRoom.number}` : 'Палата не выбрана'}
             {monitorId && <span className="monitor-badge">Монитор {monitorId}</span>}
-            {isTestMode && <span className="test-badge">Тест</span>}
           </div>
         </div>
-
-        {isTestMode && rooms.length > 0 && (
-          <div className="room-test-selector">
-            <label htmlFor="room-test-select">Палата для теста</label>
-            <select
-              id="room-test-select"
-              value={activeRoomId ?? ''}
-              onChange={(e) => handleRoomChange(Number(e.target.value))}
-            >
-              {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  №{room.number}
-                  {room.name ? ` — ${room.name}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         <div className="header-center">
           <div className="current-time">

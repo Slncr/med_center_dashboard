@@ -27,6 +27,12 @@ import type {
   UnassignBraceletResult,
   PatientVitalThresholds,
 } from '../types/braceletAlerts';
+import type {
+  OrAnnouncement,
+  OrAtmosphereConfig,
+  OrBoard,
+  OrDisplaySettings,
+} from '../types/operatingRoom';
 
 const API_BASE_URL = '/api/v1';
 
@@ -168,6 +174,73 @@ class ApiService {
   async getRoomDisplayBinding(): Promise<RoomDisplayBinding> {
     const response = await this.api.get<RoomDisplayBinding>('/rooms/display-binding');
     return response.data;
+  }
+
+  async getOperatingRoomStatus(): Promise<{ status: string; updated_at: string | null }> {
+    const response = await this.api.get<{ status: string; updated_at: string | null }>(
+      '/operating-room/status',
+    );
+    return response.data;
+  }
+
+  async setOperatingRoomStatus(
+    status: string,
+  ): Promise<{ status: string; updated_at: string | null }> {
+    const response = await this.api.put<{ status: string; updated_at: string | null }>(
+      '/operating-room/status',
+      { status },
+    );
+    return response.data;
+  }
+
+  async getOperatingRoomBoard(): Promise<OrBoard> {
+    const response = await this.api.get<OrBoard>('/operating-room/board');
+    return response.data;
+  }
+
+  async getOperatingRoomConfig(): Promise<Omit<OrBoard, 'stats' | 'atmosphere_error'> & {
+    atmosphere_error?: string | null;
+    stats?: OrBoard['stats'];
+  }> {
+    const response = await this.api.get('/operating-room/config');
+    return response.data;
+  }
+
+  async getOperatingRoomAtmosphere(): Promise<{
+    atmosphere_config: OrAtmosphereConfig;
+    atmosphere: OrBoard['atmosphere'];
+    atmosphere_error: string | null;
+  }> {
+    const response = await this.api.get('/operating-room/atmosphere');
+    return response.data;
+  }
+
+  async updateOperatingRoomDisplay(
+    settings: Partial<OrDisplaySettings>,
+  ): Promise<OrDisplaySettings> {
+    const response = await this.api.put<OrDisplaySettings>('/operating-room/display', settings);
+    return response.data;
+  }
+
+  async updateOperatingRoomAtmosphere(
+    payload: Partial<OrAtmosphereConfig>,
+  ): Promise<OrAtmosphereConfig> {
+    const response = await this.api.put<OrAtmosphereConfig>(
+      '/operating-room/atmosphere',
+      payload,
+    );
+    return response.data;
+  }
+
+  async createOperatingRoomAnnouncement(text: string): Promise<OrAnnouncement> {
+    const response = await this.api.post<OrAnnouncement>('/operating-room/announcements', {
+      text,
+    });
+    return response.data;
+  }
+
+  async deleteOperatingRoomAnnouncement(id: string): Promise<void> {
+    await this.api.delete(`/operating-room/announcements/${id}`);
   }
 
   async getRoom(id: number): Promise<Room> {

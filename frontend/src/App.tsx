@@ -6,6 +6,10 @@ import AdminRegistrationPage from './pages/AdminRegistrationPage';
 import NurseDashboardPage from './pages/NurseDashboardPage';
 import DoctorDashboardPage from './pages/DoctorDashboardPage';
 import RoomDisplayPage from './pages/RoomDisplayPage';
+import OperatingRoomTabletPage from './pages/OperatingRoomTabletPage';
+import OperatingRoomDisplayPage from './pages/OperatingRoomDisplayPage';
+import OperatingRoomInfoPage from './pages/OperatingRoomInfoPage';
+import OperatingRoomAdminPage from './pages/OperatingRoomAdminPage';
 import MainLayout from './MainLayout';
 import ArchivedPatients from './components/nurse-station/ArchivedPatients';
 import NotificationToast from './components/common/NotificationToast';
@@ -61,6 +65,15 @@ const App: React.FC = () => {
             } 
           />
 
+          <Route
+            path="/admin/operating-room"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <OperatingRoomAdminPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route 
             path="/nurse/appointments" 
             element={
@@ -81,6 +94,12 @@ const App: React.FC = () => {
 
           <Route path="/room" element={<RoomDisplayPage />} />
           <Route path="/room/:monitorId" element={<RoomDisplayPage />} />
+          <Route path="/or" element={<OperatingRoomTabletPage />} />
+          <Route path="/or/tablet" element={<OperatingRoomTabletPage />} />
+          <Route path="/or/display" element={<OperatingRoomDisplayPage />} />
+          <Route path="/or/monitor" element={<OperatingRoomDisplayPage />} />
+          <Route path="/or/info" element={<OperatingRoomInfoPage />} />
+          <Route path="/or/board" element={<OperatingRoomInfoPage />} />
 
           <Route path="/dashboard" element={<Navigate to="/register" replace />} />
           <Route path="/" element={<Navigate to="/login" replace />} />

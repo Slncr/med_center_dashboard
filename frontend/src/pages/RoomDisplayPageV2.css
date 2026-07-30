@@ -49,11 +49,6 @@
   color: #1d4ed8;
 }
 
-.rdv2-badge--test {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
 .rdv2-header-right {
   display: flex;
   align-items: center;
@@ -83,39 +78,14 @@
   background: #ef4444;
 }
 
-.rdv2-room-picker {
-  position: absolute;
-  top: 58px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #dbe4ee;
-  border-radius: 12px;
-  padding: 6px 12px;
-}
-
-.rdv2-room-picker label {
-  font-size: 12px;
-  color: #475569;
-}
-
-.rdv2-room-picker select {
-  border: 1px solid #d1d9e5;
-  border-radius: 10px;
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
 /* ── Основная зона коек ── */
 
 .rdv2-main {
   flex: 1;
   min-height: 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
   padding-bottom: 12px;
@@ -128,6 +98,11 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.rdv2-beds-list.is-centered {
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .rdv2-bed-card {
@@ -317,7 +292,7 @@
   height: 48px;
   border-radius: 50%;
   background: #ffffff;
-  border: 1.5px solid #c4b5fd;
+  border: 1.5px solid #bfdbfe;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -332,6 +307,13 @@
   width: 26px;
   height: 26px;
   object-fit: contain;
+  /* единый синий #0ea5e9 */
+  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2094%) hue-rotate(166deg) brightness(97%) contrast(93%);
+}
+
+.rdv2-bed-card.free .rdv2-sleep-icon {
+  filter: brightness(0) saturate(100%) invert(78%) sepia(6%) saturate(247%) hue-rotate(179deg) brightness(92%) contrast(89%);
+  opacity: 0.7;
 }
 
 .rdv2-sleep-text {
@@ -408,10 +390,6 @@
   margin-top: 2px;
 }
 
-.rdv2-metric-card--press .rdv2-metric-icon-wrap {
-  border-color: #fca5a5;
-}
-
 .rdv2-metric-card.is-alert .rdv2-metric-icon-wrap {
   border-color: #f87171;
 }
@@ -424,6 +402,13 @@
   width: 32px;
   height: 32px;
   object-fit: contain;
+  /* единый синий #0ea5e9 */
+  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2094%) hue-rotate(166deg) brightness(97%) contrast(93%);
+}
+
+.rdv2-bed-card.free .rdv2-metric-icon {
+  filter: brightness(0) saturate(100%) invert(78%) sepia(6%) saturate(247%) hue-rotate(179deg) brightness(92%) contrast(89%);
+  opacity: 0.7;
 }
 
 .rdv2-metric-text {
@@ -526,6 +511,8 @@
   width: 30px;
   height: 30px;
   object-fit: contain;
+  /* единый синий #0ea5e9 */
+  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2094%) hue-rotate(166deg) brightness(97%) contrast(93%);
 }
 
 .rdv2-atm-content {
